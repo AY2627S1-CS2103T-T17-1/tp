@@ -33,14 +33,6 @@ All Java code in this project, including tests and future changes, must follow t
 
 Ensure that Java 25 is used when running the application or build tasks. On macOS, use `sdk use java 25.0.3.fx-zulu` to switch to Java 25 if needed.
 
-## UI test workflow:
-
-After every code update:
-
-1. Review `test/ui-test-plan.md` and update it when the change adds or alters user-visible behavior.
-2. Invoke the project-specific `test-ui` skill using `.codex/skills/test-ui/SKILL.md`.
-3. Run the complete UI test plan and include the console input/output transcript and any failure details in the handoff.
-
 ## JUnit test coverage:
 
 Maintain JUnit tests for approximately the top 50% of methods, prioritizing complex, core, or business-critical logic. After every code change, review and update the relevant JUnit tests so they remain aligned with the implementation and continue to meet this coverage target.
