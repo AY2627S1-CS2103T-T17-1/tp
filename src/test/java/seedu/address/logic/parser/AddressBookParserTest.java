@@ -25,6 +25,7 @@ import seedu.address.logic.commands.RemarkCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.Remark;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 import seedu.address.testutil.PersonBuilder;
 import seedu.address.testutil.PersonUtil;
@@ -35,7 +36,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_remark() throws Exception {
-        assertEquals(new RemarkCommand(INDEX_FIRST_PERSON, "Likes swimming"),
+        assertEquals(new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes swimming")),
                 parser.parseCommand("remark 1 r/Likes swimming"));
     }
 

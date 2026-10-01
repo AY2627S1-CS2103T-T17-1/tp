@@ -9,6 +9,7 @@ import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.RemarkCommand;
+import seedu.address.model.person.Remark;
 
 /**
  * Tests parsing of remark text, empty remarks, and invalid displayed indexes.
@@ -25,16 +26,16 @@ public class RemarkCommandParserTest {
     @Test
     public void parse_validArguments_returnsRemarkCommand() {
         assertParseSuccess(parser, "1 r/Likes swimming",
-                new RemarkCommand(INDEX_FIRST_PERSON, "Likes swimming"));
+                new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes swimming")));
         assertParseSuccess(parser, "  1  r/  Likes swimming  ",
-                new RemarkCommand(INDEX_FIRST_PERSON, "Likes swimming"));
+                new RemarkCommand(INDEX_FIRST_PERSON, new Remark("Likes swimming")));
         assertParseSuccess(parser, "1 r/泳ぐのが好き!",
-                new RemarkCommand(INDEX_FIRST_PERSON, "泳ぐのが好き!"));
+                new RemarkCommand(INDEX_FIRST_PERSON, new Remark("泳ぐのが好き!")));
     }
 
     @Test
     public void parse_emptyOrMissingRemark_returnsEmptyRemark() {
-        RemarkCommand expected = new RemarkCommand(INDEX_FIRST_PERSON, "");
+        RemarkCommand expected = new RemarkCommand(INDEX_FIRST_PERSON, new Remark(""));
         assertParseSuccess(parser, "1 r/", expected);
         assertParseSuccess(parser, "1 r/   ", expected);
         assertParseSuccess(parser, "1", expected);
@@ -42,7 +43,7 @@ public class RemarkCommandParserTest {
 
     @Test
     public void parse_repeatedRemark_usesLastValue() {
-        assertParseSuccess(parser, "1 r/old r/new", new RemarkCommand(INDEX_FIRST_PERSON, "new"));
+        assertParseSuccess(parser, "1 r/old r/new", new RemarkCommand(INDEX_FIRST_PERSON, new Remark("new")));
     }
 
     @Test
