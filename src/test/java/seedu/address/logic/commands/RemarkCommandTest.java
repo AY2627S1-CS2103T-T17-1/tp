@@ -1,9 +1,10 @@
 package seedu.address.logic.commands;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static seedu.address.testutil.Assert.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.ModelManager;
 
 /**
@@ -12,7 +13,8 @@ import seedu.address.model.ModelManager;
 public class RemarkCommandTest {
 
     @Test
-    public void execute_minimalCommand_returnsGreeting() {
-        assertEquals("Hello from remark", new RemarkCommand().execute(new ModelManager()).getFeedbackToUser());
+    public void execute_notImplemented_throwsCommandException() {
+        assertThrows(CommandException.class, RemarkCommand.MESSAGE_NOT_IMPLEMENTED_YET, () ->
+                new RemarkCommand().execute(new ModelManager()));
     }
 }
