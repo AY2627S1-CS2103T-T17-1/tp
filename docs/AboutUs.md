@@ -31,9 +31,9 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ### Khor Kai Shean
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/kks070206.png" width="200px">
 
-[[github](http://github.com/johndoe)] [[portfolio](team/johndoe.md)]
+[[github](http://github.com/kks070206)] [[portfolio](team/johndoe.md)]
 
 * Role: TBA
 * Responsibilities: TBA
