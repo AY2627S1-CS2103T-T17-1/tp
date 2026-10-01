@@ -11,10 +11,10 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ### Lim Qi Zao
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/zao05.png" width="200px">
 
 [[homepage](http://www.comp.nus.edu.sg/~damithch)]
-[[github](https://github.com/johndoe)]
+[[github](https://github.com/zao05)]
 [[portfolio](team/johndoe.md)]
 
 * Role: TBA
