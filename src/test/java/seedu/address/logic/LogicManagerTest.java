@@ -28,11 +28,15 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.Remark;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
 import seedu.address.testutil.PersonBuilder;
 
+/**
+ * Tests command parsing, model updates, and persistence through the logic component.
+ */
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
     private static final IOException DUMMY_AD_EXCEPTION = new AccessDeniedException("dummy access denied exception");
@@ -42,6 +46,23 @@ public class LogicManagerTest {
 
     private Model model = new ModelManager();
     private Logic logic;
+
+    @Test
+    public void execute_remarkThenEditThenClear_persistsEachChange() throws Exception {
+        model.addPerson(AMY);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(temporaryFolder.resolve("addressBook.json"));
+        logic.execute("remark 1 r/Call tomorrow");
+        assertEquals(new Remark("Call tomorrow"),
+                storage.readAddressBook().orElseThrow().getPersonList().get(0).getRemark());
+
+        logic.execute("edit 1 p/98765432");
+        Person edited = new PersonBuilder(AMY).withPhone("98765432").withRemark("Call tomorrow").build();
+        assertEquals(edited, storage.readAddressBook().orElseThrow().getPersonList().get(0));
+
+        logic.execute("remark 1 r/");
+        assertEquals(new PersonBuilder(edited).withRemark("").build(),
+                storage.readAddressBook().orElseThrow().getPersonList().get(0));
+    }
 
     @BeforeEach
     public void setUp() {
