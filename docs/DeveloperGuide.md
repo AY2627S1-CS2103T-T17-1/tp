@@ -259,31 +259,45 @@ _{Explain here how the data archiving feature will be implemented}_
 
 ### Product scope
 
-**Target user profile**:
+**Target user profile**: An independent private tutor who manages approximately 15–30 students and their parents,
+works alone, and prefers typing commands to navigating menus. The tutor needs to retrieve contact and tutoring
+information while preparing lessons or communicating with parents.
 
-* has a need to manage a significant number of contacts
-* prefers desktop apps over other types of applications
-* can type fast
-* prefers typing to mouse interactions
-* is reasonably comfortable using CLI apps
-
-**Value proposition**: Manage contacts faster than with a typical mouse-driven GUI application.
-
+**Value proposition**: TutorContacts keeps student and parent contact information, together with essential tutoring
+details, in one place. Typed commands let the tutor record contacts and retrieve the information needed for lesson
+preparation or parent communication. The initial MVP focuses on creating, viewing, deleting, and retaining contact
+records. Relationship links and other contact-organization features are possible future extensions.
 
 ### User stories
 
-Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
+Priority describes the importance of a user need, not whether the feature has already been implemented.
 
-| Priority | As a …​                                    | I want to …​                     | So that I can…​                                                        |
-| -------- | ------------------------------------------ | ------------------------------ | ---------------------------------------------------------------------- |
-| `* * *`  | new user                                   | see usage instructions         | refer to instructions when I forget how to use the App                 |
-| `* * *`  | user                                       | add a new person               |                                                                        |
-| `* * *`  | user                                       | delete a person                | remove entries that I no longer need                                   |
-| `* * *`  | user                                       | find a person by name          | locate details of persons without having to go through the entire list |
-| `* *`    | user                                       | hide private contact details   | minimize chance of someone else seeing them by accident                |
-| `*`      | user with many persons in the address book | sort persons by name           | locate a person easily                                                 |
+Priorities:
+* High (must-have for the agreed MVP) - `* * *`;
+* Medium (nice-to-have for future versions) - `* *`.
 
-*{More to be added}*
+| Priority | As a… | I can… | So that I can… |
+| --- | --- | --- | --- |
+| `* * *` | private tutor | add a student contact | keep the student's contact information in one place |
+| `* * *` | private tutor | add a parent contact | keep the information needed to contact that parent |
+| `* * *` | private tutor | record one subject for a student | remember which subject I teach that student |
+| `* * *` | private tutor | record a student's academic level | prepare teaching materials appropriate for that student |
+| `* * *` | private tutor | add a short note to a contact | remember relevant details such as a lesson preference |
+| `* * *` | private tutor | list all my contacts | see my student and parent records at a glance |
+| `* * *` | private tutor | view a contact's complete details | read information that is not shown in the contact list |
+| `* * *` | private tutor | delete an unwanted contact | remove an incorrect or no longer needed record |
+| `* * *` | private tutor | retrieve my contact records after reopening TutorContacts | continue using records entered in an earlier session |
+| `* * *` | private tutor | exit TutorContacts safely | end a session without losing an accepted contact change |
+| `* *` | private tutor | edit a contact's details | keep the record accurate when details change |
+| `* *` | private tutor | find contacts by name | locate someone without scanning the complete list |
+| `* *` | private tutor | link a parent to one or more students | identify whom to contact for each student without duplicating the parent's record |
+| `* *` | private tutor | archive an inactive contact | keep its information without showing it among active contacts |
+| `* *` | new TutorContacts user | see a brief command guide | learn the available commands without reading the full user guide |
+| `* *` | private tutor | record multiple subjects for a student | keep all subjects I teach that student in one record |
+| `* *` | private tutor | filter students by subject | review contacts relevant to a particular subject |
+| `* *` | private tutor | filter students by academic level | review students at a particular level |
+| `* *` | private tutor | sort students by academic level | review students at similar levels together |
+| `* *` | private tutor | assign custom tags to contacts | group contacts according to my teaching needs |
 
 ### Use cases
 
