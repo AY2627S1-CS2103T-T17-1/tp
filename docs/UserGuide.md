@@ -152,6 +152,23 @@ Exits the program.
 
 Format: `exit`
 
+### Adding or clearing a remark: `remark`
+
+Adds or replaces the remark of the person at the given index in the currently displayed list.
+
+Format: `remark INDEX r/REMARK`
+
+* The index must be a positive integer shown in the current list, including a filtered list after `find`.
+* The remark appears on the person's card and is saved automatically.
+* Use `remark INDEX r/` to clear a remark. Following the tutorial, `remark INDEX` also clears it.
+* Leading and trailing whitespace is trimmed. If `r/` is repeated, the last value is used.
+* After a successful change, all persons are displayed again. Editing other fields preserves the remark.
+
+Examples:
+
+* `remark 2 r/Likes baseball` adds or replaces the second displayed person's remark.
+* `remark 2 r/` clears that person's remark.
+
 ### Saving the data
 
 AddressBook automatically saves data after every command. You do not need to save manually.
@@ -195,4 +212,5 @@ Action | Format, Examples
 **Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List** | `list`
+**Remark** | `remark INDEX r/REMARK`<br> e.g., `remark 2 r/Likes baseball`; clear with `remark 2 r/`
 **Help** | `help`

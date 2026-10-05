@@ -16,7 +16,27 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.testutil.PersonBuilder;
 
+/**
+ * Tests person identity, complete value equality, and immutable field access.
+ */
 public class PersonTest {
+
+    @Test
+    public void constructor_nullRemark_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> new Person(ALICE.getName(), ALICE.getPhone(),
+                ALICE.getEmail(), ALICE.getAddress(), null, ALICE.getTags()));
+    }
+
+    @Test
+    public void equals_differentRemark_sameIdentityButDifferentData() {
+        Person editedAlice = new PersonBuilder(ALICE).withRemark("Likes swimming").build();
+        assertTrue(ALICE.isSamePerson(editedAlice));
+        assertFalse(ALICE.equals(editedAlice));
+        assertEquals(new Remark("Likes swimming"), editedAlice.getRemark());
+        Person copy = new PersonBuilder(editedAlice).build();
+        assertEquals(editedAlice, copy);
+        assertEquals(editedAlice.hashCode(), copy.hashCode());
+    }
 
     @Test
     public void asObservableList_modifyList_throwsUnsupportedOperationException() {
@@ -93,7 +113,8 @@ public class PersonTest {
     @Test
     public void toStringMethod() {
         String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName() + ", phone=" + ALICE.getPhone()
-                + ", email=" + ALICE.getEmail() + ", address=" + ALICE.getAddress() + ", tags=" + ALICE.getTags() + "}";
+                + ", email=" + ALICE.getEmail() + ", address=" + ALICE.getAddress()
+                + ", remark=" + ALICE.getRemark() + ", tags=" + ALICE.getTags() + "}";
         assertEquals(expected, ALICE.toString());
     }
 }
