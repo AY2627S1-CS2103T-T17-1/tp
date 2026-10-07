@@ -287,32 +287,170 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 ### Use cases
 
-(For all use cases below, the **System** is the `AddressBook` and the **Actor** is the `user`, unless specified otherwise)
+(For all use cases below, the **System** is `TutorContacts` and the **Actor** is the `user`, unless specified
+otherwise. `INDEX` is the one-based position in the displayed contact list. These use cases follow the
+[V2 TutorContacts MVP specification](https://docs.google.com/document/d/13atDT_z6unnRSmTLVOimhPvUcavvWek9Xy9jy5YNyFY/edit?tab=t.pgg9f79ckkj4).
+Failed commands leave the displayed and saved contact data unchanged. Some specified behavior is not yet implemented
+in the current AB3 codebase.)
 
-**Use case: Delete a person**
+**Use case: Add a student or parent contact**
 
 **MSS**
 
-1.  User requests to list persons
-2.  AddressBook shows a list of persons
-3.  User requests to delete a specific person in the list
-4.  AddressBook deletes the person
+1. User enters `add` with a role, name, phone, email, and address. The user supplies a subject and level for a student
+   and may supply a note for either role.
+2. TutorContacts validates the fields and checks for a duplicate contact.
+3. TutorContacts adds the contact to the end of the list and selects its compact card, which shows its index, role,
+   name, and phone.
+4. TutorContacts saves the updated data file and reports `Added student: NAME.` or `Added parent: NAME.`
 
-    Use case ends.
+   Use case ends.
 
 **Extensions**
 
-* 2a. The list is empty.
+* 2a. A general required field is missing, a value is invalid, or a prefix is unknown or repeated.
+  * 2a1. TutorContacts shows the applicable format, validation, or prefix error. No contact is added.
 
-  Use case ends.
+    Use case resumes at step 1.
+* 2b. A student is missing a subject or level, or a parent has either field.
+  * 2b1. TutorContacts shows the role-specific error. No contact is added.
 
-* 3a. The given index is invalid.
+    Use case resumes at step 1.
+* 2c. A contact has the same role and normalized name as an existing contact, and its normalized phone or email also
+  matches.
+  * 2c1. TutorContacts shows `This contact duplicates an existing ROLE: NAME.` No contact is added.
 
-    * 3a1. AddressBook shows an error message.
+    Use case resumes at step 1.
+* 4a. TutorContacts cannot save the data file.
+  * 4a1. TutorContacts shows `Contact was not added because TutorContacts could not save the data file.` The contact is
+    not added, and the displayed and saved data remain unchanged.
 
-      Use case resumes at step 2.
+    Use case ends.
 
-*{More to be added}*
+**Use case: List all contacts**
+
+**MSS**
+
+1. User enters `list` to see all contacts.
+2. TutorContacts shows every contact in insertion order, numbered from 1, with its role, name, and phone on a compact
+   card. Any expanded contact card is collapsed.
+3. TutorContacts reports `Showing N contacts.`
+4. User scans the list. No contact data is changed or saved.
+
+   Use case ends.
+
+**Extensions**
+
+* 1a. User supplies extra text or parameters after `list`.
+  * 1a1. TutorContacts shows `Invalid command format. Expected: list` and leaves the displayed list unchanged.
+
+    Use case ends.
+* 2a. There are no contacts.
+  * 2a1. TutorContacts shows an empty list and reports `No contacts to display.`
+
+    Use case ends.
+
+**Use case: View one contact's complete details**
+
+**MSS**
+
+1. User enters `list` to display contacts.
+2. TutorContacts displays contacts with their current index numbers.
+3. User enters `view INDEX` for a contact in that displayed list.
+4. TutorContacts highlights and expands the indexed contact card in place. The other cards remain compact, and the
+   list remains visible.
+5. TutorContacts shows the contact's role, name, phone, email, address, note, and subject and level if it is a student.
+   TutorContacts reports `Showing contact: NAME.` No contact data is changed or saved.
+
+   Use case ends.
+
+**Extensions**
+
+* 3a. The index is non-numeric, zero, or negative.
+  * 3a1. TutorContacts shows `Index must be a positive integer shown in the current list.` The displayed list and
+    expanded-card selection remain unchanged.
+
+    Use case resumes at step 3.
+* 3b. The index is larger than the currently displayed list.
+  * 3b1. TutorContacts shows `No contact exists at index INDEX in the current list.` The displayed list and
+    expanded-card selection remain unchanged.
+
+    Use case resumes at step 3.
+* 3c. The index is missing, or the user supplies extra arguments.
+  * 3c1. TutorContacts shows `Invalid command format. Expected: view INDEX` and leaves the displayed list and
+    selection unchanged.
+
+    Use case resumes at step 3.
+
+**Use case: Delete a contact**
+
+**MSS**
+
+1. User enters `list` to display contacts.
+2. TutorContacts displays the contacts with their current index numbers.
+3. User enters `delete INDEX` for a contact in that displayed list.
+4. TutorContacts removes the contact card, refreshes and renumbers the list, and clears the selection if the deleted
+   contact was selected.
+5. TutorContacts saves the updated data file and reports `Deleted contact: NAME.`
+
+   Use case ends.
+
+**Extensions**
+
+* 3a. The index is non-numeric, zero, or negative.
+  * 3a1. TutorContacts shows `Index must be a positive integer shown in the current list.` Nothing is deleted.
+
+    Use case resumes at step 3.
+* 3b. The index is larger than the currently displayed list.
+  * 3b1. TutorContacts shows `No contact exists at index INDEX in the current list.` Nothing is deleted.
+
+    Use case resumes at step 3.
+* 3c. The index is missing, or the user supplies extra arguments.
+  * 3c1. TutorContacts shows `Invalid command format. Expected: delete INDEX`. Nothing is deleted.
+
+    Use case resumes at step 3.
+* 5a. TutorContacts cannot save the data file.
+  * 5a1. TutorContacts shows `Contact was not deleted because TutorContacts could not save the data file.` The contact
+    remains, and the displayed and saved data remain unchanged.
+
+    Use case ends.
+
+**Use case: Save data and exit safely**
+
+**MSS**
+
+1. User adds or deletes a contact.
+2. TutorContacts saves the contacts and their role-specific fields to `data/tutorcontacts.json` before confirming the
+   command.
+3. User enters `exit`.
+4. TutorContacts reports `Exiting TutorContacts.` and closes after confirming that no accepted change remains unsaved.
+5. User launches TutorContacts again.
+6. TutorContacts loads every saved contact field and displays the restored compact-card list.
+
+   Use case ends.
+
+**Extensions**
+
+* 2a. TutorContacts cannot save the data file.
+  * 2a1. TutorContacts reports the `add` or `delete` save-failure message. The displayed and saved data remain
+    unchanged.
+
+    Use case ends.
+* 3a. User supplies extra text after `exit`.
+  * 3a1. TutorContacts shows `Invalid command format. Expected: exit` and remains open.
+
+    Use case resumes at step 3.
+* 6a. The data file is missing.
+  * 6a1. TutorContacts starts with an empty list without an error. It creates the file on the first successful
+    data-changing command.
+
+    Use case ends.
+* 6b. The data file is unreadable or structurally invalid, including an invalid or duplicate contact record.
+  * 6b1. TutorContacts starts with an empty list and shows
+    `Warning: TutorContacts could not load data/tutorcontacts.json. The existing file was not changed.`
+  * 6b2. TutorContacts leaves the existing file unchanged.
+
+    Use case ends.
 
 ### Non-Functional Requirements
 
