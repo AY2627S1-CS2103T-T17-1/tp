@@ -26,6 +26,7 @@ docs/_site/
 # CLAUDE.md
 # /.claude/
 # /.codex/
+/.codex/skills/present-changes-visually/
 
 # Temp files
 _temp/
