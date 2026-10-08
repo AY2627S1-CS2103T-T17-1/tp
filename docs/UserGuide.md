@@ -140,19 +140,27 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
-### Deleting a person: `delete`
+### Deleting a contact: `delete`
 
-Deletes the specified person from the address book.
+Deletes the specified contact from TutorContacts.
 
 Format: `delete INDEX`
 
-* Deletes the person at the specified `INDEX`.
-* The index refers to the index number shown in the displayed person list.
-* The index **must be a positive integer** 1, 2, 3, …​
+* Deletes the contact at the specified `INDEX` in the currently displayed list, including search results.
+* Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
+* On success, the message is `Deleted contact: NAME.` The remaining contacts keep their order and are renumbered.
 
 Examples:
-* `list` followed by `delete 2` deletes the 2nd person in the address book.
-* `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
+* `list` followed by `delete 2` deletes the second displayed contact.
+* `find Betsy` followed by `delete 1` deletes the first search result.
+
+Invalid input leaves contact data and the displayed list unchanged:
+
+| Input problem | Error message |
+| --- | --- |
+| Missing or extra arguments | `Invalid command format. Expected: delete INDEX` |
+| An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
+| An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
 
 ### Clearing all entries: `clear`
 
