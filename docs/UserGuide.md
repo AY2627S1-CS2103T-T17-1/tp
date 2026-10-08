@@ -59,7 +59,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
 * Command words are case-insensitive. For example, `list`, `List`, and `LIST` are equivalent.<br>
-  Parameter values retain their capitalization; parameter prefixes remain case-sensitive.
+  Parameter values retain their capitalization.
 
 * Extraneous parameters for `help`, `exit`, and `clear` are ignored.<br>
   For example, `help 123` is interpreted as `help`.
