@@ -58,8 +58,13 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
-* Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
+* Command words are case-insensitive. For example, `list`, `List`, and `LIST` are equivalent.<br>
+  Parameter values retain their capitalization.
+
+* Extraneous parameters for `help`, `exit`, and `clear` are ignored.<br>
   For example, `help 123` is interpreted as `help`.
+
+* The `list` command accepts no parameters. Additional arguments are rejected.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </div>
@@ -91,11 +96,20 @@ Examples:
 * `add r/student n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01`
 * `add r/PARENT n/Betsy Crowe t/friend e/betsycrowe@example.com a/Newgate Prison p/1234567 t/criminal`
 
-### Listing all persons: `list`
+### Listing all contacts: `list`
 
-Shows a list of all persons in the address book.
+Displays all contacts in insertion order, numbered from 1. If the list was filtered by a search, this command restores the complete list.
 
 Format: `list`
+
+* If contacts exist, the result message is `Showing N contacts.`, where `N` is the total number of contacts.
+* If no contacts exist, the result message is `No contacts to display.`
+* Command words are case-insensitive: `list`, `List`, and `LIST` are accepted.
+* Leading and trailing spaces are ignored.
+* Additional arguments are rejected with `Invalid command format. Expected: list`.
+* This command does not change contact details.
+
+Example: `list`
 
 ### Editing a person: `edit`
 
@@ -130,19 +144,27 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
-### Deleting a person: `delete`
+### Deleting a contact: `delete`
 
-Deletes the specified person from the address book.
+Deletes the specified contact from TutorContacts.
 
 Format: `delete INDEX`
 
-* Deletes the person at the specified `INDEX`.
-* The index refers to the index number shown in the displayed person list.
-* The index **must be a positive integer** 1, 2, 3, …​
+* Deletes the contact at the specified `INDEX` in the currently displayed list, including search results.
+* Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
+* On success, the message is `Deleted contact: NAME.` The remaining contacts keep their order and are renumbered.
 
 Examples:
-* `list` followed by `delete 2` deletes the 2nd person in the address book.
-* `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
+* `list` followed by `delete 2` deletes the second displayed contact.
+* `find Betsy` followed by `delete 1` deletes the first search result.
+
+Invalid input leaves contact data and the displayed list unchanged:
+
+| Input problem | Error message |
+| --- | --- |
+| Missing or extra arguments | `Invalid command format. Expected: delete INDEX` |
+| An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
+| An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
 
 ### Clearing all entries: `clear`
 
