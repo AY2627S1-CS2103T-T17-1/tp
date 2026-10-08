@@ -1,7 +1,6 @@
 package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static seedu.address.logic.Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.commands.CommandTestUtil.ADDRESS_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
@@ -12,6 +11,7 @@ import static seedu.address.testutil.TypicalPersons.AMY;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +33,9 @@ import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
 import seedu.address.testutil.PersonBuilder;
 
+/**
+ * Tests command execution and storage error handling.
+ */
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
     private static final IOException DUMMY_AD_EXCEPTION = new AccessDeniedException("dummy access denied exception");
@@ -61,7 +64,41 @@ public class LogicManagerTest {
     @Test
     public void execute_commandExecutionError_throwsCommandException() {
         String deleteCommand = "delete 9";
-        assertCommandException(deleteCommand, MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        assertCommandException(deleteCommand, "No contact exists at index 9 in the current list.");
+    }
+
+    @Test
+    public void execute_invalidDelete_preservesModelAndSavedData() throws Exception {
+        model.addPerson(AMY);
+        model.updateFilteredPersonList(person -> false);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.updateFilteredPersonList(person -> false);
+
+        Path dataPath = temporaryFolder.resolve("addressBook.json");
+        new JsonAddressBookStorage(dataPath).saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(dataPath);
+
+        assertCommandFailure("delete 1 extra", ParseException.class,
+                "Invalid command format. Expected: delete INDEX", expectedModel);
+        assertCommandFailure("delete 0", ParseException.class,
+                "Index must be a positive integer shown in the current list.", expectedModel);
+        assertCommandFailure("delete 1", CommandException.class,
+                "No contact exists at index 1 in the current list.", expectedModel);
+        assertCommandFailure("delete 2147483648", ParseException.class,
+                "No contact exists at index 2147483648 in the current list.", expectedModel);
+
+        assertEquals(savedData, Files.readString(dataPath));
+    }
+
+    @Test
+    public void execute_validDelete_updatesSavedData() throws Exception {
+        model.addPerson(AMY);
+        Path dataPath = temporaryFolder.resolve("addressBook.json");
+        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataPath);
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+
+        assertCommandSuccess("delete 1", "Deleted contact: Amy Bee.", new ModelManager());
+        assertEquals(model.getAddressBook(), addressBookStorage.readAddressBook().orElseThrow());
     }
 
     @Test
