@@ -5,19 +5,16 @@ title: About Us
 
 We are a team based in the [School of Computing, National University of Singapore](https://www.comp.nus.edu.sg).
 
-You can reach us at the email `seer[at]comp.nus.edu.sg`
-
 ## Project team
 
 ### Lim Qi Zao
 
 <img src="images/zao05.png" width="200px">
 
-[[homepage](http://www.comp.nus.edu.sg/~damithch)]
 [[github](https://github.com/zao05)]
-[[portfolio](team/johndoe.md)]
 
 * Role: TBA
+* Responsibilities: TBA
 
 ### Jingyu Shi
 
@@ -32,7 +29,7 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 <img src="images/kks070206.png" width="200px">
 
-[[github](http://github.com/kks070206)] [[portfolio](team/johndoe.md)]
+[[github](https://github.com/kks070206)]
 
 * Role: TBA
 * Responsibilities: TBA
@@ -41,8 +38,7 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 <img src="images/antelyuu.png" width="200px">
 
-[[github](http://github.com/Antelyuu)]
-[[portfolio](team/johndoe.md)]
+[[github](https://github.com/Antelyuu)]
 
 * Role: TBA
 * Responsibilities: TBA

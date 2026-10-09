@@ -9,7 +9,10 @@ title: Developer Guide
 
 ## **Acknowledgements**
 
-* _{List the sources of reused or adapted ideas, code, documentation, and third-party libraries here, with links to the originals.}_
+* TutorContacts is based on the [AddressBook-Level3](https://se-education.org/addressbook-level3/) project created by
+  the [SE-EDU initiative](https://se-education.org/), including its code and documentation.
+* Third-party libraries used: [JavaFX](https://openjfx.io/), [Jackson](https://github.com/FasterXML/jackson), and
+  [JUnit 5](https://github.com/junit-team/junit5).
 
 --------------------------------------------------------------------------------------------------------------------
 
