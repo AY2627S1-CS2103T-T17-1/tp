@@ -174,21 +174,30 @@ Format: `clear`
 
 ### Exiting the program: `exit`
 
-Exits the program.
+Exits TutorContacts. The feedback message is `Exiting TutorContacts.`
+
+Successful contact changes are saved when you make them, so exiting does not rewrite the data file.
+If a change reports a save error, `exit` retries saving it and stays open if the retry also fails.
 
 Format: `exit`
 
 ### Saving the data
 
-AddressBook automatically saves data after every command. You do not need to save manually.
+TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `delete`, and
+`clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `help`, and `exit` do not rewrite
+the data file.
 
 ### Editing the data file
 
-AddressBook data is saved automatically as a JSON file `[JAR file location]/data/addressbook.json`. Advanced users are welcome to update data directly by editing that data file.
+Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.json`. The previous default file,
+`data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
+to keep those contacts. Advanced users can edit the JSON file directly.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
-If your changes make the data file invalid, AddressBook starts with an empty address book at the next run. The invalid file remains on disk until you run a command (AddressBook saves after every command). Still, we recommend backing up the file before editing it.<br>
-Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
+If your changes make the data file invalid, TutorContacts starts with an empty address book at the next run. The invalid
+file remains on disk until you run a data-changing command. Back up the file before editing it.<br>
+Certain edits can also cause TutorContacts to behave unexpectedly (for example, if a value is outside the acceptable
+range). Edit the data file only if you are confident that you can update it correctly.
 </div>
 
 ### Archiving data files `[coming in v2.0]`

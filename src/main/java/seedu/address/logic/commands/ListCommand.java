@@ -29,4 +29,9 @@ public class ListCommand extends Command {
 
         return new CommandResult(feedback);
     }
+
+    @Override
+    public boolean isDataChanging() {
+        return false;
+    }
 }
