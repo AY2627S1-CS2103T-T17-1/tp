@@ -468,16 +468,62 @@ in the current AB3 codebase.)
 
 ### Non-Functional Requirements
 
-1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
-2.  Should be able to hold up to 1000 persons without noticeable sluggishness in performance for typical usage.
-3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+**Platform and distribution**
 
-*{More to be added}*
+1.  Should work on any _mainstream OS_ with Java `25` installed, without requiring any other Java version.
+2.  Should run from a single JAR file without an installer.
+3.  The JAR file should not exceed 100 MB.
+
+**Performance**
+
+4.  Should hold up to 1000 contacts without noticeable sluggishness for typical usage. This is well above the
+    expected 15–30 students and their parents.
+5.  Should respond to any command within 2 seconds on a typical laptop when holding up to 1000 contacts.
+
+**Usability**
+
+6.  A user with above-average typing speed for regular English text (i.e. not code, not system admin commands)
+    should be able to accomplish most tasks faster using commands than using the mouse.
+7.  The GUI should work well (i.e. no resolution-related inconveniences) at screen resolutions of 1920x1080 and
+    higher with screen scales of 100% and 125%, and remain usable at resolutions of 1280x720 and higher with a
+    screen scale of 150%.
+
+**Data and reliability**
+
+8.  Should store all data locally in a human-editable _data file_, without using a database management system.
+9.  Should not lose any change that TutorContacts has confirmed, even if the application is closed immediately
+    afterwards.
+10. Should leave a data file that it cannot load unchanged at startup, so that the user can inspect or repair it.
+
+**Scope and privacy**
+
+11. Should be used by a single user and should not support shared or multi-user access to the data.
+12. Should work without an internet connection and should not depend on any remote server.
+13. Should not transmit student or parent contact information outside the user's computer.
 
 ### Glossary
 
-* **Mainstream OS**: Windows, Linux, Unix, or macOS
-* **Private contact detail**: A contact detail that is not meant to be shared with others
+* **Academic level**: A student's stage of study, such as `Primary 6`, `Secondary 3`, or `JC 2`. Recorded only for
+  student contacts.
+* **Compact card**: The summary of a contact shown in the contact list, displaying its index, role, name, and phone.
+* **Data file**: The file `data/tutorcontacts.json`, in the same folder as the JAR file, in which TutorContacts saves
+  all contacts.
+* **Duplicate contact**: A contact with the same role and _normalized name_ as an existing contact, and whose phone
+  or email also matches that contact's.
+* **Expanded card**: A contact card that shows all of the contact's details after a `view INDEX` command.
+* **INDEX**: The one-based position of a contact in the currently displayed contact list.
+* **Mainstream OS**: Windows, Linux, Unix, or macOS.
+* **MVP**: Minimum viable product; the smallest version of TutorContacts that delivers its core value.
+* **Normalized name**: A name after leading and trailing spaces are removed. Normalized names are compared exactly,
+  so `Alex Tan` and `alex tan` are different normalized names.
+* **Note**: A short, optional remark on a contact, such as a lesson preference.
+* **Parent contact**: A contact with the `parent` role, typically the parent or guardian of a student.
+* **Prefix**: A short marker such as `r/` or `n/` that identifies which field a command parameter belongs to.
+* **Private tutor**: An independent tutor who works alone, teaching students privately rather than through a school
+  or tuition agency.
+* **Role**: The type of a contact, either `student` or `parent`, which determines the fields the contact has.
+* **Student contact**: A contact with the `student` role, which must also have a subject and an academic level.
+* **Subject**: The subject that the tutor teaches a student, such as `A-Math`. Recorded only for student contacts.
 
 --------------------------------------------------------------------------------------------------------------------
 
