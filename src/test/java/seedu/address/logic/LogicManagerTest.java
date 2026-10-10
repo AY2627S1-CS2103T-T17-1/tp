@@ -3,7 +3,6 @@ package seedu.address.logic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.logic.Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.commands.CommandTestUtil.ADDRESS_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
@@ -138,7 +137,8 @@ public class LogicManagerTest {
         assertEquals(0, addressBookStorage.saveCount);
         assertFalse(Files.exists(addressBookStorage.getAddressBookFilePath()));
 
-        logic.execute(AddCommand.COMMAND_WORD + NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY + ADDRESS_DESC_AMY);
+        logic.execute(AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY);
         assertEquals(1, addressBookStorage.saveCount);
 
         for (String command : readOnlyCommands) {
@@ -149,7 +149,7 @@ public class LogicManagerTest {
 
     @Test
     public void execute_dataChangingCommands_savesAddressBook() throws Exception {
-        String addCommand = AddCommand.COMMAND_WORD + NAME_DESC_AMY + PHONE_DESC_AMY
+        String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
 
         logic.execute(addCommand);
@@ -169,7 +169,7 @@ public class LogicManagerTest {
     @Test
     public void execute_exitAfterFailedSave_retriesUnsavedChanges() throws Exception {
         addressBookStorage.failNextSave = true;
-        String addCommand = AddCommand.COMMAND_WORD + NAME_DESC_AMY + PHONE_DESC_AMY
+        String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
         String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
 
@@ -186,7 +186,7 @@ public class LogicManagerTest {
     @Test
     public void execute_exitWhenRetryFails_throwsCommandException() {
         addressBookStorage.failNextSave = true;
-        String addCommand = AddCommand.COMMAND_WORD + NAME_DESC_AMY + PHONE_DESC_AMY
+        String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
         String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
 
