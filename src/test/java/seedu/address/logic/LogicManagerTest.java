@@ -9,6 +9,7 @@ import static seedu.address.logic.commands.CommandTestUtil.ADDRESS_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.ROLE_DESC_AMY;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.AMY;
 
@@ -38,7 +39,7 @@ import seedu.address.storage.StorageManager;
 import seedu.address.testutil.PersonBuilder;
 
 /**
- * Tests command execution and persistence behavior in {@link LogicManager}.
+ * Tests command execution and storage error handling.
  */
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
@@ -68,13 +69,63 @@ public class LogicManagerTest {
     @Test
     public void execute_commandExecutionError_throwsCommandException() {
         String deleteCommand = "delete 9";
-        assertCommandException(deleteCommand, MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        assertCommandException(deleteCommand, "No contact exists at index 9 in the current list.");
+    }
+
+    @Test
+    public void execute_invalidDelete_preservesModelAndSavedData() throws Exception {
+        model.addPerson(AMY);
+        model.updateFilteredPersonList(person -> false);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.updateFilteredPersonList(person -> false);
+
+        Path dataPath = temporaryFolder.resolve("addressBook.json");
+        new JsonAddressBookStorage(dataPath).saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(dataPath);
+
+        assertCommandFailure("delete 1 extra", ParseException.class,
+                "Invalid command format. Expected: delete INDEX", expectedModel);
+        assertCommandFailure("delete 0", ParseException.class,
+                "Index must be a positive integer shown in the current list.", expectedModel);
+        assertCommandFailure("delete 1", CommandException.class,
+                "No contact exists at index 1 in the current list.", expectedModel);
+        assertCommandFailure("delete 2147483648", ParseException.class,
+                "No contact exists at index 2147483648 in the current list.", expectedModel);
+
+        assertEquals(savedData, Files.readString(dataPath));
+    }
+
+    @Test
+    public void execute_validDelete_updatesSavedData() throws Exception {
+        model.addPerson(AMY);
+        Path dataPath = temporaryFolder.resolve("addressBook.json");
+        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataPath);
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+
+        assertCommandSuccess("delete 1", "Deleted contact: Amy Bee.", new ModelManager());
+        assertEquals(model.getAddressBook(), addressBookStorage.readAddressBook().orElseThrow());
     }
 
     @Test
     public void execute_validCommand_success() throws Exception {
         String listCommand = ListCommand.COMMAND_WORD;
-        assertCommandSuccess(listCommand, ListCommand.MESSAGE_SUCCESS, model);
+        assertCommandSuccess(listCommand, "No contacts to display.", model);
+    }
+
+    @Test
+    public void execute_listWithArguments_preservesModelAndSavedData() throws Exception {
+        model.addPerson(AMY);
+        model.updateFilteredPersonList(person -> false);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.updateFilteredPersonList(person -> false);
+
+        Path dataPath = temporaryFolder.resolve("addressBook.json");
+        new JsonAddressBookStorage(dataPath).saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(dataPath);
+
+        assertCommandFailure("list 3", ParseException.class,
+                "Invalid command format. Expected: list", expectedModel);
+        assertEquals(savedData, Files.readString(dataPath));
     }
 
     @Test
@@ -240,7 +291,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, storage);
 
         // Triggers the saveAddressBook method by executing an add command
-        String addCommand = AddCommand.COMMAND_WORD + NAME_DESC_AMY + PHONE_DESC_AMY
+        String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
         Person expectedPerson = new PersonBuilder(AMY).withTags().build();
         ModelManager expectedModel = new ModelManager();
