@@ -176,6 +176,9 @@ public class LogicManagerTest {
         assertThrows(CommandException.class, expectedMessage, () -> logic.execute(addCommand));
         assertFalse(Files.exists(addressBookStorage.getAddressBookFilePath()));
 
+        logic.execute("list");
+        assertEquals(0, addressBookStorage.saveCount);
+
         CommandResult result = logic.execute("exit");
         assertTrue(result.isExit());
         assertEquals(1, addressBookStorage.saveCount);
