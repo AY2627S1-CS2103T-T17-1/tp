@@ -8,6 +8,7 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ import seedu.address.testutil.EditPersonDescriptorBuilder;
 import seedu.address.testutil.PersonBuilder;
 import seedu.address.testutil.PersonUtil;
 
+/**
+ * Tests command dispatch and argument validation.
+ */
 public class AddressBookParserTest {
 
     private final AddressBookParser parser = new AddressBookParser();
@@ -82,9 +86,40 @@ public class AddressBookParserTest {
     }
 
     @Test
-    public void parseCommand_list() throws Exception {
-        assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
-        assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD + " 3") instanceof ListCommand);
+    public void parseCommand_list_returnsListCommand() throws Exception {
+        assertTrue(parser.parseCommand("list") instanceof ListCommand);
+        assertTrue(parser.parseCommand("LIST") instanceof ListCommand);
+        assertTrue(parser.parseCommand("List") instanceof ListCommand);
+        assertTrue(parser.parseCommand("  list   ") instanceof ListCommand);
+    }
+
+    @Test
+    public void parseCommand_listWithArguments_throwsParseException() {
+        assertThrows(ParseException.class, "Invalid command format. Expected: list", ()
+                -> parser.parseCommand("list 3"));
+    }
+
+    @Test
+    public void parseCommand_mixedCaseDelete_returnsDeleteCommand() throws Exception {
+        DeleteCommand command = (DeleteCommand) parser.parseCommand("DeLeTe 1");
+        assertEquals(new DeleteCommand(INDEX_FIRST_PERSON), command);
+    }
+
+    @Test
+    public void parseCommand_mixedCaseFind_preservesKeywordCase() throws Exception {
+        FindCommand command = (FindCommand) parser.parseCommand("FiNd Alice");
+        assertEquals(new FindCommand(new NameContainsKeywordsPredicate(List.of("Alice"))), command);
+    }
+
+    @Test
+    public void parseCommand_turkishLocale_returnsListCommand() throws Exception {
+        Locale defaultLocale = Locale.getDefault();
+        try {
+            Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+            assertTrue(parser.parseCommand("LIST") instanceof ListCommand);
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
     }
 
     @Test

@@ -1,19 +1,30 @@
 ---
 layout: page
-title: AddressBook Level 3
+title: TutorContacts
 ---
 
-[![CI Status](https://github.com/se-edu/addressbook-level3/workflows/Java%20CI/badge.svg)](https://github.com/se-edu/addressbook-level3/actions)
-[![codecov](https://codecov.io/gh/se-edu/addressbook-level3/branch/master/graph/badge.svg)](https://codecov.io/gh/se-edu/addressbook-level3)
+[![CI Status](https://github.com/AY2627S1-CS2103T-T17-1/tp/actions/workflows/gradle.yml/badge.svg)](https://github.com/AY2627S1-CS2103T-T17-1/tp/actions/workflows/gradle.yml)
+[![codecov](https://codecov.io/gh/AY2627S1-CS2103T-T17-1/tp/branch/master/graph/badge.svg)](https://app.codecov.io/github/AY2627S1-CS2103T-T17-1/tp)
 
-![Ui](images/Ui.png)
+![TutorContacts user interface](images/Ui.png)
 
-**AddressBook is a desktop application for managing your contact details.** While it has a GUI, most of the user interactions happen using a CLI (Command Line Interface).
+**TutorContacts is a desktop contact manager for independent private tutors who manage many students and
+parents.** It keeps essential contact and tuition information in one place and is optimized for tutors who
+prefer fast, typed commands.
 
-* If you are interested in using AddressBook, head over to the [_Quick Start_ section of the **User Guide**](UserGuide.html#quick-start).
-* If you are interested in developing AddressBook, the [**Developer Guide**](DeveloperGuide.html) is a good place to start.
+TutorContacts is designed to make common contact-management tasks quick: adding student and parent
+contacts, listing contacts, viewing their complete details, deleting outdated entries, and retaining data
+locally between sessions.
 
+* To use TutorContacts, start with the [_Quick Start_ section of the **User Guide**](UserGuide.html#quick-start).
+* To learn how TutorContacts is designed and maintained, see the [**Developer Guide**](DeveloperGuide.html).
+* To meet the people building TutorContacts, visit [**About Us**](AboutUs.html).
+* To inspect the project or contribute, visit the [**team repository**](https://github.com/AY2627S1-CS2103T-T17-1/tp).
 
-**Acknowledgements**
+## Acknowledgements
 
-* Libraries used: [JavaFX](https://openjfx.io/), [Jackson](https://github.com/FasterXML/jackson), [JUnit5](https://github.com/junit-team/junit5)
+TutorContacts is based on the [AddressBook-Level3](https://se-education.org/addressbook-level3/) project
+created by the [SE-EDU initiative](https://se-education.org/).
+
+The project uses [JavaFX](https://openjfx.io/), [Jackson](https://github.com/FasterXML/jackson), and
+[JUnit 5](https://github.com/junit-team/junit5).
