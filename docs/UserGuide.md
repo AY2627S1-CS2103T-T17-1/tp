@@ -30,6 +30,8 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `add r/student n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a student contact named `John Doe`.
 
+   * `view 1` : Shows the 1st contact in the current list.
+
    * `delete 3` : Deletes the 3rd contact shown in the current list.
 
    * `clear` : Deletes all contacts.
@@ -110,6 +112,30 @@ Format: `list`
 * This command does not change contact details.
 
 Example: `list`
+
+### Viewing a contact: `view`
+
+Shows the details of the specified contact from TutorContacts.
+
+Format: `view INDEX`
+
+* Views the contact at the specified `INDEX` in the currently displayed list, including search results.
+* Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
+* On success, the message is `Showing contact: NAME.`
+* This command does not change contact details or save the data file.
+* Showing all of the contact's details in an expanded contact card is coming in a later version.
+
+Examples:
+* `list` followed by `view 2` shows the second displayed contact.
+* `find Betsy` followed by `view 1` shows the first search result.
+
+Invalid input leaves contact data and the displayed list unchanged:
+
+| Input problem | Error message |
+| --- | --- |
+| Missing or extra arguments | `Invalid command format. Expected: view INDEX` |
+| An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
+| An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
 
 ### Editing a person: `edit`
 
@@ -230,4 +256,5 @@ Action | Format, Examples
 **Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List** | `list`
+**View** | `view INDEX`<br> e.g., `view 2`
 **Help** | `help`
