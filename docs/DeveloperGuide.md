@@ -514,8 +514,9 @@ in the current AB3 codebase.)
 * **INDEX**: The one-based position of a contact in the currently displayed contact list.
 * **Mainstream OS**: Windows, Linux, Unix, or macOS.
 * **MVP**: Minimum viable product; the smallest version of TutorContacts that delivers its core value.
-* **Normalized name**: A name after leading and trailing spaces are removed. Normalized names are compared exactly,
-  so `Alex Tan` and `alex tan` are different normalized names.
+* **Normalized name**: A name after leading and trailing spaces are removed and consecutive internal spaces are
+  collapsed into one. Normalized names are compared exactly, so `Alex Tan` and `alex tan` are different normalized
+  names.
 * **Note**: A short, optional remark on a contact, such as a lesson preference.
 * **Parent contact**: A contact with the `parent` role, typically the parent or guardian of a student.
 * **Prefix**: A short marker such as `r/` or `n/` that identifies which field a command parameter belongs to.
