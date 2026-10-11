@@ -148,6 +148,16 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_viewCommand_doesNotSaveAddressBook() throws Exception {
+        logic.execute(AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY);
+        assertEquals(1, addressBookStorage.saveCount);
+
+        logic.execute("view 1");
+        assertEquals(1, addressBookStorage.saveCount);
+    }
+
+    @Test
     public void execute_dataChangingCommands_savesAddressBook() throws Exception {
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;

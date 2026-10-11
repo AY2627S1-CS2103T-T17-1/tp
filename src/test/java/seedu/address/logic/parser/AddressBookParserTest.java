@@ -22,6 +22,7 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
@@ -97,6 +98,25 @@ public class AddressBookParserTest {
     public void parseCommand_listWithArguments_throwsParseException() {
         assertThrows(ParseException.class, "Invalid command format. Expected: list", ()
                 -> parser.parseCommand("list 3"));
+    }
+
+    @Test
+    public void parseCommand_view() throws Exception {
+        ViewCommand command = (ViewCommand) parser.parseCommand(
+                ViewCommand.COMMAND_WORD + " " + INDEX_FIRST_PERSON.getOneBased());
+        assertEquals(new ViewCommand(INDEX_FIRST_PERSON), command);
+    }
+
+    @Test
+    public void parseCommand_mixedCaseView_returnsViewCommand() throws Exception {
+        ViewCommand command = (ViewCommand) parser.parseCommand("ViEw 1");
+        assertEquals(new ViewCommand(INDEX_FIRST_PERSON), command);
+    }
+
+    @Test
+    public void parseCommand_viewWithoutIndex_throwsParseException() {
+        assertThrows(ParseException.class, "Invalid command format. Expected: view INDEX", ()
+                -> parser.parseCommand("view"));
     }
 
     @Test
