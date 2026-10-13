@@ -48,7 +48,8 @@ public class ViewCommand extends Command {
         }
 
         Person contactToView = displayedContacts.get(targetIndex.getZeroBased());
-        return new CommandResult(String.format(MESSAGE_VIEW_CONTACT_SUCCESS, contactToView.getName().fullName));
+        return CommandResult.expandContact(
+                String.format(MESSAGE_VIEW_CONTACT_SUCCESS, contactToView.getName().fullName), contactToView);
     }
 
     /**
