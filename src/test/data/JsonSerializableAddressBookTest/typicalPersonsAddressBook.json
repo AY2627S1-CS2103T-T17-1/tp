@@ -6,6 +6,9 @@
     "phone" : "94351253",
     "email" : "alice@example.com",
     "address" : "123, Jurong West Ave 6, #08-111",
+    "subject" : "Mathematics",
+    "level" : "Secondary 3",
+    "note" : "Prefers visual examples",
     "tags" : [ "friends" ]
   }, {
     "role" : "student",
@@ -13,6 +16,8 @@
     "phone" : "98765432",
     "email" : "johnd@example.com",
     "address" : "311, Clementi Ave 2, #02-25",
+    "subject" : "Physics",
+    "level" : "JC 1",
     "tags" : [ "owesMoney", "friends" ]
   }, {
     "role" : "student",
@@ -20,6 +25,8 @@
     "phone" : "95352563",
     "email" : "heinz@example.com",
     "address" : "wall street",
+    "subject" : "English",
+    "level" : "Secondary 2",
     "tags" : [ ]
   }, {
     "role" : "student",
@@ -27,6 +34,8 @@
     "phone" : "87652533",
     "email" : "cornelia@example.com",
     "address" : "10th street",
+    "subject" : "Chemistry",
+    "level" : "Secondary 4",
     "tags" : [ "friends" ]
   }, {
     "role" : "student",
@@ -34,6 +43,8 @@
     "phone" : "9482224",
     "email" : "werner@example.com",
     "address" : "michegan ave",
+    "subject" : "Science",
+    "level" : "Primary 6",
     "tags" : [ ]
   }, {
     "role" : "student",
@@ -41,13 +52,16 @@
     "phone" : "9482427",
     "email" : "lydia@example.com",
     "address" : "little tokyo",
+    "subject" : "A-Math",
+    "level" : "Secondary 4",
     "tags" : [ ]
   }, {
-    "role" : "student",
+    "role" : "parent",
     "name" : "George Best",
     "phone" : "9482442",
     "email" : "anna@example.com",
     "address" : "4th street",
+    "note" : "Contact after 6 pm",
     "tags" : [ ]
   } ]
 }

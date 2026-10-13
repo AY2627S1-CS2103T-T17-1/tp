@@ -67,6 +67,15 @@ public class EmailTest {
     }
 
     @Test
+    public void isSameEmail() {
+        Email email = new Email("Alice@example.com");
+
+        assertTrue(email.isSameEmail(new Email("alice@EXAMPLE.COM")));
+        assertFalse(email.isSameEmail(new Email("bob@example.com")));
+        assertThrows(NullPointerException.class, () -> email.isSameEmail(null));
+    }
+
+    @Test
     public void equals() {
         Email email = new Email("valid@email");
 

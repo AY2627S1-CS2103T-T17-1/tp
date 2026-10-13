@@ -38,6 +38,17 @@ public class Name {
         return test.matches(VALIDATION_REGEX);
     }
 
+    /**
+     * Returns true if both names have the same normalized value.
+     */
+    public boolean isSameName(Name otherName) {
+        requireNonNull(otherName);
+        return normalize(fullName).equals(normalize(otherName.fullName));
+    }
+
+    private static String normalize(String name) {
+        return name.trim().replaceAll(" +", " ");
+    }
 
     @Override
     public String toString() {
