@@ -28,6 +28,8 @@ import seedu.address.model.tag.Tag;
 class JsonAdaptedPerson {
 
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Person's %s field is missing!";
+    public static final String INVALID_PARENT_FIELDS_MESSAGE =
+            "Parent contacts must not have a subject or level.";
 
     private final String role;
     private final String name;
@@ -97,6 +99,9 @@ class JsonAdaptedPerson {
             throw new IllegalValueException(Role.MESSAGE_CONSTRAINTS);
         }
         final Role modelRole = Role.fromString(role);
+        if (modelRole == Role.PARENT && (subject != null || level != null)) {
+            throw new IllegalValueException(INVALID_PARENT_FIELDS_MESSAGE);
+        }
 
         if (name == null) {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Name.class.getSimpleName()));

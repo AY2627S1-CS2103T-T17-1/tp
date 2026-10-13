@@ -1,6 +1,7 @@
 package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static seedu.address.storage.JsonAdaptedPerson.INVALID_PARENT_FIELDS_MESSAGE;
 import static seedu.address.storage.JsonAdaptedPerson.MISSING_FIELD_MESSAGE_FORMAT;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.BENSON;
@@ -177,6 +178,24 @@ public class JsonAdaptedPersonTest {
     }
 
     @Test
+    public void toModelType_parentWithSubject_throwsIllegalValueException() {
+        JsonAdaptedPerson person = createParent(VALID_SUBJECT, null);
+        assertThrows(IllegalValueException.class, INVALID_PARENT_FIELDS_MESSAGE, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_parentWithLevel_throwsIllegalValueException() {
+        JsonAdaptedPerson person = createParent(null, VALID_LEVEL);
+        assertThrows(IllegalValueException.class, INVALID_PARENT_FIELDS_MESSAGE, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_parentWithSubjectAndLevel_throwsIllegalValueException() {
+        JsonAdaptedPerson person = createParent(VALID_SUBJECT, VALID_LEVEL);
+        assertThrows(IllegalValueException.class, INVALID_PARENT_FIELDS_MESSAGE, person::toModelType);
+    }
+
+    @Test
     public void toModelType_nullNote_returnsPersonWithoutNote() throws Exception {
         JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
                 VALID_SUBJECT, VALID_LEVEL, null, VALID_TAGS);
@@ -186,6 +205,12 @@ public class JsonAdaptedPersonTest {
     private static JsonAdaptedPerson createPerson(String role, String name, String phone, String email,
             String address, String subject, String level, String note, List<JsonAdaptedTag> tags) {
         return new JsonAdaptedPerson(role, name, phone, email, address, subject, level, note, tags);
+    }
+
+    private static JsonAdaptedPerson createParent(String subject, String level) {
+        return createPerson(GEORGE.getRole().toString(), GEORGE.getName().toString(), GEORGE.getPhone().toString(),
+                GEORGE.getEmail().toString(), GEORGE.getAddress().toString(), subject, level,
+                GEORGE.getNote().orElseThrow().toString(), VALID_TAGS);
     }
 
 }
