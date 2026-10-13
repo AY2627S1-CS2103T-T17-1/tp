@@ -4,7 +4,9 @@
     "name": "Valid Person",
     "phone": "9482424",
     "email": "hans@example.com",
-    "address": "4th street"
+    "address": "4th street",
+    "subject": "Mathematics",
+    "level": "Secondary 3"
   }, {
     "role": "parent",
     "name": "Person With Invalid Phone Field",

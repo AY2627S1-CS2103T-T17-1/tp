@@ -33,6 +33,18 @@ public class Phone {
         return test.matches(VALIDATION_REGEX);
     }
 
+    /**
+     * Returns true if both phone numbers have the same normalized digits.
+     */
+    public boolean isSamePhone(Phone otherPhone) {
+        requireNonNull(otherPhone);
+        return normalize(value).equals(normalize(otherPhone.value));
+    }
+
+    private static String normalize(String phone) {
+        return phone.replaceAll("[+ \\-]", "");
+    }
+
     @Override
     public String toString() {
         return value;
