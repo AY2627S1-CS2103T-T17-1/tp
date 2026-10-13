@@ -5,9 +5,10 @@ import java.util.Comparator;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.Role;
 
 /**
  * A UI component that displays information of a {@code Person}.
@@ -27,7 +28,9 @@ public class PersonCard extends UiPart<Region> {
     public final Person person;
 
     @FXML
-    private HBox cardPane;
+    private VBox details;
+    @FXML
+    private Label role;
     @FXML
     private Label name;
     @FXML
@@ -39,21 +42,55 @@ public class PersonCard extends UiPart<Region> {
     @FXML
     private Label email;
     @FXML
+    private Label subject;
+    @FXML
+    private Label level;
+    @FXML
+    private Label note;
+    @FXML
     private FlowPane tags;
 
     /**
-     * Creates a {@code PersonCard} with the given {@code Person} and index to display.
+     * Creates a compact {@code PersonCard} with the given {@code Person} and index to display.
+     *
+     * @param person Contact to display.
+     * @param displayedIndex One-based index in the current list.
      */
     public PersonCard(Person person, int displayedIndex) {
+        this(person, displayedIndex, false);
+    }
+
+    /**
+     * Creates a compact or expanded card with role-specific contact details.
+     *
+     * @param person Contact to display.
+     * @param displayedIndex One-based index in the current list.
+     * @param isExpanded Whether to show the contact's complete details.
+     */
+    public PersonCard(Person person, int displayedIndex, boolean isExpanded) {
         super(FXML);
         this.person = person;
-        id.setText(displayedIndex + ". ");
+        id.setText(displayedIndex + ".");
         name.setText(person.getName().fullName);
+        boolean isStudent = person.getRole() == Role.STUDENT;
+        role.setText(isStudent ? "Student" : "Parent");
+        role.getStyleClass().add(isStudent ? "student-role" : "parent-role");
         phone.setText(person.getPhone().value);
-        address.setText(person.getAddress().value);
-        email.setText(person.getEmail().value);
+        address.setText("Address: " + person.getAddress().value);
+        email.setText("Email: " + person.getEmail().value);
+        subject.setText("Subject: " + person.getSubject().map(Object::toString).orElse("Not recorded"));
+        level.setText("Academic level: " + person.getLevel().map(Object::toString).orElse("Not recorded"));
+        note.setText("Note: " + person.getNote().map(Object::toString).orElse("None"));
+        subject.setVisible(isStudent);
+        subject.setManaged(isStudent);
+        level.setVisible(isStudent);
+        level.setManaged(isStudent);
+        details.setVisible(isExpanded);
+        details.setManaged(isExpanded);
         person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))
                 .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
+        tags.setVisible(!person.getTags().isEmpty());
+        tags.setManaged(!person.getTags().isEmpty());
     }
 }
