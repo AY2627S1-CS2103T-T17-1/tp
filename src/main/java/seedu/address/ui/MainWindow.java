@@ -128,6 +128,15 @@ public class MainWindow extends UiPart<Stage> {
     }
 
     /**
+     * Shows a warning in the command feedback area after startup.
+     *
+     * @param warning Warning to display to the user.
+     */
+    void showStartupWarning(String warning) {
+        resultDisplay.setFeedbackToUser(warning);
+    }
+
+    /**
      * Sets the default size based on {@code guiSettings}.
      */
     private void setWindowDefaultSize(GuiSettings guiSettings) {

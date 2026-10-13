@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.HOON;
@@ -9,6 +10,7 @@ import static seedu.address.testutil.TypicalPersons.IDA;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -84,6 +86,20 @@ public class JsonAddressBookStorageTest {
         readBack = jsonAddressBookStorage.readAddressBook().get(); // file path not specified
         assertEquals(original, new AddressBook(readBack));
 
+    }
+
+    @Test
+    public void saveAddressBook_replacementFails_preservesExistingData() throws Exception {
+        Path dataPath = testFolder.resolve("tutorcontacts.json");
+        Files.createDirectory(dataPath);
+        Path existingData = dataPath.resolve("existing-data.txt");
+        Files.writeString(existingData, "keep this data");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(dataPath);
+
+        assertThrows(IOException.class, () -> storage.saveAddressBook(new AddressBook()));
+
+        assertTrue(Files.isDirectory(dataPath));
+        assertEquals("keep this data", Files.readString(existingData));
     }
 
     @Test
