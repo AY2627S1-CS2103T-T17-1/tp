@@ -16,6 +16,7 @@ import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.Role;
 import seedu.address.model.tag.Tag;
 
 public class ParserUtilTest {
@@ -31,6 +32,7 @@ public class ParserUtilTest {
     private static final String VALID_EMAIL = "rachel@example.com";
     private static final String VALID_TAG_1 = "friend";
     private static final String VALID_TAG_2 = "neighbour";
+    private static final String VALID_ROLE = "student";
 
     private static final String WHITESPACE = " \t\r\n";
 
@@ -57,6 +59,23 @@ public class ParserUtilTest {
     @Test
     public void parseName_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> ParserUtil.parseName((String) null));
+    }
+
+    @Test
+    public void parseRole_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseRole(null));
+    }
+
+    @Test
+    public void parseRole_invalidValue_throwsParseException() {
+        assertThrows(ParseException.class, Role.MESSAGE_CONSTRAINTS, () ->
+                ParserUtil.parseRole("teacher"));
+    }
+
+    @Test
+    public void parseRole_validValue_returnsRole() throws Exception {
+        assertEquals(Role.STUDENT, ParserUtil.parseRole(VALID_ROLE));
+        assertEquals(Role.STUDENT, ParserUtil.parseRole(" STUDENT "));
     }
 
     @Test

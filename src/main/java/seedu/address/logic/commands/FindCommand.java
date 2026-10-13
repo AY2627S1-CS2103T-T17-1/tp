@@ -35,6 +35,11 @@ public class FindCommand extends Command {
     }
 
     @Override
+    public boolean isDataChanging() {
+        return false;
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (other == this) {
             return true;

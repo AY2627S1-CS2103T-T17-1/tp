@@ -17,4 +17,14 @@ public abstract class Command {
      */
     public abstract CommandResult execute(Model model) throws CommandException;
 
+    /**
+     * Returns whether a successful execution requires the address book to be saved.
+     * Commands save by default so that new data-changing commands are persisted unless marked read-only.
+     *
+     * @return {@code true} if this command changes address book data; {@code false} otherwise.
+     */
+    public boolean isDataChanging() {
+        return true;
+    }
+
 }
