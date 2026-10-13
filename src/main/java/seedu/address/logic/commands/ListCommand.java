@@ -27,7 +27,7 @@ public class ListCommand extends Command {
                 ? MESSAGE_EMPTY_LIST
                 : String.format(MESSAGE_SUCCESS, contactCount);
 
-        return new CommandResult(feedback);
+        return CommandResult.collapseContacts(feedback);
     }
 
     @Override
