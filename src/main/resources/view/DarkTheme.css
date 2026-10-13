@@ -90,30 +90,30 @@
 .list-view {
     -fx-background-insets: 0;
     -fx-padding: 0;
-    -fx-background-color: derive(#1d1d1d, 20%);
+    -fx-background-color: #161b22;
 }
 
 .list-cell {
     -fx-label-padding: 0 0 0 0;
     -fx-graphic-text-gap : 0;
-    -fx-padding: 0 0 0 0;
+    -fx-padding: 4 6 4 6;
 }
 
 .list-cell:filled:even {
-    -fx-background-color: #3c3e3f;
+    -fx-background-color: #161b22;
 }
 
 .list-cell:filled:odd {
-    -fx-background-color: #515658;
+    -fx-background-color: #161b22;
 }
 
 .list-cell:filled:selected {
-    -fx-background-color: #424d5f;
+    -fx-background-color: #161b22;
 }
 
 .list-cell:filled:selected #cardPane {
-    -fx-border-color: #3e7b91;
-    -fx-border-width: 1;
+    -fx-border-color: #69dcc9;
+    -fx-background-color: #203c3b;
 }
 
 .list-cell .label {
@@ -308,8 +308,33 @@
 }
 
 #cardPane {
-    -fx-background-color: transparent;
-    -fx-border-width: 0;
+    -fx-background-color: #1e2630;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-border-color: #384655;
+    -fx-border-width: 1;
+}
+
+.list-cell .contact-role {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-padding: 3 8 3 8;
+    -fx-background-radius: 4;
+}
+
+.list-cell .student-role {
+    -fx-background-color: #203c3b;
+    -fx-text-fill: #8fe5d8;
+}
+
+.list-cell .parent-role {
+    -fx-background-color: #3c334c;
+    -fx-text-fill: #d9c0f0;
+}
+
+.contact-details {
+    -fx-padding: 10 0 0 0;
+    -fx-border-color: #384655 transparent transparent transparent;
 }
 
 #commandTypeLabel {

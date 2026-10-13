@@ -533,6 +533,39 @@ in the current AB3 codebase.)
 
 ## **Appendix: Instructions for manual testing**
 
+### Contact-card UI
+
+`CommandResult` carries a `ContactListAction` and an optional target contact. `add` requests selection,
+`view` requests selection and expansion, and `list` requests collapse. Other successful commands retain the
+selection only while that contact remains visible. `MainWindow` applies these requests after `Logic.execute`
+returns, including any required save. `PersonListPanel` ignores transient JavaFX selection changes during
+execution and reconciles the final list using `ContactListState`, which retains contacts rather than indices.
+Failed commands restore the prior presentation against the final model; restoring model data after a failed save
+is the logic layer's responsibility.
+
+`ContactListStateTest` runs in the normal headless JUnit suite. `ContactCardsUiTest` additionally checks actual
+FXML fields and command-box integration on a desktop. With Java 25, run it using:
+
+* PowerShell: `$env:RUN_UI_TESTS='true'; .\gradlew.bat test --tests '*ContactCardsUiTest' --rerun-tasks`
+* macOS/Linux with a graphical display: `RUN_UI_TESTS=true ./gradlew test --tests '*ContactCardsUiTest' --rerun-tasks`
+
+The desktop tests are opt-in because CI does not provide a graphical display on every platform.
+They save rendered previews under `build/reports/ui` for visual inspection.
+
+Manual checks for the UI contribution:
+
+1. Start with at least two contacts. Check that compact cards show only index, role, name, and phone.
+2. Run `view 2`, then `view 1`: only the latest target should be expanded. Check student subject/level,
+   parent omission of those fields, email, address, and note. Check long names and notes wrap without clipping.
+3. Run `view 0`, `view 99` (when out of range), and `view 1 extra`: selection and expansion must not change.
+4. Run `list`: all cards should be compact. Add a contact: its compact card should be selected and visible.
+5. View the second contact and delete the first: the same contact should stay expanded with index 1.
+   Delete that selected contact: selection should clear. Repeat within filtered search results.
+6. Check resizing and scrolling at 1920x1080 with 100%/125% scaling and 1280x720 with 150% scaling.
+   Keyboard command entry must remain usable after selection changes.
+7. After the persistence rollback work is integrated, repeat add/delete with a failing save and check both
+   the list data and selection remain unchanged. UI tests simulate model restoration; they do not verify storage rollback.
+
 Given below are instructions to test the app manually.
 
 <div markdown="span" class="alert alert-info">:information_source: **Note:** These instructions only provide a starting point for testers to work on;

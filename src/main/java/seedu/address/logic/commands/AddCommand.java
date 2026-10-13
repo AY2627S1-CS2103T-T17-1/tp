@@ -59,7 +59,8 @@ public class AddCommand extends Command {
         }
 
         model.addPerson(toAdd);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getRole(), toAdd.getName().fullName));
+        return CommandResult.selectContact(
+                String.format(MESSAGE_SUCCESS, toAdd.getRole(), toAdd.getName().fullName), toAdd);
     }
 
     @Override
