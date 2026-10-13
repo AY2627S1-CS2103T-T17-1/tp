@@ -89,6 +89,7 @@ Format: `add r/ROLE n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]…​`
 * `ROLE` must be `student` or `parent` and is case-insensitive.
 * The `r/ROLE` parameter is required and may appear in any parameter order.
 * On success, TutorContacts reports `Added student: NAME.` or `Added parent: NAME.`
+* The newly added contact is selected and scrolled into view as a compact card.
 
 <div markdown="span" class="alert alert-primary">:bulb: **Tip:**
 A person can have any number of tags, including zero.
@@ -101,6 +102,8 @@ Examples:
 ### Listing all contacts: `list`
 
 Displays all contacts in insertion order, numbered from 1. If the list was filtered by a search, this command restores the complete list.
+
+Compact cards show only the index, role, name, and phone. `list` collapses any expanded card.
 
 Format: `list`
 
@@ -123,13 +126,17 @@ Format: `view INDEX`
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
 * On success, the message is `Showing contact: NAME.`
 * This command does not change contact details or save the data file.
-* Showing all of the contact's details in an expanded contact card is coming in a later version.
+* The selected card is highlighted and expanded in place; other cards remain compact.
+* Expanded cards also show email, address, and note, plus subject and academic level for students.
+  An absent note is shown as `None`. Older student records without subject or level show `Not recorded` for those fields.
+  Existing tags, if any, appear only in the expanded card.
+* Use `view` on another contact to move the expansion, or `list` to collapse it.
 
 Examples:
 * `list` followed by `view 2` shows the second displayed contact.
 * `find Betsy` followed by `view 1` shows the first search result.
 
-Invalid input leaves contact data and the displayed list unchanged:
+Invalid input leaves contact data, the displayed list, and the current selection and expansion unchanged:
 
 | Input problem | Error message |
 | --- | --- |
@@ -179,6 +186,8 @@ Format: `delete INDEX`
 * Deletes the contact at the specified `INDEX` in the currently displayed list, including search results.
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
 * On success, the message is `Deleted contact: NAME.` The remaining contacts keep their order and are renumbered.
+* Deleting the selected contact clears the selection and expansion. Deleting another contact keeps the selected
+  contact highlighted, with its new index and any expanded details.
 
 Examples:
 * `list` followed by `delete 2` deletes the second displayed contact.
