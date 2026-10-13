@@ -19,7 +19,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
 1. Copy the file to the folder you want to use as the _home folder_ for your AddressBook.
 
-1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
+1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar tutorcontacts.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
    ![Ui](images/Ui.png)
 
@@ -177,7 +177,7 @@ Format: `clear`
 Exits TutorContacts. The feedback message is `Exiting TutorContacts.`
 
 Successful contact changes are saved when you make them, so exiting does not rewrite the data file.
-If a change reports a save error, `exit` retries saving it and stays open if the retry also fails.
+If a change cannot be saved, TutorContacts rejects it and restores the previous contact list; exiting does not retry it.
 
 Format: `exit`
 
@@ -185,17 +185,20 @@ Format: `exit`
 
 TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `delete`, and
 `clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `help`, and `exit` do not rewrite
-the data file.
+the data file. A failed save leaves both the displayed contacts and the existing data file unchanged.
 
 ### Editing the data file
 
 Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.json`. The previous default file,
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
-to keep those contacts. Advanced users can edit the JSON file directly.
+to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
+the first successful data-changing command. Advanced users can edit the JSON file directly.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
-If your changes make the data file invalid, TutorContacts starts with an empty address book at the next run. The invalid
-file remains on disk until you run a data-changing command. Back up the file before editing it.<br>
+If the data file is invalid or unreadable, TutorContacts starts with an empty list and displays
+`Warning: TutorContacts could not load data/tutorcontacts.json. The existing file was not changed.`
+TutorContacts will not overwrite that file during the session; repair it and restart the app before changing contacts.
+Back up the file before editing it.<br>
 Certain edits can also cause TutorContacts to behave unexpectedly (for example, if a value is outside the acceptable
 range). Edit the data file only if you are confident that you can update it correctly.
 </div>
