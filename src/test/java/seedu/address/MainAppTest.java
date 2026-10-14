@@ -90,6 +90,20 @@ public class MainAppTest {
     }
 
     @Test
+    public void initModelManager_nullContact_warnsAndPreservesFile() throws Exception {
+        Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
+        String invalidData = "{\"persons\":[null]}";
+        Files.writeString(dataPath, invalidData);
+        MainApp app = new MainApp();
+
+        Model model = app.initModelManager(createStorage(dataPath), new UserPrefs());
+
+        assertEquals(new AddressBook(), model.getAddressBook());
+        assertEquals(MainApp.DATA_FILE_WARNING, app.getStartupWarning());
+        assertEquals(invalidData, Files.readString(dataPath));
+    }
+
+    @Test
     public void initModelManager_duplicateContact_warnsAndPreservesFile() throws Exception {
         Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
         Path duplicateData = Paths.get("src", "test", "data", "JsonSerializableAddressBookTest",

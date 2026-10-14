@@ -21,6 +21,9 @@ import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.ReadOnlyAddressBook;
 
+/**
+ * Tests loading and saving of contact data through JSON storage.
+ */
 public class JsonAddressBookStorageTest {
     private static final Path TEST_DATA_FOLDER = Paths.get("src", "test", "data", "JsonAddressBookStorageTest");
 
@@ -60,6 +63,17 @@ public class JsonAddressBookStorageTest {
     @Test
     public void readAddressBook_invalidAndValidPersonAddressBook_throwDataLoadingException() {
         assertThrows(DataLoadingException.class, () -> readAddressBook("invalidAndValidPersonAddressBook.json"));
+    }
+
+    @Test
+    public void readAddressBook_nullPerson_throwsDataLoadingExceptionWithoutChangingFile() throws Exception {
+        Path dataPath = testFolder.resolve("tutorcontacts.json");
+        String invalidData = "{\"persons\":[null]}";
+        Files.writeString(dataPath, invalidData);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(dataPath);
+
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+        assertEquals(invalidData, Files.readString(dataPath));
     }
 
     @Test
