@@ -2,6 +2,7 @@ package seedu.address;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,9 +16,12 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
+import seedu.address.model.ModelManager;
+import seedu.address.model.ReadOnlyUserPrefs;
 import seedu.address.model.UserPrefs;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
+import seedu.address.storage.Storage;
 import seedu.address.storage.StorageManager;
 
 /**
@@ -34,6 +38,29 @@ public class MainAppTest {
         filePathField.setAccessible(true);
 
         assertEquals(Paths.get("data", "tutorcontacts.json"), filePathField.get(null));
+    }
+
+    @Test
+    public void init_wiresApplicationComponentsWithoutWritingFiles() throws Exception {
+        MainApp app = new MainApp() {
+            @Override
+            protected UserPrefs initPrefs(JsonUserPrefsStorage storage) {
+                return new UserPrefs();
+            }
+
+            @Override
+            Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
+                return new ModelManager(new AddressBook(), userPrefs);
+            }
+        };
+
+        app.init();
+
+        assertNotNull(app.storage);
+        assertNotNull(app.model);
+        assertNotNull(app.logic);
+        assertNotNull(app.ui);
+        assertNull(app.getStartupWarning());
     }
 
     @Test

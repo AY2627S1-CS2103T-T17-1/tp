@@ -33,10 +33,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
+import seedu.address.MainApp;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.model.Model;
@@ -175,6 +177,27 @@ public class ContactCardsUiTest {
             enter(root, "view 1");
             saveSnapshot(root, "view-student");
             stage.close();
+        });
+    }
+
+    @Test
+    void uiManager_startWithDataWarning_displaysWarning() throws Exception {
+        runOnFxThread(() -> {
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            UiManager uiManager = new UiManager(new LogicManager(new ModelManager(), storage), dataPath,
+                    MainApp.DATA_FILE_WARNING);
+            Stage stage = new Stage();
+
+            try {
+                uiManager.start(stage);
+                TextArea feedback = (TextArea) stage.getScene().getRoot().lookup("#resultDisplay");
+                assertNotNull(feedback);
+                assertEquals(MainApp.DATA_FILE_WARNING, feedback.getText());
+            } finally {
+                stage.close();
+            }
         });
     }
 

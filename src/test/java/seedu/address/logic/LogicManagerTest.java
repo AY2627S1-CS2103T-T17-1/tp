@@ -271,6 +271,17 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_editSaveThrowsIoException_restoresModelAndReportsError() throws Exception {
+        model.addPerson(AMY);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        addressBookStorage.failNextSave = true;
+
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
+        assertCommandFailure("edit 1 p/22222222", CommandException.class, expectedMessage, expectedModel);
+        assertEquals(AMY, model.getFilteredPersonList().get(0));
+    }
+
+    @Test
     public void getFilteredPersonList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> logic.getFilteredPersonList().remove(0));
     }
