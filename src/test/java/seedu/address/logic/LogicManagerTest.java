@@ -31,11 +31,9 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
-import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
-import seedu.address.testutil.PersonBuilder;
 
 /**
  * Tests command execution and storage error handling.
@@ -177,13 +175,13 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_exitAfterFailedSave_retriesUnsavedChanges() throws Exception {
+    public void execute_failedAdd_rollsBackAndExitDoesNotSave() throws Exception {
         addressBookStorage.failNextSave = true;
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
 
-        assertThrows(CommandException.class, expectedMessage, () -> logic.execute(addCommand));
+        assertThrows(CommandException.class, LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> logic.execute(addCommand));
+        assertEquals(new AddressBook(), model.getAddressBook());
         assertFalse(Files.exists(addressBookStorage.getAddressBookFilePath()));
 
         logic.execute("list");
@@ -191,35 +189,96 @@ public class LogicManagerTest {
 
         CommandResult result = logic.execute("exit");
         assertTrue(result.isExit());
-        assertEquals(1, addressBookStorage.saveCount);
-        AddressBook savedAddressBook = new AddressBook(addressBookStorage.readAddressBook().get());
-        assertEquals(model.getAddressBook(), savedAddressBook);
+        assertEquals(0, addressBookStorage.saveCount);
     }
 
     @Test
-    public void execute_exitWhenRetryFails_throwsCommandException() {
+    public void execute_failedDelete_preservesDisplayedAndSavedData() throws Exception {
+        model.addPerson(AMY);
+        model.updateFilteredPersonList(person -> person.equals(AMY));
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
         addressBookStorage.failNextSave = true;
+
+        assertThrows(CommandException.class,
+                LogicManager.MESSAGE_DELETE_SAVE_FAILURE, () -> logic.execute("delete 1"));
+
+        assertEquals(AMY, model.getFilteredPersonList().get(0));
+        assertEquals(1, model.getFilteredPersonList().size());
+        assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
+        logic.execute("exit");
+        assertEquals(1, addressBookStorage.saveCount);
+    }
+
+    @Test
+    public void execute_failedAdd_preservesFilteredListAndSavedData() throws Exception {
+        model.addPerson(AMY);
+        model.updateFilteredPersonList(person -> false);
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
+        addressBookStorage.failNextSave = true;
+
+        String addCommand = "add r/student n/Bob Builder p/99999999 e/bob@example.com a/Street";
+        assertThrows(CommandException.class,
+                LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> logic.execute(addCommand));
+
+        assertEquals(0, model.getFilteredPersonList().size());
+        assertEquals(new AddressBook(addressBookStorage.readAddressBook().orElseThrow()), model.getAddressBook());
+        assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
+    }
+
+    @Test
+    public void execute_invalidDataFile_rejectsChangesWithoutOverwriting() throws Exception {
+        Path dataPath = addressBookStorage.getAddressBookFilePath();
+        Files.writeString(dataPath, "invalid data");
+        StorageManager storage = new StorageManager(addressBookStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        logic = new LogicManager(model, storage, false);
+
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
-
-        assertThrows(CommandException.class, expectedMessage, () -> logic.execute(addCommand));
-
-        addressBookStorage.failNextSave = true;
-        assertThrows(CommandException.class, expectedMessage, () -> logic.execute("exit"));
-        assertFalse(Files.exists(addressBookStorage.getAddressBookFilePath()));
+        assertThrows(CommandException.class,
+                LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> logic.execute(addCommand));
+        assertEquals(new AddressBook(), model.getAddressBook());
+        assertEquals("invalid data", Files.readString(dataPath));
+        assertEquals(0, addressBookStorage.saveCount);
+        assertTrue(logic.execute("exit").isExit());
     }
 
     @Test
     public void execute_storageThrowsIoException_throwsCommandException() {
-        assertCommandFailureForExceptionFromStorage(DUMMY_IO_EXCEPTION, String.format(
-                LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage()));
+        assertCommandFailureForExceptionFromStorage(DUMMY_IO_EXCEPTION, LogicManager.MESSAGE_ADD_SAVE_FAILURE);
     }
 
     @Test
     public void execute_storageThrowsAdException_throwsCommandException() {
-        assertCommandFailureForExceptionFromStorage(DUMMY_AD_EXCEPTION, String.format(
-                LogicManager.FILE_OPS_PERMISSION_ERROR_FORMAT, DUMMY_AD_EXCEPTION.getMessage()));
+        model.addPerson(AMY);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        Path dataPath = temporaryFolder.resolve("addressBook.json");
+        JsonAddressBookStorage failingStorage = new JsonAddressBookStorage(dataPath) {
+            @Override
+            public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                throw DUMMY_AD_EXCEPTION;
+            }
+        };
+        StorageManager storage = new StorageManager(failingStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        logic = new LogicManager(model, storage);
+
+        String expectedMessage = String.format(LogicManager.FILE_OPS_PERMISSION_ERROR_FORMAT,
+                DUMMY_AD_EXCEPTION.getMessage());
+        assertCommandFailure("clear", CommandException.class, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_editSaveThrowsIoException_restoresModelAndReportsError() throws Exception {
+        model.addPerson(AMY);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        addressBookStorage.failNextSave = true;
+
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
+        assertCommandFailure("edit 1 p/22222222", CommandException.class, expectedMessage, expectedModel);
+        assertEquals(AMY, model.getFilteredPersonList().get(0));
     }
 
     @Test
@@ -306,10 +365,7 @@ public class LogicManagerTest {
         // Triggers the saveAddressBook method by executing an add command
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
-        Person expectedPerson = new PersonBuilder(AMY).withTags().build();
-        ModelManager expectedModel = new ModelManager();
-        expectedModel.addPerson(expectedPerson);
-        assertCommandFailure(addCommand, CommandException.class, expectedMessage, expectedModel);
+        assertCommandFailure(addCommand, CommandException.class, expectedMessage, new ModelManager());
     }
 
     /**

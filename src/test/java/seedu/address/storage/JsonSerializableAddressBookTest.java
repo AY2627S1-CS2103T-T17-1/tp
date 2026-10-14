@@ -5,6 +5,7 @@ import static seedu.address.testutil.Assert.assertThrows;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +14,9 @@ import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.AddressBook;
 import seedu.address.testutil.TypicalPersons;
 
+/**
+ * Tests conversion of saved contact data into an address book.
+ */
 public class JsonSerializableAddressBookTest {
 
     private static final Path TEST_DATA_FOLDER = Paths.get("src", "test", "data", "JsonSerializableAddressBookTest");
@@ -42,6 +46,14 @@ public class JsonSerializableAddressBookTest {
                 JsonSerializableAddressBook.class).get();
         assertThrows(IllegalValueException.class, JsonSerializableAddressBook.MESSAGE_DUPLICATE_PERSON,
                 dataFromFile::toModelType);
+    }
+
+    @Test
+    public void toModelType_nullPerson_throwsIllegalValueException() {
+        JsonSerializableAddressBook data = new JsonSerializableAddressBook(Collections.singletonList(null));
+
+        assertThrows(IllegalValueException.class, JsonSerializableAddressBook.MESSAGE_NULL_PERSON,
+                data::toModelType);
     }
 
 }

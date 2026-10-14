@@ -64,6 +64,13 @@ public interface Model {
     ObservableList<Person> getFilteredPersonList();
 
     /**
+     * Returns the predicate used to determine which contacts are displayed.
+     *
+     * @return The active contact filter, or a predicate that shows all contacts.
+     */
+    Predicate<Person> getFilteredPersonPredicate();
+
+    /**
      * Updates the filter of the filtered person list to filter by the given {@code predicate}.
      * @throws NullPointerException if {@code predicate} is null.
      */
