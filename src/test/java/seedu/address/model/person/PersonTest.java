@@ -17,6 +17,9 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.testutil.PersonBuilder;
 
+/**
+ * Tests full contact equality and normalized duplicate identity.
+ */
 public class PersonTest {
 
     @Test
@@ -55,9 +58,9 @@ public class PersonTest {
         editedAlice = new PersonBuilder(ALICE).withName(VALID_NAME_BOB).build();
         assertFalse(ALICE.isSamePerson(editedAlice));
 
-        // name differs in case -> returns false
+        // Name capitalization is ignored for duplicate identity.
         Person editedBob = new PersonBuilder(BOB).withName(VALID_NAME_BOB.toLowerCase()).build();
-        assertFalse(BOB.isSamePerson(editedBob));
+        assertTrue(BOB.isSamePerson(editedBob));
 
         // consecutive spaces are ignored when comparing names -> returns true
         editedAlice = new PersonBuilder(ALICE).withName("Alice  Pauline").build();

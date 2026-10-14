@@ -9,13 +9,10 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
  */
 public class Address {
 
-    public static final String MESSAGE_CONSTRAINTS = "Addresses can take any values, and should not be blank";
+    public static final String MESSAGE_CONSTRAINTS = "Address must be 1-150 printable characters on one line.";
 
-    /*
-     * The first character of the address must not be a whitespace,
-     * otherwise " " (a blank string) becomes a valid input.
-     */
-    public static final String VALIDATION_REGEX = "[^\\s].*";
+    // Controls and Unicode line separators cannot appear in the normalized one-line address.
+    public static final String VALIDATION_REGEX = "[^\\p{Cc}\\p{Zl}\\p{Zp}]{1,150}";
 
     public final String value;
 
@@ -27,14 +24,15 @@ public class Address {
     public Address(String address) {
         requireNonNull(address);
         checkArgument(isValidAddress(address), MESSAGE_CONSTRAINTS);
-        value = address;
+        value = address.trim();
     }
 
     /**
      * Returns true if a given string is a valid address.
      */
     public static boolean isValidAddress(String test) {
-        return test.matches(VALIDATION_REGEX);
+        requireNonNull(test);
+        return test.trim().matches(VALIDATION_REGEX);
     }
 
     @Override

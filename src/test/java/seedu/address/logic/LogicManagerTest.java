@@ -95,6 +95,21 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_invalidPrefixes_preservesModelAndSavedData() throws Exception {
+        model.addPerson(AMY);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        Path dataPath = temporaryFolder.resolve("addressBook.json");
+        new JsonAddressBookStorage(dataPath).saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(dataPath);
+
+        assertCommandFailure("add n/Alex x/foo", ParseException.class, "Unknown prefix: x/.", expectedModel);
+        assertCommandFailure("add n/Alex N/Bob", ParseException.class,
+                "Prefix n/ may be specified only once.", expectedModel);
+        assertEquals(savedData, Files.readString(dataPath));
+        assertEquals(0, addressBookStorage.saveCount);
+    }
+
+    @Test
     public void execute_validDelete_updatesSavedData() throws Exception {
         model.addPerson(AMY);
         Path dataPath = temporaryFolder.resolve("addressBook.json");
@@ -138,7 +153,7 @@ public class LogicManagerTest {
         assertFalse(Files.exists(addressBookStorage.getAddressBookFilePath()));
 
         logic.execute(AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY);
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3");
         assertEquals(1, addressBookStorage.saveCount);
 
         for (String command : readOnlyCommands) {
@@ -150,7 +165,7 @@ public class LogicManagerTest {
     @Test
     public void execute_viewCommand_doesNotSaveAddressBook() throws Exception {
         logic.execute(AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY);
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3");
         assertEquals(1, addressBookStorage.saveCount);
 
         logic.execute("view 1");
@@ -160,7 +175,7 @@ public class LogicManagerTest {
     @Test
     public void execute_dataChangingCommands_savesAddressBook() throws Exception {
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
 
         logic.execute(addCommand);
         assertEquals(1, addressBookStorage.saveCount);
@@ -180,7 +195,7 @@ public class LogicManagerTest {
     public void execute_exitAfterFailedSave_retriesUnsavedChanges() throws Exception {
         addressBookStorage.failNextSave = true;
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
         String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
 
         assertThrows(CommandException.class, expectedMessage, () -> logic.execute(addCommand));
@@ -200,7 +215,7 @@ public class LogicManagerTest {
     public void execute_exitWhenRetryFails_throwsCommandException() {
         addressBookStorage.failNextSave = true;
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
         String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
 
         assertThrows(CommandException.class, expectedMessage, () -> logic.execute(addCommand));
@@ -305,7 +320,7 @@ public class LogicManagerTest {
 
         // Triggers the saveAddressBook method by executing an add command
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
         Person expectedPerson = new PersonBuilder(AMY).withTags().build();
         ModelManager expectedModel = new ModelManager();
         expectedModel.addPerson(expectedPerson);

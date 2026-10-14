@@ -11,7 +11,7 @@ public class Subject {
 
     public static final String MESSAGE_CONSTRAINTS =
             "Subject must be 1-40 characters and use only letters, digits, spaces, or common subject punctuation.";
-    public static final String VALIDATION_REGEX = "[\\p{Alnum}&+\\-'/()., ]{1,40}";
+    public static final String VALIDATION_REGEX = "[\\p{L}\\p{N}&+\\-'/()., ]{1,40}";
 
     public final String value;
 

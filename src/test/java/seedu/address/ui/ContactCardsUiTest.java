@@ -179,10 +179,92 @@ public class ContactCardsUiTest {
     }
 
     @Test
+    void window_prefixErrorsAndEscapes_preserveSelectionAndStoreLiteralText() throws Exception {
+        Path dataPath = temporaryFolder.resolve("contacts.json");
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(800, 600);
+
+            enter(root, "ADD R/PARENT N/Prefix Parent P/81234567 E/prefix@example.com A/1 Road");
+            enter(root, "view 1");
+            Person selectedContact = (Person) list(root).getSelectionModel().getSelectedItem();
+            enter(root, "add n/Alex x/foo");
+            assertEquals(1, model.getFilteredPersonList().size());
+            assertEquals(selectedContact, list(root).getSelectionModel().getSelectedItem());
+            assertTrue(selectedCard(root).lookup("#details").isVisible());
+            enter(root, "add n/Alex N/Bob");
+            assertEquals(selectedContact, list(root).getSelectionModel().getSelectedItem());
+            assertTrue(selectedCard(root).lookup("#details").isVisible());
+
+            enter(root, "add r/parent n/Literal Parent p/91234567 e/literal@example.com a/Block \\x/12");
+            Person addedContact = (Person) list(root).getSelectionModel().getSelectedItem();
+            assertEquals("Block x/12", addedContact.getAddress().value);
+            assertEquals(2, model.getFilteredPersonList().size());
+            stage.close();
+        });
+        assertEquals("Block x/12",
+                new JsonAddressBookStorage(dataPath).readAddressBook().orElseThrow().getPersonList().get(1)
+                        .getAddress().value);
+    }
+
+    @Test
+    void window_mvpStudentAndParentFlow_showsAllFieldsAndRejectsInvalidInput() throws Exception {
+        Path dataPath = temporaryFolder.resolve("contacts.json");
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(800, 600);
+
+            enter(root, "ADD R/STUDENT N/Alex   Tan P/+9123-4567 E/Alex@Example.com A/1 Road"
+                    + " S/A-Math L/Secondary   3 O/Discuss \\x/foo");
+            enter(root, "view 1");
+            Person student = (Person) list(root).getSelectionModel().getSelectedItem();
+            assertEquals("Alex Tan", student.getName().fullName);
+            assertEquals("Subject: A-Math", label(selectedCard(root), "subject").getText());
+            assertEquals("Academic level: Secondary 3", label(selectedCard(root), "level").getText());
+            assertEquals("Note: Discuss x/foo", label(selectedCard(root), "note").getText());
+
+            enter(root, "add r/parent n/May Tan p/88888888 e/may@example.com a/2 Road s/");
+            assertEquals(1, model.getFilteredPersonList().size());
+            assertEquals(student, list(root).getSelectionModel().getSelectedItem());
+            assertTrue(selectedCard(root).lookup("#details").isVisible());
+            enter(root, "exit 3");
+            assertEquals(student, list(root).getSelectionModel().getSelectedItem());
+
+            enter(root, "add r/parent n/May Tan p/88888888 e/may@example.com a/2 Road o/");
+            enter(root, "view 2");
+            assertFalse(selectedCard(root).lookup("#subject").isManaged());
+            assertFalse(selectedCard(root).lookup("#level").isManaged());
+            assertEquals("Note: None", label(selectedCard(root), "note").getText());
+            enter(root, "list");
+            assertFalse(selectedCard(root).lookup("#details").isVisible());
+            enter(root, "delete 2");
+            assertEquals(1, model.getFilteredPersonList().size());
+            stage.close();
+        });
+        Person restored = new JsonAddressBookStorage(dataPath).readAddressBook().orElseThrow()
+                .getPersonList().getFirst();
+        assertEquals("A-Math", restored.getSubject().orElseThrow().value);
+        assertEquals("Secondary 3", restored.getLevel().orElseThrow().value);
+        assertEquals("Discuss x/foo", restored.getNote().orElseThrow().value);
+    }
+
+    @Test
     void cards_longDetailsAtSmallWindow_wrapWithinCard() throws Exception {
         runOnFxThread(() -> {
             Person contact = new PersonBuilder(ALICE)
-                    .withName("A very long contact name with several words that should wrap across multiple lines")
+                    .withName("A long contact name with several words that wraps across lines")
                     .withNote("Practice algebra and geometry before the next lesson. ".repeat(3))
                     .build();
             PersonListPanel panel = new PersonListPanel(FXCollections.observableArrayList(contact, GEORGE));
