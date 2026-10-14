@@ -533,7 +533,47 @@ in the current AB3 codebase.)
 
 ## **Appendix: Instructions for manual testing**
 
+### Command parsing and validation
+
+The add parser accepts `r/`, `n/`, `p/`, `e/`, `a/`, `s/`, `l/`, and `o/`. All are single-value prefixes.
+Unknown-prefix detection runs before duplicate-prefix detection, followed by base-field presence, role,
+role-specific field rules, field-value validation, and model duplicate detection. `Subject`, `Level`, and `Note`
+reuse the model/storage foundation; `Person` retains its compatibility constructor for legacy records.
+Newly added students must have subject and level, while parents cannot supply either prefix.
+
+Field constructors normalize values and share validation with `ParserUtil` and JSON loading. Names are
+compared case-insensitively for duplicate identity; capitalization remains significant for full object equality
+and is retained in stored data. `ExitCommandParser` rejects arguments before an exit result can reach the UI.
+
+`MvpCommandIntegrationTest` exercises all five commands, exact feedback, normalized duplicates, preserved
+data after rejected input, presentation requests, and JSON round trips. `ParserUtilTest` and field tests cover
+limits and invalid values. `ExitCommandParserTest` checks the parameterless exit grammar.
+
+With a disposable data file, manually verify:
+
+1. Add a student with subject, level, a formatted phone, and a note. Run `view 1` and check every stored field.
+2. Add a parent without subject or level. Check the parent card omits those fields. An empty `o/` omits its note.
+3. Try a student without subject/level, a parent with either prefix, repeated `o/`, an unknown prefix, and a
+   field exceeding its length limit. Verify exact errors and unchanged list data, selection, and JSON.
+4. Re-add the student's identity with different name/email capitalization or phone separators. Check duplicates
+   are rejected. Check a matching name with different phone and email, or a cross-role match, is accepted.
+5. Run `list`, `view INDEX`, and `delete INDEX`. Check feedback, insertion order, visible indexes, and selection.
+6. Restart and verify all added fields are restored. Check read-only commands do not rewrite the JSON file.
+7. Run `exit 3`: the window must remain open. Run `exit`: it should close successfully.
+
 ### Contact-card UI
+
+Prefix recognition checks (use disposable test data):
+
+1. Enter `ADD R/PARENT N/Prefix Parent P/81234567 E/prefix@example.com A/311, Clementi Ave 2, #02-25`.
+   Check that capitalization is retained and a parent contact is added, then run `view 1` to expand it.
+2. Enter `add n/Alex x/foo`. Expect `Unknown prefix: x/.` with the selected contact and expansion unchanged.
+3. Enter `add n/Alex N/Bob`. Expect `Prefix n/ may be specified only once.` with no contact-data change.
+4. Enter `add r/parent n/Literal Parent p/91234567 e/literal@example.com a/21 Clementi Ave 3 o/Discuss \x/foo`.
+   View the added contact and check its note is `Discuss x/foo`. Check the JSON stores that same literal text.
+
+The prefix and student/parent flow tests in `ContactCardsUiTest` check prefix recognition and literal text
+through real command-box execution and JSON storage when `RUN_UI_TESTS=true`.
 
 `CommandResult` carries a `ContactListAction` and an optional target contact. `add` requests selection,
 `view` requests selection and expansion, and `list` requests collapse. Other successful commands retain the

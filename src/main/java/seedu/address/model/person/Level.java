@@ -11,7 +11,7 @@ public class Level {
 
     public static final String MESSAGE_CONSTRAINTS =
             "Level must be 1-30 characters and contain only letters, digits, spaces, apostrophes, or hyphens.";
-    public static final String VALIDATION_REGEX = "[\\p{Alnum} '\\-]{1,30}";
+    public static final String VALIDATION_REGEX = "[\\p{L}\\p{N} '\\-]{1,30}";
 
     public final String value;
 

@@ -11,7 +11,7 @@ public class Note {
 
     public static final String MESSAGE_CONSTRAINTS =
             "Note must contain 1-200 printable characters on one line.";
-    public static final String VALIDATION_REGEX = "[^\\p{Cntrl}\\r\\n]{1,200}";
+    public static final String VALIDATION_REGEX = "[^\\p{Cc}\\p{Zl}\\p{Zp}]{1,200}";
 
     public final String value;
 

@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import seedu.address.commons.core.index.Index;
@@ -11,9 +12,12 @@ import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.Level;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.Role;
+import seedu.address.model.person.Subject;
 import seedu.address.model.tag.Tag;
 
 /**
@@ -89,11 +93,58 @@ public class ParserUtil {
      */
     public static Address parseAddress(String address) throws ParseException {
         requireNonNull(address);
-        String trimmedAddress = address.trim();
-        if (!Address.isValidAddress(trimmedAddress)) {
+        if (!Address.isValidAddress(address)) {
             throw new ParseException(Address.MESSAGE_CONSTRAINTS);
         }
-        return new Address(trimmedAddress);
+        return new Address(address);
+    }
+
+    /**
+     * Parses and normalizes a student's subject.
+     *
+     * @param subject Subject supplied by the user.
+     * @return The validated subject.
+     * @throws ParseException If the subject violates its field constraints.
+     */
+    public static Subject parseSubject(String subject) throws ParseException {
+        requireNonNull(subject);
+        if (!Subject.isValidSubject(subject)) {
+            throw new ParseException(Subject.MESSAGE_CONSTRAINTS);
+        }
+        return new Subject(subject);
+    }
+
+    /**
+     * Parses and normalizes a student's academic level.
+     *
+     * @param level Academic level supplied by the user.
+     * @return The validated academic level.
+     * @throws ParseException If the level violates its field constraints.
+     */
+    public static Level parseLevel(String level) throws ParseException {
+        requireNonNull(level);
+        if (!Level.isValidLevel(level)) {
+            throw new ParseException(Level.MESSAGE_CONSTRAINTS);
+        }
+        return new Level(level);
+    }
+
+    /**
+     * Parses an optional note, treating an empty or whitespace-only value as omitted.
+     *
+     * @param note Note supplied by the user, or an empty string if omitted.
+     * @return The validated note, if present.
+     * @throws ParseException If a nonempty note violates its field constraints.
+     */
+    public static Optional<Note> parseNote(String note) throws ParseException {
+        requireNonNull(note);
+        if (note.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        if (!Note.isValidNote(note)) {
+            throw new ParseException(Note.MESSAGE_CONSTRAINTS);
+        }
+        return Optional.of(new Note(note));
     }
 
     /**

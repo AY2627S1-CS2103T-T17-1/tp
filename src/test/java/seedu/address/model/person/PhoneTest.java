@@ -1,12 +1,28 @@
 package seedu.address.model.person;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests phone formatting, digit limits, and normalized duplicate comparison.
+ */
 public class PhoneTest {
+
+    @Test
+    public void constructor_formattedPhone_enforcesDigitAndSeparatorRules() {
+        assertEquals("+65 9876-5432", new Phone(" +65 9876-5432 ").value);
+        assertTrue(new Phone("+9312-1534").isSamePhone(new Phone("93121534")));
+        assertTrue(Phone.isValidPhone("1".repeat(15)));
+        assertFalse(Phone.isValidPhone("1".repeat(16)));
+        assertFalse(Phone.isValidPhone("+12"));
+        assertFalse(Phone.isValidPhone("+ 123"));
+        assertFalse(Phone.isValidPhone("123-"));
+        assertFalse(Phone.isValidPhone("++123"));
+    }
 
     @Test
     public void constructor_null_throwsNullPointerException() {
@@ -30,7 +46,7 @@ public class PhoneTest {
         assertFalse(Phone.isValidPhone("91")); // less than 3 numbers
         assertFalse(Phone.isValidPhone("phone")); // non-numeric
         assertFalse(Phone.isValidPhone("9011p041")); // alphabets within digits
-        assertFalse(Phone.isValidPhone("9312 1534")); // spaces within digits
+        assertTrue(Phone.isValidPhone("9312 1534")); // spaces between digit groups
 
         // valid phone numbers
         assertTrue(Phone.isValidPhone("911")); // exactly 3 numbers

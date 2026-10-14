@@ -2,9 +2,12 @@ package seedu.address.testutil;
 
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_LEVEL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ROLE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_SUBJECT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 
 import java.util.Set;
@@ -32,14 +35,22 @@ public class PersonUtil {
     public static String getPersonDetails(Person person) {
         StringBuilder sb = new StringBuilder();
         sb.append(PREFIX_ROLE + person.getRole().toString() + " ");
-        sb.append(PREFIX_NAME + person.getName().fullName + " ");
+        sb.append(PREFIX_NAME).append(escapePrefixText(person.getName().fullName)).append(" ");
         sb.append(PREFIX_PHONE + person.getPhone().value + " ");
         sb.append(PREFIX_EMAIL + person.getEmail().value + " ");
-        sb.append(PREFIX_ADDRESS + person.getAddress().value + " ");
-        person.getTags().stream().forEach(
-            s -> sb.append(PREFIX_TAG + s.tagName + " ")
-        );
+        sb.append(PREFIX_ADDRESS).append(escapePrefixText(person.getAddress().value)).append(" ");
+        person.getSubject().ifPresent(subject -> sb.append(PREFIX_SUBJECT)
+                .append(escapePrefixText(subject.value)).append(" "));
+        person.getLevel().ifPresent(level -> sb.append(PREFIX_LEVEL).append(level).append(" "));
+        person.getNote().ifPresent(note -> sb.append(PREFIX_NOTE).append(escapePrefixText(note.value)).append(" "));
         return sb.toString();
+    }
+
+    /**
+     * Escapes literal prefix-shaped tokens so generated commands preserve the contact's stored text.
+     */
+    private static String escapePrefixText(String value) {
+        return value.replaceAll("(?<!\\S)(\\\\*[A-Za-z]/)", "\\\\$1");
     }
 
     /**

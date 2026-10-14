@@ -31,7 +31,7 @@ help you find and manage this information faster than traditional GUI applicatio
 
    * `list` : Lists all contacts.
 
-   * `add r/student n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a student contact named `John Doe`.
+   * `add r/student n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01 s/Math l/Secondary 3` : Adds a student contact named `John Doe`.
 
    * `view 1` : Shows the 1st contact in the current list.
 
@@ -63,16 +63,44 @@ help you find and manage this information faster than traditional GUI applicatio
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
-* Command words are case-insensitive. For example, `list`, `List`, and `LIST` are equivalent.<br>
+* Command words and prefixes are case-insensitive. For example, `list`, `List`, and `LIST` are equivalent,
+  and `n/` and `N/` both introduce a name.<br>
   Parameter values retain their capitalization.
 
-* Extraneous parameters for `help`, `exit`, and `clear` are ignored.<br>
+* Extraneous parameters for `help` and `clear` are ignored.<br>
   For example, `help 123` is interpreted as `help`.
 
-* The `list` command accepts no parameters. Additional arguments are rejected.
+* The `list` and `exit` commands accept no parameters. Additional arguments are rejected.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </div>
+
+### Prefixes and literal text
+
+In commands with prefixed parameters (`add` and `edit`), a single ASCII letter followed by `/` at the start
+of the arguments or immediately after whitespace starts a parameter. For example, `n/Alex Tan p/91234567`
+supplies a name and a phone number. Prefixes ignore case; parameter values retain their capitalization.
+
+An unescaped prefix that the command does not accept is rejected with `Unknown prefix: x/.` The error uses
+the lowercase prefix, so `X/` also reports `x/`. Unknown prefixes are checked before the remaining argument
+validation. Repeating a single-value prefix, including mixed-case repeats such as `n/Alex N/Bob`, is rejected
+with `Prefix n/ may be specified only once.` If several fields repeat, the first field in that command's
+validation order is reported. Repeated `t/` values remain supported by `edit`; `add` rejects `t/`.
+
+To include prefix-shaped text literally at the beginning of a value or after whitespace, place a backslash
+before it. The backslash is an input escape and is removed from the stored value:
+
+| Input fragment | Result |
+| --- | --- |
+| `o/Discuss x/foo` | Rejected with `Unknown prefix: x/.` |
+| `o/Discuss \x/foo` | Stores the note `Discuss x/foo`. |
+| `o/Discuss \n/foo` | Stores the note `Discuss n/foo`; it does not supply another name. |
+| `o/\\x/foo` | Stores the note `\x/foo`, retaining one literal backslash. |
+| `o/Discussx/foo` | Stores `Discussx/foo`; the slash is within ordinary text. |
+
+Other backslashes are preserved. For example, `o/C:\Tutor\Files` stores the path text as typed.
+The escape only controls how parameters are separated; the resulting value must still satisfy its field's
+validation rules. It does not enable unsupported parameters.
 
 ### Viewing help: `help`
 
@@ -87,20 +115,40 @@ Format: `help`
 
 Adds a student or parent contact to TutorContacts.
 
-Format: `add r/ROLE n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]…​`
+Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NOTE]`
 
 * `ROLE` must be `student` or `parent` and is case-insensitive.
-* The `r/ROLE` parameter is required and may appear in any parameter order.
+* Role, name, phone, email, and address are required. Parameters may appear in any order.
+* Students must supply one subject with `s/` and one academic level with `l/`.
+* Parents must omit both `s/` and `l/`; even empty versions of these prefixes are rejected.
+* Either role may supply `o/NOTE`. An omitted or whitespace-only note is treated as absent.
+* `t/` and other unsupported prefixes are rejected. Adding tags or multiple subjects is not supported.
 * On success, TutorContacts reports `Added student: NAME.` or `Added parent: NAME.`
 * The newly added contact is selected and scrolled into view as a compact card.
 
-<div markdown="span" class="alert alert-primary">:bulb: **Tip:**
-A person can have any number of tags, including zero.
-</div>
+Field rules apply to normalized values. Leading and trailing whitespace is trimmed; consecutive spaces in
+names, subjects, and levels are collapsed. Capitalization is retained for display and storage.
+
+| Field | Accepted values |
+| --- | --- |
+| Role | `student` or `parent`, ignoring case; stored in lowercase. |
+| Name | 1–70 characters; starts with a letter or digit; letters, digits, spaces, apostrophes, full stops, and hyphens. |
+| Phone | 3–15 digits; optional leading `+`; spaces and hyphens only between digits. |
+| Email | One `@`, a nonempty local part, and at least two nonempty dot-separated domain labels. No internal whitespace; domain labels use letters, digits, and internal hyphens. |
+| Address | 1–150 printable characters on one line. |
+| Subject | 1–40 characters; letters, digits, spaces, and `& + - ' / ( ) . ,`. |
+| Level | 1–30 characters; letters, digits, spaces, apostrophes, and hyphens. |
+| Note | 1–200 printable characters on one line, or empty to omit it. |
+
+Duplicates require the same role and the same normalized name ignoring case, together with either the same
+phone digits (ignoring `+`, spaces, and hyphens) or the same email ignoring case. A matching name alone is
+allowed, and students and parents may share contact details. Rejected input leaves contact data unchanged.
 
 Examples:
-* `add r/student n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01`
-* `add r/PARENT n/Betsy Crowe t/friend e/betsycrowe@example.com a/Newgate Prison p/1234567 t/criminal`
+* `add r/student n/John Doe p/9876 5432 e/johnd@example.com a/John street, block 123, #01-01 s/A-Math l/Secondary 3 o/Prefers visual examples`
+* `add r/PARENT n/Betsy Crowe e/betsycrowe@example.com a/311, Clementi Ave 2, #02-25 p/+65 1234-5678 o/Contact after 6 pm`
+* `add r/student n/Alex Tan p/91234567 e/alex@example.com a/21 Clementi Ave 3 s/Math l/JC 1 o/Discuss \x/foo`
+  stores the note `Discuss x/foo` using the [literal-prefix escape](#prefixes-and-literal-text).
 
 ### Listing all contacts: `list`
 
@@ -219,6 +267,8 @@ If a change cannot be saved, TutorContacts rejects it and restores the previous 
 
 Format: `exit`
 
+Additional text is rejected with `Invalid command format. Expected: exit`; for example, `exit 3` does not exit.
+
 ### Saving the data
 
 TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `delete`, and
@@ -261,7 +311,7 @@ range). Edit the data file only if you are confident that you can update it corr
 
 Action | Format, Examples
 --------|------------------
-**Add** | `add r/ROLE n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]…​` <br> e.g., `add r/student n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
+**Add** | `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NOTE]` <br> e.g., `add r/student n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 s/Math l/Secondary 3`
 **Clear** | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
@@ -269,3 +319,4 @@ Action | Format, Examples
 **List** | `list`
 **View** | `view INDEX`<br> e.g., `view 2`
 **Help** | `help`
+**Exit** | `exit`
