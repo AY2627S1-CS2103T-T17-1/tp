@@ -14,16 +14,23 @@ import org.junit.jupiter.api.Test;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.Level;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.Role;
+import seedu.address.model.person.Subject;
 import seedu.address.model.tag.Tag;
 
+/**
+ * Tests conversion of user input into validated model fields.
+ */
 public class ParserUtilTest {
     private static final String INVALID_NAME = "R@chel";
-    private static final String INVALID_PHONE = "+651234";
+    private static final String INVALID_PHONE = "+65-";
     private static final String INVALID_ADDRESS = " ";
     private static final String INVALID_EMAIL = "example.com";
+
     private static final String INVALID_TAG = "#friend";
 
     private static final String VALID_NAME = "Rachel Walker";
@@ -35,6 +42,34 @@ public class ParserUtilTest {
     private static final String VALID_ROLE = "student";
 
     private static final String WHITESPACE = " \t\r\n";
+
+    @Test
+    public void parseStudentFields_normalizesAndRejectsInvalidValues() throws ParseException {
+        assertEquals("A-Math", ParserUtil.parseSubject("  A-Math  ").value);
+        assertEquals("Secondary 3", ParserUtil.parseLevel(" Secondary   3 ").value);
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseSubject(null));
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseLevel(null));
+        assertThrows(ParseException.class, Subject.MESSAGE_CONSTRAINTS, () -> {
+            ParserUtil.parseSubject("s".repeat(41));
+        });
+        assertThrows(ParseException.class, Level.MESSAGE_CONSTRAINTS, () -> {
+            ParserUtil.parseLevel("l".repeat(31));
+        });
+    }
+
+    @Test
+    public void parseNote_optionalAndNonemptyValues_followConstraints() throws ParseException {
+        assertTrue(ParserUtil.parseNote("").isEmpty());
+        assertTrue(ParserUtil.parseNote("  ").isEmpty());
+        assertEquals("Contact after 6 pm", ParserUtil.parseNote(" Contact after 6 pm ").orElseThrow().value);
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseNote(null));
+        assertThrows(ParseException.class, Note.MESSAGE_CONSTRAINTS, () -> {
+            ParserUtil.parseNote("n".repeat(201));
+        });
+        assertThrows(ParseException.class, Note.MESSAGE_CONSTRAINTS, () -> {
+            ParserUtil.parseNote("First line\nSecond line");
+        });
+    }
 
     @Test
     public void parseIndex_invalidInput_throwsParseException() {

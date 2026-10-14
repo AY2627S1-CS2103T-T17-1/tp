@@ -1,12 +1,26 @@
 package seedu.address.model.person;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests normalized name values, permitted punctuation, limits, and duplicate identity.
+ */
 public class NameTest {
+
+    @Test
+    public void constructor_normalizesAndEnforcesBoundaries() {
+        assertEquals("Zoë O'Neil-Tan Jr.", new Name("  Zoë   O'Neil-Tan Jr.  ").fullName);
+        assertTrue(Name.isValidName("A"));
+        assertTrue(Name.isValidName("A".repeat(70)));
+        assertFalse(Name.isValidName("A".repeat(71)));
+        assertFalse(Name.isValidName("-Alex"));
+        assertFalse(Name.isValidName("Alex\nTan"));
+    }
 
     @Test
     public void constructor_null_throwsNullPointerException() {
@@ -43,7 +57,7 @@ public class NameTest {
         Name name = new Name("Alice Pauline");
 
         assertTrue(name.isSameName(new Name("Alice  Pauline")));
-        assertFalse(name.isSameName(new Name("alice Pauline")));
+        assertTrue(name.isSameName(new Name("alice Pauline")));
         assertThrows(NullPointerException.class, () -> name.isSameName(null));
     }
 

@@ -3,7 +3,12 @@ package seedu.address.logic.parser;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import seedu.address.logic.parser.exceptions.ParseException;
 
 /**
  * Tokenizes arguments string of the form: {@code preamble <prefix>value <prefix>value ...}<br>
@@ -15,9 +20,14 @@ import java.util.stream.Collectors;
  */
 public class ArgumentTokenizer {
 
+    private static final Pattern COMMAND_PREFIX_PATTERN = Pattern.compile("(?<!\\S)[A-Za-z]/");
+
+    private static final Pattern ESCAPED_PREFIX_PATTERN = Pattern.compile("(?<!\\S)\\\\(\\\\*[A-Za-z]/)");
+
     /**
      * Tokenizes an arguments string and returns an {@code ArgumentMultimap} object that maps prefixes to their
-     * respective argument values. Only the given prefixes will be recognized in the arguments string.
+     * respective argument values. Recognizes the given prefixes without regard to case and unescapes literal
+     * prefix-shaped text in values. Only the given prefixes divide the arguments string.
      *
      * @param argsString Arguments string of the form: {@code preamble <prefix>value <prefix>value ...}
      * @param prefixes   Prefixes to tokenize the arguments string with
@@ -26,6 +36,28 @@ public class ArgumentTokenizer {
     public static ArgumentMultimap tokenize(String argsString, Prefix... prefixes) {
         List<PrefixPosition> positions = findAllPrefixPositions(argsString, prefixes);
         return extractArguments(argsString, positions);
+    }
+
+    /**
+     * Tokenizes command arguments after rejecting unescaped single-letter prefixes that the command does not accept.
+     * Escape a literal prefix-shaped token with a backslash, such as {@code \x/}, to keep it in a parameter value.
+     *
+     * @param argsString Arguments following the command word.
+     * @param prefixes Prefixes accepted by the command.
+     * @return Arguments mapped to the supplied canonical prefixes.
+     * @throws ParseException If the input contains an unknown prefix.
+     */
+    public static ArgumentMultimap tokenizeForCommand(String argsString, Prefix... prefixes) throws ParseException {
+        Matcher matcher = COMMAND_PREFIX_PATTERN.matcher(argsString);
+        while (matcher.find()) {
+            String inputPrefix = matcher.group();
+            boolean isKnownPrefix = Arrays.stream(prefixes)
+                    .anyMatch(prefix -> prefix.getPrefix().equalsIgnoreCase(inputPrefix));
+            if (!isKnownPrefix) {
+                throw new ParseException("Unknown prefix: " + inputPrefix.toLowerCase(Locale.ROOT) + ".");
+            }
+        }
+        return tokenize(argsString, prefixes);
     }
 
     /**
@@ -47,32 +79,15 @@ public class ArgumentTokenizer {
     private static List<PrefixPosition> findPrefixPositions(String argsString, Prefix prefix) {
         List<PrefixPosition> positions = new ArrayList<>();
 
-        int prefixPosition = findPrefixPosition(argsString, prefix.getPrefix(), 0);
-        while (prefixPosition != -1) {
-            PrefixPosition extendedPrefix = new PrefixPosition(prefix, prefixPosition);
+        Pattern prefixPattern = Pattern.compile("(?<!\\S)" + Pattern.quote(prefix.getPrefix()),
+                Pattern.CASE_INSENSITIVE);
+        Matcher matcher = prefixPattern.matcher(argsString);
+        while (matcher.find()) {
+            PrefixPosition extendedPrefix = new PrefixPosition(prefix, matcher.start());
             positions.add(extendedPrefix);
-            prefixPosition = findPrefixPosition(argsString, prefix.getPrefix(), prefixPosition);
         }
 
         return positions;
-    }
-
-    /**
-     * Returns the index of the first occurrence of {@code prefix} in
-     * {@code argsString} starting from index {@code fromIndex}. An occurrence
-     * is valid if there is a whitespace before {@code prefix}. Returns -1 if no
-     * such occurrence can be found.
-     *
-     * E.g if {@code argsString} = "e/hip/900", {@code prefix} = "p/" and
-     * {@code fromIndex} = 0, this method returns -1 as there are no valid
-     * occurrences of "p/" with whitespace before it. However, if
-     * {@code argsString} = "e/hi p/900", {@code prefix} = "p/" and
-     * {@code fromIndex} = 0, this method returns 5.
-     */
-    private static int findPrefixPosition(String argsString, String prefix, int fromIndex) {
-        int prefixIndex = argsString.indexOf(" " + prefix, fromIndex);
-        return prefixIndex == -1 ? -1
-                : prefixIndex + 1; // +1 as offset for whitespace
     }
 
     /**
@@ -121,7 +136,7 @@ public class ArgumentTokenizer {
         int valueStartPos = currentPrefixPosition.getStartPosition() + prefix.getPrefix().length();
         String value = argsString.substring(valueStartPos, nextPrefixPosition.getStartPosition());
 
-        return value.trim();
+        return ESCAPED_PREFIX_PATTERN.matcher(value.trim()).replaceAll("$1");
     }
 
     /**

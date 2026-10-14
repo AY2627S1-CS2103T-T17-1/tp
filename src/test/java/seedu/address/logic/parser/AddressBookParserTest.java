@@ -31,7 +31,7 @@ import seedu.address.testutil.PersonBuilder;
 import seedu.address.testutil.PersonUtil;
 
 /**
- * Tests command dispatch and argument validation.
+ * Tests command dispatch and argument validation through the application's main parser.
  */
 public class AddressBookParserTest {
 
@@ -42,6 +42,13 @@ public class AddressBookParserTest {
         Person person = new PersonBuilder().build();
         AddCommand command = (AddCommand) parser.parseCommand(PersonUtil.getAddCommand(person));
         assertEquals(new AddCommand(person), command);
+    }
+
+    @Test
+    public void parseCommand_generatedAdd_preservesLiteralPrefixes() throws Exception {
+        Person person = new PersonBuilder().withAddress("Block x/12").withSubject("Biology/Chemistry")
+                .withNote("Discuss x/foo and n/bar").build();
+        assertEquals(new AddCommand(person), parser.parseCommand(PersonUtil.getAddCommand(person)));
     }
 
     @Test
@@ -69,7 +76,8 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_exit() throws Exception {
         assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD) instanceof ExitCommand);
-        assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD + " 3") instanceof ExitCommand);
+        assertTrue(parser.parseCommand(" ExIt  ") instanceof ExitCommand);
+        assertThrows(ParseException.class, ExitCommand.MESSAGE_INVALID_ARGUMENTS, () -> parser.parseCommand("exit 3"));
     }
 
     @Test

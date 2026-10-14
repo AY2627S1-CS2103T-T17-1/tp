@@ -1,12 +1,26 @@
 package seedu.address.model.person;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests printable address values, trimming, and length limits.
+ */
 public class AddressTest {
+
+    @Test
+    public void constructor_printableAddress_enforcesBoundaries() {
+        assertEquals("1 Road", new Address("  1 Road  ").value);
+        assertTrue(Address.isValidAddress("a".repeat(150)));
+        assertFalse(Address.isValidAddress("a".repeat(151)));
+        assertFalse(Address.isValidAddress("1 Road\nUnit 2"));
+        assertFalse(Address.isValidAddress("1 Road\tUnit 2"));
+        assertFalse(Address.isValidAddress("1 Road\u2028Unit 2"));
+    }
 
     @Test
     public void constructor_null_throwsNullPointerException() {

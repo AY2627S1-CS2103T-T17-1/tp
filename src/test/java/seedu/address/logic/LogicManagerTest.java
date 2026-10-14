@@ -93,6 +93,21 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_invalidPrefixes_preservesModelAndSavedData() throws Exception {
+        model.addPerson(AMY);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        Path dataPath = temporaryFolder.resolve("addressBook.json");
+        new JsonAddressBookStorage(dataPath).saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(dataPath);
+
+        assertCommandFailure("add n/Alex x/foo", ParseException.class, "Unknown prefix: x/.", expectedModel);
+        assertCommandFailure("add n/Alex N/Bob", ParseException.class,
+                "Prefix n/ may be specified only once.", expectedModel);
+        assertEquals(savedData, Files.readString(dataPath));
+        assertEquals(0, addressBookStorage.saveCount);
+    }
+
+    @Test
     public void execute_validDelete_updatesSavedData() throws Exception {
         model.addPerson(AMY);
         Path dataPath = temporaryFolder.resolve("addressBook.json");
@@ -136,7 +151,7 @@ public class LogicManagerTest {
         assertFalse(Files.exists(addressBookStorage.getAddressBookFilePath()));
 
         logic.execute(AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY);
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3");
         assertEquals(1, addressBookStorage.saveCount);
 
         for (String command : readOnlyCommands) {
@@ -148,7 +163,7 @@ public class LogicManagerTest {
     @Test
     public void execute_viewCommand_doesNotSaveAddressBook() throws Exception {
         logic.execute(AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY);
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3");
         assertEquals(1, addressBookStorage.saveCount);
 
         logic.execute("view 1");
@@ -158,7 +173,7 @@ public class LogicManagerTest {
     @Test
     public void execute_dataChangingCommands_savesAddressBook() throws Exception {
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
 
         logic.execute(addCommand);
         assertEquals(1, addressBookStorage.saveCount);
@@ -178,7 +193,7 @@ public class LogicManagerTest {
     public void execute_failedAdd_rollsBackAndExitDoesNotSave() throws Exception {
         addressBookStorage.failNextSave = true;
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
 
         assertThrows(CommandException.class, LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> logic.execute(addCommand));
         assertEquals(new AddressBook(), model.getAddressBook());
@@ -218,7 +233,8 @@ public class LogicManagerTest {
         String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
         addressBookStorage.failNextSave = true;
 
-        String addCommand = "add r/student n/Bob Builder p/99999999 e/bob@example.com a/Street";
+        String addCommand = "add r/student n/Bob Builder p/99999999 e/bob@example.com a/Street"
+                + " s/Mathematics l/Secondary 3";
         assertThrows(CommandException.class,
                 LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> logic.execute(addCommand));
 
@@ -236,7 +252,7 @@ public class LogicManagerTest {
         logic = new LogicManager(model, storage, false);
 
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
         assertThrows(CommandException.class,
                 LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> logic.execute(addCommand));
         assertEquals(new AddressBook(), model.getAddressBook());
@@ -364,7 +380,7 @@ public class LogicManagerTest {
 
         // Triggers the saveAddressBook method by executing an add command
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
-                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY;
+                + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
         assertCommandFailure(addCommand, CommandException.class, expectedMessage, new ModelManager());
     }
 

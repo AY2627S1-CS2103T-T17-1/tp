@@ -45,6 +45,9 @@ import seedu.address.model.person.Phone;
 import seedu.address.model.tag.Tag;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 
+/**
+ * Tests edit-command syntax and compatibility with the shared prefix tokenizer.
+ */
 public class EditCommandParserTest {
 
     private static final String TAG_EMPTY = " " + PREFIX_TAG;
@@ -53,6 +56,22 @@ public class EditCommandParserTest {
             String.format(MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE);
 
     private EditCommandParser parser = new EditCommandParser();
+
+    @Test
+    public void parse_unknownPrefix_failure() {
+        assertParseFailure(parser, "1 a/Block x/12", "Unknown prefix: x/.");
+    }
+
+    @Test
+    public void parse_mixedCaseDuplicate_failure() {
+        assertParseFailure(parser, "1 p/81234567 P/91234567", "Prefix p/ may be specified only once.");
+    }
+
+    @Test
+    public void parse_escapedPrefixInAddress_success() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withAddress("Block x/12").build();
+        assertParseSuccess(parser, "1 A/Block \\x/12", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+    }
 
     @Test
     public void parse_missingParts_failure() {
@@ -77,8 +96,8 @@ public class EditCommandParserTest {
         // invalid arguments being parsed as preamble
         assertParseFailure(parser, "1 some random string", MESSAGE_INVALID_FORMAT);
 
-        // invalid prefix being parsed as preamble
-        assertParseFailure(parser, "1 i/ string", MESSAGE_INVALID_FORMAT);
+        // Unknown prefixes are rejected before the index and remaining fields are validated.
+        assertParseFailure(parser, "1 i/ string", "Unknown prefix: i/.");
     }
 
     @Test
