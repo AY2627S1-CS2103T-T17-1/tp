@@ -181,6 +181,43 @@ public class ContactCardsUiTest {
     }
 
     @Test
+    void window_atMinimumHeight_keepsCommandAndContactListUsable() throws Exception {
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            model.addPerson(ALICE);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            stage.setWidth(800);
+            stage.setHeight(420);
+
+            try {
+                window.show();
+                Region root = (Region) stage.getScene().getRoot();
+                layout(root);
+                assertEquals(420, stage.getMinHeight());
+                assertTrue(root.getHeight() <= 420);
+                assertVisibleWithinWindow(root, root.lookup("#commandTextField"));
+                assertVisibleWithinWindow(root, root.lookup("#resultDisplay"));
+                assertVisibleWithinWindow(root, list(root));
+                assertVisibleWithinWindow(root, root.lookup("#saveLocationStatus"));
+
+                enter(root, "view 1");
+                assertEquals(ALICE, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                enter(root, "list");
+                assertFalse(selectedCard(root).lookup("#details").isVisible());
+                saveSnapshot(root, "minimum-height-window");
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
     void uiManager_startWithDataWarning_displaysWarning() throws Exception {
         runOnFxThread(() -> {
             Path dataPath = temporaryFolder.resolve("contacts.json");
@@ -273,6 +310,16 @@ public class ContactCardsUiTest {
     private static void layout(Region root) {
         root.applyCss();
         root.layout();
+    }
+
+    /**
+     * Checks that a control has usable height and stays inside the laid-out window.
+     */
+    private static void assertVisibleWithinWindow(Region root, Node control) {
+        assertNotNull(control);
+        assertTrue(control.isVisible());
+        assertTrue(control.getBoundsInLocal().getHeight() > 0);
+        assertTrue(control.localToScene(control.getBoundsInLocal()).getMaxY() <= root.getHeight() + 1);
     }
 
     /**
