@@ -39,6 +39,15 @@ public class PhoneTest {
     }
 
     @Test
+    public void isSamePhone() {
+        Phone phone = new Phone("93121534");
+
+        assertTrue(phone.isSamePhone(new Phone("93121534")));
+        assertFalse(phone.isSamePhone(new Phone("93121535")));
+        assertThrows(NullPointerException.class, () -> phone.isSamePhone(null));
+    }
+
+    @Test
     public void equals() {
         Phone phone = new Phone("999");
 

@@ -29,13 +29,15 @@ public class ListCommandTest {
 
     @Test
     public void execute_listIsNotFiltered_showsSameList() {
-        assertCommandSuccess(new ListCommand(), model, "Showing 7 contacts.", expectedModel);
+        assertCommandSuccess(new ListCommand(), model,
+                CommandResult.collapseContacts("Showing 7 contacts."), expectedModel);
     }
 
     @Test
     public void execute_listIsFiltered_showsEverything() {
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
-        assertCommandSuccess(new ListCommand(), model, "Showing 7 contacts.", expectedModel);
+        assertCommandSuccess(new ListCommand(), model,
+                CommandResult.collapseContacts("Showing 7 contacts."), expectedModel);
     }
 
     @Test
@@ -43,7 +45,8 @@ public class ListCommandTest {
         model = new ModelManager();
         expectedModel = new ModelManager();
 
-        assertCommandSuccess(new ListCommand(), model, "No contacts to display.", expectedModel);
+        assertCommandSuccess(new ListCommand(), model,
+                CommandResult.collapseContacts("No contacts to display."), expectedModel);
     }
 
     @Test
@@ -52,13 +55,15 @@ public class ListCommandTest {
         model.addPerson(ALICE);
         expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
 
-        assertCommandSuccess(new ListCommand(), model, "Showing 1 contacts.", expectedModel);
+        assertCommandSuccess(new ListCommand(), model,
+                CommandResult.collapseContacts("Showing 1 contacts."), expectedModel);
     }
 
     @Test
     public void execute_filterMatchesNothing_showsAllContacts() {
         model.updateFilteredPersonList(person -> false);
 
-        assertCommandSuccess(new ListCommand(), model, "Showing 7 contacts.", expectedModel);
+        assertCommandSuccess(new ListCommand(), model,
+                CommandResult.collapseContacts("Showing 7 contacts."), expectedModel);
     }
 }
