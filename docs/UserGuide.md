@@ -3,7 +3,10 @@ layout: page
 title: User Guide
 ---
 
-AddressBook Level 3 (AB3) is a **desktop application for managing contacts, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, AB3 can help you manage contacts faster than traditional GUI applications.
+TutorContacts is a **desktop contact manager for independent private tutors, optimized for use through a Command Line
+Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). It keeps student and parent contact
+details, together with each student's subject and academic level, in one place. If you type quickly, TutorContacts can
+help you find and manage this information faster than traditional GUI applications.
 
 * Table of Contents
 {:toc}
@@ -15,12 +18,12 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 1. Ensure that Java `25` or later is installed on your computer.<br>
    **Mac users:** Ensure you have the precise JDK version prescribed [here](https://se-education.org/guides/tutorials/javaInstallationMac.html).
 
-1. Download the latest `.jar` file from [here](https://github.com/se-edu/addressbook-level3/releases).
+1. Download the latest `tutorcontacts.jar` file from [here](https://github.com/AY2627S1-CS2103T-T17-1/tp/releases).
 
-1. Copy the file to the folder you want to use as the _home folder_ for your AddressBook.
+1. Copy the file to the folder you want to use as the _home folder_ for TutorContacts.
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar tutorcontacts.jar`.<br>
-   A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
+   A GUI similar to the one below should appear in a few seconds. On the first launch, the contact list is empty.<br>
    ![Ui](images/Ui.png)
 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
@@ -116,8 +119,12 @@ Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NO
 
 * `ROLE` must be `student` or `parent` and is case-insensitive.
 * Role, name, phone, email, and address are required. Parameters may appear in any order.
-* Students must supply one subject with `s/` and one academic level with `l/`.
-* Parents must omit both `s/` and `l/`; even empty versions of these prefixes are rejected.
+* Students must supply one subject with `s/` and one academic level with `l/`. Otherwise, TutorContacts reports
+  `Student contacts require both s/SUBJECT and l/LEVEL.`
+* Parents must omit both `s/` and `l/`; even empty versions of these prefixes are rejected with
+  `Subject and level are only valid for student contacts.`
+
+  ![Error shown when a parent contact is given a subject](images/addParentWithSubjectError.png)
 * Either role may supply `o/NOTE`. An omitted or whitespace-only note is treated as absent.
 * `t/` and other unsupported prefixes are rejected. Adding tags or multiple subjects is not supported.
 * On success, TutorContacts reports `Added student: NAME.` or `Added parent: NAME.`
@@ -164,6 +171,8 @@ Format: `list`
 
 Example: `list`
 
+![Result of the list command showing four compact contact cards](images/listContactsResult.png)
+
 ### Viewing a contact: `view`
 
 Shows the details of the specified contact from TutorContacts.
@@ -184,6 +193,8 @@ Examples:
 * `list` followed by `view 2` shows the second displayed contact.
 * `find Betsy` followed by `view 1` shows the first search result.
 
+![Result of view 1 showing an expanded student contact card](images/viewContactResult.png)
+
 Invalid input leaves contact data, the displayed list, and the current selection and expansion unchanged:
 
 | Input problem | Error message |
@@ -192,25 +203,26 @@ Invalid input leaves contact data, the displayed list, and the current selection
 | An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
 | An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
 
-### Editing a person: `edit`
+### Editing a contact: `edit`
 
-Edits an existing person in the address book.
+Edits an existing contact in TutorContacts.
 
 Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`
 
-* Edits the person at the specified `INDEX`. The index refers to the index number shown in the displayed person list. The index **must be a positive integer** 1, 2, 3, …​
+* Edits the contact at the specified `INDEX`. The index refers to the index number shown in the displayed contact list. The index **must be a positive integer** 1, 2, 3, …​
 * At least one of the optional fields must be provided.
 * Existing values will be updated to the input values.
-* When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
-* To remove all of a person's tags, enter `t/` without a tag after it.
+* `edit` cannot change a contact's role, subject, academic level, or note in this version.
+* When editing tags, all of the contact's existing tags are removed; adding tags is not cumulative.
+* To remove all of a contact's tags, enter `t/` without a tag after it.
 
 Examples:
-*  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st person to be `91234567` and `johndoe@example.com` respectively.
-*  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd person to be `Betsy Crower` and clears all existing tags.
+*  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st contact to be `91234567` and `johndoe@example.com` respectively.
+*  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd contact to be `Betsy Crower` and clears all existing tags.
 
-### Locating persons by name: `find`
+### Locating contacts by name: `find`
 
-Finds persons whose names contain any of the given keywords.
+Finds contacts whose names contain any of the given keywords.
 
 Format: `find KEYWORD [MORE_KEYWORDS]`
 
@@ -218,12 +230,11 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
-* Persons matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* Contacts matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
 
 Examples:
 * `find John` returns `john` and `John Doe`
-* `find alex david` returns `Alex Yeoh`, `David Li`<br>
-  ![result for 'find alex david'](images/findAlexDavidResult.png)
+* `find alex david` returns `Alex Yeoh`, `David Li`
 
 ### Deleting a contact: `delete`
 
@@ -249,9 +260,9 @@ Invalid input leaves contact data and the displayed list unchanged:
 | An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
 | An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
 
-### Clearing all entries: `clear`
+### Clearing all contacts: `clear`
 
-Clears all entries from the address book.
+Deletes all contacts from TutorContacts.
 
 Format: `clear`
 
@@ -288,16 +299,12 @@ Certain edits can also cause TutorContacts to behave unexpectedly (for example, 
 range). Edit the data file only if you are confident that you can update it correctly.
 </div>
 
-### Archiving data files `[coming in v2.0]`
-
-_Details coming soon ..._
-
 --------------------------------------------------------------------------------------------------------------------
 
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous AddressBook home folder.
+**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous TutorContacts home folder.
 
 --------------------------------------------------------------------------------------------------------------------
 
