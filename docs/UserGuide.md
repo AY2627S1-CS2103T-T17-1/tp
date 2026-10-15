@@ -119,8 +119,12 @@ Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NO
 
 * `ROLE` must be `student` or `parent` and is case-insensitive.
 * Role, name, phone, email, and address are required. Parameters may appear in any order.
-* Students must supply one subject with `s/` and one academic level with `l/`.
-* Parents must omit both `s/` and `l/`; even empty versions of these prefixes are rejected.
+* Students must supply one subject with `s/` and one academic level with `l/`. Otherwise, TutorContacts reports
+  `Student contacts require both s/SUBJECT and l/LEVEL.`
+* Parents must omit both `s/` and `l/`; even empty versions of these prefixes are rejected with
+  `Subject and level are only valid for student contacts.`
+
+  ![Error shown when a parent contact is given a subject](images/addParentWithSubjectError.png)
 * Either role may supply `o/NOTE`. An omitted or whitespace-only note is treated as absent.
 * `t/` and other unsupported prefixes are rejected. Adding tags or multiple subjects is not supported.
 * On success, TutorContacts reports `Added student: NAME.` or `Added parent: NAME.`
@@ -167,6 +171,8 @@ Format: `list`
 
 Example: `list`
 
+![Result of the list command showing four compact contact cards](images/listContactsResult.png)
+
 ### Viewing a contact: `view`
 
 Shows the details of the specified contact from TutorContacts.
@@ -186,6 +192,8 @@ Format: `view INDEX`
 Examples:
 * `list` followed by `view 2` shows the second displayed contact.
 * `find Betsy` followed by `view 1` shows the first search result.
+
+![Result of view 1 showing an expanded student contact card](images/viewContactResult.png)
 
 Invalid input leaves contact data, the displayed list, and the current selection and expansion unchanged:
 
