@@ -125,6 +125,22 @@ public class ContactCardsUiTest {
     }
 
     @Test
+    void helpWindow_labels_usePreferredMinimumHeight() throws Exception {
+        runOnFxThread(() -> {
+            HelpWindow help = new HelpWindow();
+            Region root = (Region) help.getRoot().getScene().getRoot();
+            layout(root);
+            Set<Node> labels = root.lookupAll(".label");
+            assertFalse(labels.isEmpty());
+            for (Node node : labels) {
+                Label label = (Label) node;
+                assertEquals(Region.USE_PREF_SIZE, label.getMinHeight(), label.getText());
+                assertEquals(label.prefHeight(label.getWidth()), label.minHeight(label.getWidth()), label.getText());
+            }
+        });
+    }
+
+    @Test
     void helpWindow_smallSize_keepsGuideScrollableAndFooterVisible() throws Exception {
         runOnFxThread(() -> {
             HelpWindow help = new HelpWindow();

@@ -7,7 +7,6 @@
 
 .label {
     -fx-text-fill: #e6e9ee;
-    -fx-min-height: -fx-pref-size;
 }
 
 .heading {

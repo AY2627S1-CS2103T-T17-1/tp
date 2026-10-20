@@ -565,6 +565,28 @@ in the current AB3 codebase.)
 
 ## **Appendix: Instructions for manual testing**
 
+### Help command guide
+
+Use a disposable data file containing at least two contacts. Before testing, run `view 1` and note the
+selected contact, expanded details, and the data file's contents and last-modified time.
+
+1. Enter `help`. Expect one window titled **TutorContacts — Command guide**, containing the command reference
+   and the TutorContacts User Guide URL. Enter `help` again in the main window: the same Help window should
+   receive focus, without opening a second window.
+2. Close Help, then choose **Help → Help** in the main window. Close it again and press **F1** in the main
+   window. Each action should reopen the guide. With Help already open, repeat both actions and check that
+   no additional Help window appears.
+3. Scroll to the end of the command list and back. Expect the `exit` entry to be reachable, while the User
+   Guide URL and **Copy User Guide URL** button stay visible outside the scrolling list.
+4. Resize Help to its minimum size (450 × 360), then enlarge it. Expect long command formats and the URL
+   to wrap without clipping, and the reference to remain scrollable. Repeat at 1920 × 1080 with 100% and
+   125% scaling, and at 1280 × 720 with 150% scaling on available supported systems.
+5. Select **Copy User Guide URL** and paste into a browser's address bar. Expect exactly
+   `https://ay2627s1-cs2103t-t17-1.github.io/tp/UserGuide.html`. With Internet access, navigate to it and
+   verify that it opens the TutorContacts User Guide, not the inherited AB3 guide.
+6. Close Help. Expect the contact list, selected contact, and expanded details to be unchanged. Check that
+   the data file's contents and last-modified time still match the values recorded before opening Help.
+
 ### Command parsing and validation
 
 The add parser accepts `r/`, `n/`, `p/`, `e/`, `a/`, `s/`, `l/`, and `o/`. All are single-value prefixes.
