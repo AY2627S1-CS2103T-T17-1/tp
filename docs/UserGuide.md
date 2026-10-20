@@ -104,12 +104,17 @@ validation rules. It does not enable unsupported parameters.
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
-
-![help message](images/helpMessage.png)
+Opens the TutorContacts command guide with command formats, short explanations, and the full User Guide URL.
 
 Format: `help`
 
+* You can also open it using **Help → Help** or **F1** in the main window.
+* Scroll through the command reference or resize the Help window to see more of it.
+* Select **Copy User Guide URL**, then paste the URL into your browser to read the full guide.
+* Running `help` again focuses the existing Help window.
+* Opening Help does not change contacts or rewrite the data file.
+
+![TutorContacts Help window showing the command guide](images/helpCommandGuide.png)
 
 ### Adding a student or parent contact: `add`
 

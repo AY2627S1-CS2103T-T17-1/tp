@@ -13,6 +13,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -28,16 +33,27 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.DataFormat;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import seedu.address.MainApp;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.CommandResult;
@@ -50,7 +66,7 @@ import seedu.address.storage.StorageManager;
 import seedu.address.testutil.PersonBuilder;
 
 /**
- * Exercises FXML cards and command-to-UI wiring on a desktop with {@code RUN_UI_TESTS=true}.
+ * Exercises FXML cards, Help, and command-to-UI wiring on a desktop with {@code RUN_UI_TESTS=true}.
  * Core selection tests run separately without a display in {@link ContactListStateTest}.
  */
 @EnabledIfEnvironmentVariable(named = "RUN_UI_TESTS", matches = "true")
@@ -77,6 +93,125 @@ public class ContactCardsUiTest {
     @AfterAll
     static void stopToolkit() {
         Platform.exit();
+    }
+
+    @Test
+    void helpWindow_commandReference_showsSupportedCommandsAndCopiesTutorContactsUrl() throws Exception {
+        runOnFxThread(() -> {
+            HelpWindow help = new HelpWindow();
+            Region root = (Region) help.getRoot().getScene().getRoot();
+            layout(root);
+            assertEquals("https://ay2627s1-cs2103t-t17-1.github.io/tp/UserGuide.html", HelpWindow.USERGUIDE_URL);
+            assertTrue(label(root, "helpMessage").getText().contains(HelpWindow.USERGUIDE_URL));
+            Set<String> commands = new HashSet<>();
+            for (Node syntax : root.lookupAll(".command-syntax")) {
+                commands.add(((Label) syntax).getText().split(" ")[0]);
+            }
+            assertEquals(Set.of("add", "list", "view", "edit", "find", "delete", "clear", "help", "exit"), commands);
+
+            Clipboard clipboard = Clipboard.getSystemClipboard();
+            Map<DataFormat, Object> previousContent = new HashMap<>();
+            for (DataFormat format : clipboard.getContentTypes()) {
+                previousContent.put(format, clipboard.getContent(format));
+            }
+            try {
+                Button copyButton = (Button) root.lookup("#copyButton");
+                copyButton.fire();
+                assertEquals(HelpWindow.USERGUIDE_URL, clipboard.getString());
+            } finally {
+                clipboard.setContent(previousContent);
+            }
+        });
+    }
+
+    @Test
+    void helpWindow_smallSize_keepsGuideScrollableAndFooterVisible() throws Exception {
+        runOnFxThread(() -> {
+            HelpWindow help = new HelpWindow();
+            try {
+                help.show();
+                Stage stage = help.getRoot();
+                Region root = (Region) stage.getScene().getRoot();
+                layout(root);
+                saveSnapshot(root, "help-command-guide");
+
+                stage.setWidth(450);
+                stage.setHeight(360);
+                root.resize(450, 332);
+                layout(root);
+                ScrollPane scrollPane = (ScrollPane) root.lookup("#commandScrollPane");
+                assertEquals(450, stage.getMinWidth());
+                assertEquals(360, stage.getMinHeight());
+                assertTrue(stage.isResizable());
+                assertTrue(scrollPane.isFitToWidth());
+                assertTrue(scrollPane.getContent().getBoundsInLocal().getHeight()
+                        > scrollPane.getViewportBounds().getHeight());
+                assertTrue(scrollPane.getContent().getBoundsInLocal().getWidth()
+                        <= scrollPane.getViewportBounds().getWidth() + 1);
+                assertVisibleWithinWindow(root, scrollPane);
+                assertVisibleWithinWindow(root, root.lookup("#helpMessage"));
+                assertVisibleWithinWindow(root, root.lookup("#copyButton"));
+                saveSnapshot(root, "help-command-guide-small");
+
+                scrollPane.setVvalue(1);
+                layout(root);
+                Node exitSyntax = root.lookupAll(".command-syntax").stream()
+                        .filter(node -> ((Label) node).getText().equals("exit"))
+                        .findFirst().orElseThrow();
+                Node viewport = scrollPane.lookup(".viewport");
+                Bounds exitBounds = exitSyntax.localToScene(exitSyntax.getBoundsInLocal());
+                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                assertTrue(exitBounds.getMinY() >= viewportBounds.getMinY());
+                assertTrue(exitBounds.getMaxY() <= viewportBounds.getMaxY());
+            } finally {
+                help.hide();
+            }
+        });
+    }
+
+    @Test
+    void window_helpCommandAndMenu_reuseHelpWindowAndKeepContactsUnchanged() throws Exception {
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            model.addPerson(ALICE);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            try {
+                enter(root, "help");
+                Stage helpStage = (Stage) Window.getWindows().stream()
+                        .filter(candidate -> candidate instanceof Stage candidateStage
+                                && candidateStage.getTitle().equals("TutorContacts — Command guide"))
+                        .findFirst().orElseThrow();
+                int windowCount = Window.getWindows().size();
+                enter(root, "help");
+                assertEquals(windowCount, Window.getWindows().size());
+
+                MenuBar menuBar = (MenuBar) root.lookup("#menuBar");
+                MenuItem helpMenu = menuBar.getMenus().get(1).getItems().getFirst();
+                assertEquals(KeyCombination.valueOf("F1"), helpMenu.getAccelerator());
+                helpMenu.fire();
+                assertTrue(helpStage.isShowing());
+                assertEquals(windowCount, Window.getWindows().size());
+                assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
+                assertFalse(Files.exists(dataPath));
+                helpStage.hide();
+                helpMenu.fire();
+                assertTrue(helpStage.isShowing());
+                helpStage.hide();
+                TextField commandField = (TextField) root.lookup("#commandTextField");
+                commandField.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.F1,
+                        false, false, false, false));
+                assertTrue(helpStage.isShowing());
+                helpStage.hide();
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     @Test

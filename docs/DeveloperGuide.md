@@ -158,6 +158,38 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Help command and command guide
+
+`HelpCommand` is read-only: it returns a `CommandResult` with `isShowHelp()` set to `true`.
+`LogicManager` returns that result without saving contact data. `MainWindow` then calls `handleHelp()`:
+it shows its existing `HelpWindow` if closed, or focuses that same window if already open.
+
+The overview below traces a successful typed `help` command. Its `ref` frames expand into the two focused
+diagrams that follow, keeping each diagram readable at the guide's normal page width.
+
+![Help command overview with references to the execution and window-handling sequences](images/HelpCommandSequenceDiagram.png)
+
+**Help execution** (`HelpCommandExecutionSequenceDiagram.puml`). `AddressBookParser` creates the command;
+the command creates result `r`. Constructor details and the routine read-only checks are omitted.
+The command returns without contact mutation or a Storage call.
+
+![Help command parsing and execution sequence](images/HelpCommandExecutionSequenceDiagram.png)
+
+**Help window handling** (`HelpWindowSequenceDiagram.puml`). This expands the UI portion of the overview after
+`Logic.execute("help")` returns. It shows the `isShowHelp()` check and the mutually exclusive show/focus paths.
+The activation of `executeCommand` includes earlier interactions shown separately in the overview and execution
+diagram. Result-display updates, logging, and clipboard operations are omitted from all three diagrams.
+
+![Applying the Help result and showing or focusing the existing window](images/HelpWindowSequenceDiagram.png)
+
+The Help menu and the F1 accelerator call `MainWindow#handleHelp()` directly, so they share the same
+show-or-focus behavior without parsing a command.
+
+`HelpWindow.fxml` contains the command reference. Its scroll pane fits the available width, and command labels
+wrap to keep long formats readable. The resizable window starts within the primary screen's visual bounds,
+including display scaling. Its User Guide URL and copy button remain outside the scrolling command list.
+When a command's syntax changes, update the reference alongside the User Guide.
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation
