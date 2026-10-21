@@ -77,6 +77,19 @@
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Filter contacts" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]"
+                    styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Supply at least one criterion. Every name keyword and field must match, ignoring case."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Names match whole words; subject and level match complete values."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity" text="Example: filter s/Mathematics l/Secondary 3"
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="Delete a contact" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="delete INDEX" styleClass="command-syntax" />
                 <Label minHeight="-Infinity" text="Delete the contact at INDEX in the displayed list. Example: delete 1"
