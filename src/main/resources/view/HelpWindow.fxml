@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import java.net.URL?>
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.Scene?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
-<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.stage.Stage?>
 
-<fx:root resizable="false" title="Help" type="javafx.stage.Stage" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+<fx:root title="TutorContacts — Command guide" type="javafx.stage.Stage"
+    width="760.0" height="560.0" minWidth="450.0" minHeight="360.0"
+    xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
   <icons>
     <Image url="@/images/help_icon.png" />
   </icons>
@@ -19,26 +21,117 @@
         <URL value="@HelpWindow.css" />
       </stylesheets>
 
-      <HBox alignment="CENTER" fx:id="helpMessageContainer">
-        <children>
-          <Label fx:id="helpMessage" text="Label">
-            <HBox.margin>
-              <Insets right="5.0" />
-            </HBox.margin>
-          </Label>
-          <Button fx:id="copyButton" mnemonicParsing="false" onAction="#copyUrl" text="Copy URL">
-            <HBox.margin>
-              <Insets left="5.0" />
-            </HBox.margin>
-          </Button>
-        </children>
-        <opaqueInsets>
-          <Insets bottom="10.0" left="5.0" right="10.0" top="5.0" />
-        </opaqueInsets>
-        <padding>
-          <Insets bottom="10.0" left="5.0" right="10.0" top="5.0" />
-        </padding>
-      </HBox>
+      <!-- -Infinity is Region.USE_PREF_SIZE: keep each label at its wrapped preferred height. -->
+      <VBox fx:id="helpMessageContainer" spacing="12.0">
+        <Label minHeight="-Infinity"
+            text="TutorContacts command guide" styleClass="heading" wrapText="true" maxWidth="Infinity" />
+        <Label minHeight="-Infinity"
+            text="Type commands in the main window. INDEX means the number in the displayed list."
+            wrapText="true" maxWidth="Infinity" />
+        <ScrollPane fx:id="commandScrollPane" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+          <content>
+            <VBox fx:id="commandGuide" spacing="12.0">
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Add a student" styleClass="command-title" />
+                <Label minHeight="-Infinity"
+                    text="add r/student n/NAME p/PHONE e/EMAIL a/ADDRESS s/SUBJECT l/LEVEL [o/NOTE]"
+                    styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Students require one subject and academic level. The note is optional."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Add a parent" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="add r/parent n/NAME p/PHONE e/EMAIL a/ADDRESS [o/NOTE]"
+                    styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity" text="Parents must omit subject and academic level."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="List all contacts" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="list" styleClass="command-syntax" />
+                <Label minHeight="-Infinity"
+                    text="Restore the complete insertion-order list and collapse expanded details."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Sort contacts by academic level" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="sort level" styleClass="command-syntax" />
+                <Label minHeight="-Infinity"
+                    text="Order the displayed students by academic level, then name; parents follow by name."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity" text="Keep the current filter. Use list to reset filtering and ordering."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="View contact details" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="view INDEX" styleClass="command-syntax" />
+                <Label minHeight="-Infinity" text="Expand the contact at INDEX in the displayed list. Example: view 1"
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Edit a contact" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]..."
+                    styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Supply at least one field. Role, subject, level, and note cannot be edited yet."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Find contacts by name" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="find KEYWORD [MORE_KEYWORDS]" styleClass="command-syntax"
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Match any whole word in a name, ignoring case. Example: find Alex May"
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Filter contacts" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]"
+                    styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Supply at least one criterion. Every name keyword and field must match, ignoring case."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Names match whole words; subject and level match complete values."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity" text="Example: filter s/Mathematics l/Secondary 3"
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Delete a contact" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="delete INDEX" styleClass="command-syntax" />
+                <Label minHeight="-Infinity" text="Delete the contact at INDEX in the displayed list. Example: delete 1"
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Clear all contacts" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="clear" styleClass="command-syntax" />
+                <Label minHeight="-Infinity" text="Delete every contact, including contacts hidden by a search."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Open this guide" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="help" styleClass="command-syntax" />
+                <Label minHeight="-Infinity"
+                    text="Open Help, or focus it if already open. You can also use Help → Help or F1."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Exit TutorContacts" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="exit" styleClass="command-syntax" />
+                <Label minHeight="-Infinity" text="Close the app. Successful contact changes are saved automatically."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <Label minHeight="-Infinity"
+                  text="UPPER_CASE values are placeholders. [Brackets] mark optional input; do not type them."
+                  wrapText="true" maxWidth="Infinity" />
+            </VBox>
+          </content>
+        </ScrollPane>
+        <Label minHeight="-Infinity" fx:id="helpMessage" wrapText="true" maxWidth="Infinity" />
+        <Button fx:id="copyButton" mnemonicParsing="false" onAction="#copyUrl" text="Copy User Guide URL" />
+      </VBox>
     </Scene>
   </scene>
 </fx:root>

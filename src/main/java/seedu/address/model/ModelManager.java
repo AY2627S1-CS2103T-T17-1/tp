@@ -23,7 +23,11 @@ public class ModelManager implements Model {
     private final AddressBook addressBook;
     private final UserPrefs userPrefs;
     private final FilteredList<Person> filteredPersons;
-    private final SortedList<Person> sortedPersons;
+
+    /**
+     * Maintains the live display order without reordering the stored contacts.
+     */
+    private final SortedList<Person> displayedPersons;
 
     /**
      * Initializes a ModelManager with the given addressBook and userPrefs.
@@ -36,7 +40,7 @@ public class ModelManager implements Model {
         this.addressBook = new AddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
         filteredPersons = new FilteredList<>(this.addressBook.getPersonList());
-        sortedPersons = new SortedList<>(filteredPersons);
+        displayedPersons = new SortedList<>(filteredPersons);
     }
 
     public ModelManager() {
@@ -100,23 +104,13 @@ public class ModelManager implements Model {
     //=========== Filtered Person List Accessors =============================================================
 
     /**
-     * Returns the observable displayed list after applying the active filter and comparator.
-     * Address book changes propagate through this view without reordering stored contacts.
+     * Returns the same observable display view after filtering and ordering.
+     *
+     * @return The live, unmodifiable list used for displayed contact indices.
      */
     @Override
     public ObservableList<Person> getFilteredPersonList() {
-        return sortedPersons;
-    }
-
-    @Override
-    public void sortPersons(Comparator<Person> comparator) {
-        requireNonNull(comparator);
-        sortedPersons.setComparator(comparator);
-    }
-
-    @Override
-    public void clearPersonSort() {
-        sortedPersons.setComparator(null);
+        return displayedPersons;
     }
 
     @Override
@@ -132,6 +126,16 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public Comparator<? super Person> getPersonListComparator() {
+        return displayedPersons.getComparator();
+    }
+
+    @Override
+    public void setPersonListComparator(Comparator<? super Person> comparator) {
+        displayedPersons.setComparator(comparator);
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (other == this) {
             return true;
@@ -144,7 +148,7 @@ public class ModelManager implements Model {
 
         return addressBook.equals(otherModelManager.addressBook)
                 && userPrefs.equals(otherModelManager.userPrefs)
-                && sortedPersons.equals(otherModelManager.sortedPersons);
+                && displayedPersons.equals(otherModelManager.displayedPersons);
     }
 
 }

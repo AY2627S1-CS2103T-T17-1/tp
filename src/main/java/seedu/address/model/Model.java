@@ -61,21 +61,12 @@ public interface Model {
      */
     void setPerson(Person target, Person editedPerson);
 
-    /** Returns an unmodifiable observable view of the filtered and sorted displayed contacts. */
-    ObservableList<Person> getFilteredPersonList();
-
     /**
-     * Applies ordering without changing the active filter or stored contact order.
+     * Returns the observable, unmodifiable displayed list after filtering and ordering.
      *
-     * @param comparator Non-null comparator defining the display order.
-     * @throws NullPointerException If the comparator is null.
+     * @return The live view used for displayed contact indices.
      */
-    void sortPersons(Comparator<Person> comparator);
-
-    /**
-     * Clears ordering while retaining the active contact filter.
-     */
-    void clearPersonSort();
+    ObservableList<Person> getFilteredPersonList();
 
     /**
      * Returns the predicate used to determine which contacts are displayed.
@@ -85,8 +76,24 @@ public interface Model {
     Predicate<Person> getFilteredPersonPredicate();
 
     /**
-     * Updates the filter of the filtered person list to filter by the given {@code predicate}.
-     * @throws NullPointerException if {@code predicate} is null.
+     * Updates the displayed list's filter without changing its ordering.
+     *
+     * @param predicate Criteria that displayed contacts must satisfy.
+     * @throws NullPointerException If {@code predicate} is {@code null}.
      */
     void updateFilteredPersonList(Predicate<Person> predicate);
+
+    /**
+     * Returns the active display comparator.
+     *
+     * @return The active comparator, or {@code null} when contacts follow insertion order.
+     */
+    Comparator<? super Person> getPersonListComparator();
+
+    /**
+     * Changes the displayed order without changing the filter or stored contacts.
+     *
+     * @param comparator Ordering to apply, or {@code null} to restore insertion order.
+     */
+    void setPersonListComparator(Comparator<? super Person> comparator);
 }

@@ -18,6 +18,8 @@ import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.logic.parser.AddressBookParser;
+import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 
@@ -116,5 +118,58 @@ public class ContactListStateTest {
     void apply_emptyListWithoutSelection_staysEmpty() {
         state.apply(CommandResult.collapseContacts("list"), List.of());
         assertTrue(state.getSelectedContact().isEmpty());
+    }
+
+    /**
+     * Checks that filtering preserves expansion when the selected contact moves to another displayed index.
+     *
+     * @throws Exception If executing a valid view or filter command unexpectedly fails.
+     */
+    @Test
+    void apply_filterKeepsSelectedContact_preservesExpansionDespiteReordering() throws Exception {
+        Model model = new ModelManager();
+        model.addPerson(BOB);
+        model.addPerson(ALICE);
+        state.apply(new ViewCommand(Index.fromOneBased(2)).execute(model), model.getFilteredPersonList());
+        state.apply(new AddressBookParser().parseCommand("filter s/Mathematics").execute(model),
+                model.getFilteredPersonList());
+        assertEquals(ALICE, model.getFilteredPersonList().getFirst());
+        assertEquals(ALICE, state.getSelectedContact().orElseThrow());
+        assertTrue(state.isExpanded(ALICE));
+    }
+
+    /**
+     * Checks that filtering out the selected contact clears both selection and expansion.
+     *
+     * @throws Exception If executing a valid view or filter command unexpectedly fails.
+     */
+    @Test
+    void apply_filterHidesSelectedContact_clearsSelectionAndExpansion() throws Exception {
+        Model model = new ModelManager();
+        model.addPerson(ALICE);
+        model.addPerson(BOB);
+        state.apply(new ViewCommand(Index.fromOneBased(1)).execute(model), model.getFilteredPersonList());
+        state.apply(new AddressBookParser().parseCommand("filter n/Bob").execute(model),
+                model.getFilteredPersonList());
+        assertTrue(state.getSelectedContact().isEmpty());
+        assertFalse(state.isExpanded(ALICE));
+    }
+
+    /**
+     * Checks that a rejected filter leaves the selected contact expanded.
+     *
+     * @throws Exception If the initial filter or view command unexpectedly fails.
+     */
+    @Test
+    void apply_invalidFilter_preservesSelectionAndExpansion() throws Exception {
+        Model model = new ModelManager();
+        model.addPerson(ALICE);
+        AddressBookParser parser = new AddressBookParser();
+        state.apply(parser.parseCommand("filter n/Alice").execute(model), model.getFilteredPersonList());
+        state.apply(new ViewCommand(Index.fromOneBased(1)).execute(model), model.getFilteredPersonList());
+        assertThrows(ParseException.class, () -> parser.parseCommand("filter s/"));
+        state.retainVisibleContacts(model.getFilteredPersonList());
+        assertEquals(ALICE, state.getSelectedContact().orElseThrow());
+        assertTrue(state.isExpanded(ALICE));
     }
 }

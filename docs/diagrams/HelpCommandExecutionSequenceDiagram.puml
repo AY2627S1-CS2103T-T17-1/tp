@@ -1,0 +1,44 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+skinparam DefaultFontSize 16
+skinparam ParticipantPadding 5
+title Help execution
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as Parser LOGIC_COLOR
+participant "h:HelpCommand" as HelpCommand LOGIC_COLOR
+participant "r:CommandResult" as Result LOGIC_COLOR
+end box
+
+[-> LogicManager : execute(...)
+activate LogicManager
+LogicManager -> Parser : parseCommand(...)
+activate Parser
+create HelpCommand
+Parser -> HelpCommand
+activate HelpCommand
+HelpCommand --> Parser : h
+deactivate HelpCommand
+Parser --> LogicManager : h
+deactivate Parser
+
+LogicManager -> HelpCommand : execute(model)
+activate HelpCommand
+create Result
+HelpCommand -> Result
+activate Result
+Result --> HelpCommand : r
+deactivate Result
+HelpCommand --> LogicManager : r
+deactivate HelpCommand
+
+note over LogicManager, Result
+Read-only checks omitted.
+No contact mutation or Storage call.
+Result r: showHelp = true, exit = false.
+end note
+[<-- LogicManager : r
+deactivate LogicManager
+@enduml

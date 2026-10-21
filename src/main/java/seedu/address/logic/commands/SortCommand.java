@@ -30,7 +30,7 @@ public class SortCommand extends Command {
     @Override
     public CommandResult execute(Model model) {
         requireNonNull(model);
-        model.sortPersons(LEVEL_COMPARATOR);
+        model.setPersonListComparator(LEVEL_COMPARATOR);
         return new CommandResult(MESSAGE_SUCCESS);
     }
 
