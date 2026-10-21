@@ -1,0 +1,81 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+title Editing a student's subject, academic level, and note
+
+box UI UI_COLOR_T1
+participant ":UI" as UI UI_COLOR
+end box
+
+box Logic LOGIC_COLOR_T1
+participant "logic:LogicManager" as LogicManager LOGIC_COLOR
+participant "parser:AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant "editParser:EditCommandParser" as EditCommandParser LOGIC_COLOR
+participant "descriptor:EditPersonDescriptor" as EditPersonDescriptor LOGIC_COLOR
+participant "edit:EditCommand" as EditCommand LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "model:ModelManager" as ModelManager MODEL_COLOR
+end box
+
+box Storage STORAGE_COLOR_T1
+participant "storage:Storage" as Storage STORAGE_COLOR
+end box
+
+UI -> LogicManager : execute("edit 1 s/Physics l/JC 1 o/Prefers examples")
+activate LogicManager
+LogicManager -> AddressBookParser : parseCommand(commandText)
+activate AddressBookParser
+AddressBookParser -> EditCommandParser : parse(arguments)
+activate EditCommandParser
+EditCommandParser -> EditPersonDescriptor : setSubject(Physics)\nsetLevel(JC 1)\nsetNote(Optional.of(Prefers examples))
+note over EditCommandParser, EditPersonDescriptor
+  ParserUtil validates the supplied Subject, Level, and Note.
+  Omitted fields are not set on the descriptor.
+end note
+EditCommandParser --> AddressBookParser : edit:EditCommand(descriptor)
+deactivate EditCommandParser
+AddressBookParser --> LogicManager : edit
+deactivate AddressBookParser
+
+note right of LogicManager
+  Copy the AddressBook and remember the current filter
+  before executing this data-changing command.
+end note
+LogicManager -> EditCommand : execute(model)
+activate EditCommand
+EditCommand -> ModelManager : getFilteredPersonList()
+ModelManager --> EditCommand : displayedContacts
+EditCommand -> EditCommand : check parent with s/ or l/
+note right of EditCommand
+  A parent-field violation throws CommandException
+  before the Model changes or Storage is called.
+end note
+EditCommand -> EditCommand : check duplicate via Person.isSamePerson(...)
+note right of EditCommand
+  After building the replacement Person, a duplicate
+  throws CommandException before setPerson. The role
+  and omitted fields are preserved.
+end note
+EditCommand -> ModelManager : setPerson(original, replacement)
+ModelManager --> EditCommand
+EditCommand -> ModelManager : updateFilteredPersonList(showAll)
+ModelManager --> EditCommand
+EditCommand --> LogicManager : result:CommandResult
+deactivate EditCommand
+
+LogicManager -> Storage : saveAddressBook(model.getAddressBook())
+alt save succeeds
+    Storage --> LogicManager : returns
+    LogicManager --> UI : result
+else IOException while saving
+    Storage --> LogicManager : throws IOException
+    LogicManager -> ModelManager : setAddressBook(previousAddressBook)
+    ModelManager --> LogicManager
+    LogicManager -> ModelManager : updateFilteredPersonList(previousFilter)
+    ModelManager --> LogicManager
+    LogicManager --> UI : throws CommandException
+end
+deactivate LogicManager
+@enduml
