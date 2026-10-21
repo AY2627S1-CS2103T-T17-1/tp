@@ -3,6 +3,7 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BOB;
@@ -18,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -143,19 +145,27 @@ public class ContactCardsUiTest {
 
     @Test
     void helpWindow_smallSize_keepsGuideScrollableAndFooterVisible() throws Exception {
-        runOnFxThread(() -> {
-            HelpWindow help = new HelpWindow();
-            try {
-                help.show();
-                Stage stage = help.getRoot();
+        HelpWindow help = callOnFxThread(HelpWindow::new);
+        Stage stage = callOnFxThread(help::getRoot);
+        Scene scene = callOnFxThread(stage::getScene);
+        try {
+            runOnFxThread(help::show);
+            waitForLayout(scene);
+            runOnFxThread(() -> {
                 Region root = (Region) stage.getScene().getRoot();
-                layout(root);
                 saveSnapshot(root, "help-command-guide");
-
                 stage.setWidth(450);
                 stage.setHeight(360);
-                root.resize(450, 332);
-                layout(root);
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                assertTrue(scene.getWidth() > 0);
+                assertTrue(scene.getHeight() > 0);
+                assertEquals(scene.getWidth(), root.getWidth(), 1);
+                assertEquals(scene.getHeight(), root.getHeight(), 1);
+                assertEquals(stage.getMinWidth(), stage.getWidth(), 1);
+                assertEquals(stage.getMinHeight(), stage.getHeight(), 1);
                 ScrollPane scrollPane = (ScrollPane) root.lookup("#commandScrollPane");
                 assertEquals(450, stage.getMinWidth());
                 assertEquals(360, stage.getMinHeight());
@@ -169,21 +179,26 @@ public class ContactCardsUiTest {
                 assertVisibleWithinWindow(root, root.lookup("#helpMessage"));
                 assertVisibleWithinWindow(root, root.lookup("#copyButton"));
                 saveSnapshot(root, "help-command-guide-small");
-
                 scrollPane.setVvalue(1);
-                layout(root);
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                ScrollPane scrollPane = (ScrollPane) root.lookup("#commandScrollPane");
                 Node exitSyntax = root.lookupAll(".command-syntax").stream()
                         .filter(node -> ((Label) node).getText().equals("exit"))
                         .findFirst().orElseThrow();
                 Node viewport = scrollPane.lookup(".viewport");
                 Bounds exitBounds = exitSyntax.localToScene(exitSyntax.getBoundsInLocal());
                 Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
-                assertTrue(exitBounds.getMinY() >= viewportBounds.getMinY());
-                assertTrue(exitBounds.getMaxY() <= viewportBounds.getMaxY());
-            } finally {
-                help.hide();
-            }
-        });
+                assertTrue(exitBounds.getMinY() >= viewportBounds.getMinY() - 1,
+                        "Exit must not be clipped above the viewport");
+                assertTrue(exitBounds.getMaxY() <= viewportBounds.getMaxY() + 1,
+                        "Exit must not be clipped below the viewport");
+            });
+        } finally {
+            runOnFxThread(help::hide);
+        }
     }
 
     @Test
@@ -198,6 +213,7 @@ public class ContactCardsUiTest {
             MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
             window.fillInnerParts();
             Region root = (Region) stage.getScene().getRoot();
+            List<Window> existingWindows = List.copyOf(Window.getWindows());
             try {
                 enter(root, "help");
                 Stage helpStage = (Stage) Window.getWindows().stream()
@@ -226,8 +242,32 @@ public class ContactCardsUiTest {
                 assertTrue(helpStage.isShowing());
                 helpStage.hide();
             } finally {
-                stage.close();
+                try {
+                    closeNewWindows(existingWindows);
+                } finally {
+                    stage.close();
+                }
             }
+        });
+    }
+
+    @Test
+    void closeNewWindows_assertionFailure_hidesHelpWindow() throws Exception {
+        runOnFxThread(() -> {
+            List<Window> existingWindows = List.copyOf(Window.getWindows());
+            HelpWindow help = new HelpWindow();
+            AssertionError failure = assertThrows(AssertionError.class, () -> {
+                try {
+                    help.show();
+                    assertTrue(help.isShowing());
+                    throw new AssertionError("Simulated failure before capturing the Help stage");
+                } finally {
+                    closeNewWindows(existingWindows);
+                }
+            });
+            assertEquals("Simulated failure before capturing the Help stage", failure.getMessage());
+            assertFalse(help.isShowing());
+            assertEquals(existingWindows, List.copyOf(Window.getWindows()));
         });
     }
 
@@ -553,15 +593,61 @@ public class ContactCardsUiTest {
         assertNotNull(control);
         assertTrue(control.isVisible());
         assertTrue(control.getBoundsInLocal().getHeight() > 0);
+        assertTrue(control.localToScene(control.getBoundsInLocal()).getMinX() >= -1);
+        assertTrue(control.localToScene(control.getBoundsInLocal()).getMaxX() <= root.getWidth() + 1);
+        assertTrue(control.localToScene(control.getBoundsInLocal()).getMinY() >= -1);
         assertTrue(control.localToScene(control.getBoundsInLocal()).getMaxY() <= root.getHeight() + 1);
+    }
+
+    /**
+     * Hides windows opened by a test, including Help when an assertion fails before it can be captured.
+     */
+    private static void closeNewWindows(List<Window> existingWindows) {
+        for (Window window : List.copyOf(Window.getWindows())) {
+            if (!existingWindows.contains(window)) {
+                window.hide();
+            }
+        }
+    }
+
+    /**
+     * Waits off the JavaFX thread for two post-layout pulses after showing, resizing, or scrolling a scene.
+     */
+    private static void waitForLayout(Scene scene) throws Exception {
+        CountDownLatch pulses = new CountDownLatch(2);
+        Runnable listener = () -> {
+            pulses.countDown();
+            if (pulses.getCount() > 0) {
+                Platform.requestNextPulse();
+            }
+        };
+        runOnFxThread(() -> {
+            scene.addPostLayoutPulseListener(listener);
+            Platform.requestNextPulse();
+        });
+        try {
+            assertTrue(pulses.await(10, TimeUnit.SECONDS), "Timed out waiting for JavaFX layout");
+        } finally {
+            runOnFxThread(() -> scene.removePostLayoutPulseListener(listener));
+        }
     }
 
     /**
      * Runs assertions on the JavaFX thread and propagates failures to JUnit.
      */
     private static void runOnFxThread(Runnable action) throws Exception {
-        FutureTask<Void> task = new FutureTask<>(action, null);
+        callOnFxThread(() -> {
+            action.run();
+            return null;
+        });
+    }
+
+    /**
+     * Returns a value from the JavaFX thread and propagates failures to JUnit.
+     */
+    private static <T> T callOnFxThread(Callable<T> action) throws Exception {
+        FutureTask<T> task = new FutureTask<>(action);
         Platform.runLater(task);
-        task.get(15, TimeUnit.SECONDS);
+        return task.get(15, TimeUnit.SECONDS);
     }
 }
