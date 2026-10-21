@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -131,6 +133,25 @@ public class ContactMatchesCriteriaPredicateTest {
         assertFalse(names("Alice").equals(names("Bob")));
         assertFalse(predicate.equals(null));
         assertFalse(predicate.equals("Mathematics"));
+    }
+
+    /**
+     * Checks that independently constructed equal predicates can be found and deduplicated in a hash set.
+     */
+    @Test
+    public void hashCode_equalCriteria_supportsHashSetLookup() {
+        ContactMatchesCriteriaPredicate predicate = new ContactMatchesCriteriaPredicate(List.of("Alice", "Tan"),
+                Optional.of(new Subject("Mathematics")), Optional.of(new Level("Secondary 3")));
+        ContactMatchesCriteriaPredicate equivalent = new ContactMatchesCriteriaPredicate(List.of("Alice", "Tan"),
+                Optional.of(new Subject("Mathematics")), Optional.of(new Level("Secondary 3")));
+        Set<ContactMatchesCriteriaPredicate> predicates = new HashSet<>();
+        predicates.add(predicate);
+
+        assertEquals(predicate, equivalent);
+        assertEquals(predicate.hashCode(), equivalent.hashCode());
+        assertTrue(predicates.contains(equivalent));
+        assertFalse(predicates.add(equivalent));
+        assertEquals(1, predicates.size());
     }
 
     private ContactMatchesCriteriaPredicate names(String... keywords) {

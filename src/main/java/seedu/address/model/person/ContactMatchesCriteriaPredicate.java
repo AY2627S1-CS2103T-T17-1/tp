@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.AppUtil.checkArgument;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -69,6 +70,11 @@ public class ContactMatchesCriteriaPredicate implements Predicate<Person> {
         return nameKeywords.equals(otherPredicate.nameKeywords)
                 && subject.equals(otherPredicate.subject)
                 && level.equals(otherPredicate.level);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nameKeywords, subject, level);
     }
 
     @Override

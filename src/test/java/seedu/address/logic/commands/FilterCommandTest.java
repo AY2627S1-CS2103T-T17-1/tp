@@ -5,8 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -50,6 +52,24 @@ public class FilterCommandTest {
     public void constructorAndExecute_nullArguments_rejectsInput() {
         assertThrows(NullPointerException.class, () -> new FilterCommand(null));
         assertThrows(NullPointerException.class, () -> new FilterCommand(predicate).execute(null));
+    }
+
+    /**
+     * Checks that equal commands with independently constructed criteria behave as one hash-set entry.
+     */
+    @Test
+    public void hashCode_equalCriteria_supportsHashSetLookup() {
+        FilterCommand command = new FilterCommand(predicate);
+        FilterCommand equivalent = new FilterCommand(
+                new ContactMatchesCriteriaPredicate(List.of("Alice"), Optional.empty(), Optional.empty()));
+        Set<FilterCommand> commands = new HashSet<>();
+        commands.add(command);
+
+        assertEquals(command, equivalent);
+        assertEquals(command.hashCode(), equivalent.hashCode());
+        assertTrue(commands.contains(equivalent));
+        assertFalse(commands.add(equivalent));
+        assertEquals(1, commands.size());
     }
 
     /**
