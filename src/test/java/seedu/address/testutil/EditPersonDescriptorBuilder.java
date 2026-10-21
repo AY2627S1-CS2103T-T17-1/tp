@@ -32,7 +32,9 @@ public class EditPersonDescriptorBuilder {
     }
 
     /**
-     * Returns an {@code EditPersonDescriptor} with fields containing {@code person}'s details
+     * Creates a builder with the editable details of {@code person}.
+     *
+     * @param person Contact whose editable details are copied into the descriptor.
      */
     public EditPersonDescriptorBuilder(Person person) {
         descriptor = new EditPersonDescriptor();
@@ -79,7 +81,10 @@ public class EditPersonDescriptorBuilder {
     }
 
     /**
-     * Sets the subject of the descriptor being built.
+     * Sets the student subject to include in the edit descriptor.
+     *
+     * @param subject Subject to assign to the student contact.
+     * @return This builder for chaining additional edit fields.
      */
     public EditPersonDescriptorBuilder withSubject(String subject) {
         descriptor.setSubject(new Subject(subject));
@@ -87,7 +92,10 @@ public class EditPersonDescriptorBuilder {
     }
 
     /**
-     * Sets the academic level of the descriptor being built.
+     * Sets the student academic level to include in the edit descriptor.
+     *
+     * @param level Academic level to assign to the student contact.
+     * @return This builder for chaining additional edit fields.
      */
     public EditPersonDescriptorBuilder withLevel(String level) {
         descriptor.setLevel(new Level(level));
@@ -95,7 +103,10 @@ public class EditPersonDescriptorBuilder {
     }
 
     /**
-     * Sets the note of the descriptor being built.
+     * Sets the contact note to include in the edit descriptor.
+     *
+     * @param note Note to assign to the student or parent contact.
+     * @return This builder for chaining additional edit fields.
      */
     public EditPersonDescriptorBuilder withNote(String note) {
         descriptor.setNote(Optional.of(new Note(note)));
@@ -103,7 +114,9 @@ public class EditPersonDescriptorBuilder {
     }
 
     /**
-     * Clears the note of the contact being edited.
+     * Marks the contact note for removal by the edit command.
+     *
+     * @return This builder for chaining additional edit fields.
      */
     public EditPersonDescriptorBuilder withoutNote() {
         descriptor.setNote(Optional.empty());
