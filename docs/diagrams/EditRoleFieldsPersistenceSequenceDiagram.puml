@@ -1,0 +1,21 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+title Saving the edit or restoring the snapshot
+
+participant "UI" as UI UI_COLOR
+participant "LogicManager" as LogicManager LOGIC_COLOR
+participant "ModelManager" as ModelManager MODEL_COLOR
+participant "Storage" as Storage STORAGE_COLOR
+
+LogicManager -> Storage : saveAddressBook(...)
+alt save succeeds
+    Storage --> LogicManager : returns
+    LogicManager --> UI : CommandResult
+else IOException while saving
+    Storage --> LogicManager : throws IOException
+    LogicManager -> ModelManager : setAddressBook(previousBook)
+    LogicManager -> ModelManager : updateFilteredPersonList(previousFilter)
+    LogicManager --> UI : throws CommandException
+end
+@enduml

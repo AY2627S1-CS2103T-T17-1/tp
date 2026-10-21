@@ -166,22 +166,32 @@ and level can be changed independently on student contacts, while either role ca
 `o/` explicitly clears the note; a missing `o/` preserves it. Legacy student records lacking subject or level can
 still be edited without supplying those fields.
 
-![Role-specific edit through Logic, Model, and Storage](images/EditRoleFieldsSequenceDiagram.png)
+The following three smaller sequence diagrams follow `edit 1 s/Physics l/JC 1 o/Prefers examples`. Splitting the
+parsing, model update, and save phases keeps their labels readable at the guide's normal width.
 
-The diagram follows a successful `edit 1 s/Physics l/JC 1 o/Prefers examples` and uses its sole `alt` fragment for
-the save outcome. The parser checks index syntax, repeated prefixes, and each supplied value.
-`EditPersonDescriptor` keeps an omitted note distinct from a specified empty note, so `EditCommand` can preserve or
-clear the stored value correctly. `EditCommand#execute` resolves the target in `ModelManager#getFilteredPersonList`,
-rejects subject or level edits on a parent, builds a replacement `Person`, and checks the existing duplicate rule
-before calling `ModelManager#setPerson`. It then restores the full displayed list and returns a `CommandResult`.
-The role itself is never changed.
+**Parsing:** `AddressBookParser` delegates to `EditCommandParser`, which validates the index syntax, repeated
+prefixes, and each supplied value before setting the `EditPersonDescriptor` fields. The descriptor keeps an omitted
+note distinct from a specified empty note, so `EditCommand` can preserve or clear the stored value correctly.
 
-Other failures are omitted from the sequence diagram to keep it focused. An invalid index or field value, a repeated
-or unknown prefix, an invalid parent-field combination, or a duplicate aborts before `setPerson`, so no data is
-mutated or saved. `LogicManager` snapshots the `AddressBook` and the current filter before executing a data-changing
-command. Only after a successful execution does it call `Storage#saveAddressBook`. If saving throws an `IOException`,
-`LogicManager` restores the snapshot and filter, then reports a `CommandException`. Storage already serializes
-subject, level, and note, so this extension does not change the JSON format.
+![Parsing the role-specific edit](images/EditRoleFieldsParsingSequenceDiagram.png)
+
+**Model update:** `LogicManager` snapshots the `AddressBook` and current filter before executing the command.
+`EditCommand#execute` resolves the target in `ModelManager#getFilteredPersonList`, rejects subject or level edits on
+a parent, builds a replacement `Person`, and checks the existing duplicate rule before calling
+`ModelManager#setPerson`. It then restores the full displayed list and returns a `CommandResult`. The role itself is
+never changed.
+
+![Applying the role-specific edit to the model](images/EditRoleFieldsSequenceDiagram.png)
+
+**Save or rollback:** Only after successful command execution does `LogicManager` call `Storage#saveAddressBook`.
+The `alt` fragment shows the save outcome: on an `IOException`, `LogicManager` restores the snapshot and filter,
+then reports a `CommandException` instead of returning the successful result.
+
+![Saving the role-specific edit or rolling it back](images/EditRoleFieldsPersistenceSequenceDiagram.png)
+
+Other failures are omitted from the diagrams to keep them focused. An invalid index or field value, a repeated or
+unknown prefix, an invalid parent-field combination, or a duplicate aborts before `setPerson`, so no data is mutated
+or saved. Storage already serializes subject, level, and note, so this extension does not change the JSON format.
 
 ### \[Proposed\] Undo/redo feature
 
