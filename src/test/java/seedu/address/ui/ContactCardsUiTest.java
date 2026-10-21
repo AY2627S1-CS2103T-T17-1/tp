@@ -41,6 +41,7 @@ import javafx.stage.Stage;
 import seedu.address.MainApp;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.person.Person;
@@ -411,5 +412,30 @@ public class ContactCardsUiTest {
         FutureTask<Void> task = new FutureTask<>(action, null);
         Platform.runLater(task);
         task.get(15, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Checks that an expanded card follows its contact when sorting changes the displayed index.
+     */
+    @Test
+    void panel_sort_preservesExpandedContactAndUpdatesIndex() throws Exception {
+        runOnFxThread(() -> {
+            Person later = new PersonBuilder().withName("Zoe").withLevel("JC 2").build();
+            Person earlier = new PersonBuilder().withName("Amy").withLevel("Primary 1").build();
+            Model model = new ModelManager();
+            model.addPerson(later);
+            model.addPerson(earlier);
+            PersonListPanel panel = new PersonListPanel(model.getFilteredPersonList());
+            new Scene(panel.getRoot(), 760, 600);
+            panel.completeCommand(CommandResult.expandContact("view", later));
+
+            panel.beginCommand();
+            panel.completeCommand(new SortCommand().execute(model));
+            layout(panel.getRoot());
+            assertEquals(later, list(panel.getRoot()).getSelectionModel().getSelectedItem());
+            assertEquals("2.", label(selectedCard(panel.getRoot()), "id").getText());
+            assertTrue(selectedCard(panel.getRoot()).lookup("#details").isVisible());
+
+        });
     }
 }

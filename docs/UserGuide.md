@@ -131,7 +131,8 @@ Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NO
 * The newly added contact is selected and scrolled into view as a compact card.
 
 Field rules apply to normalized values. Leading and trailing whitespace is trimmed; consecutive spaces in
-names, subjects, and levels are collapsed. Capitalization is retained for display and storage.
+names, subjects, and levels are collapsed. Capitalization is retained except for roles and academic levels,
+which are stored in their canonical forms.
 
 | Field | Accepted values |
 | --- | --- |
@@ -141,8 +142,13 @@ names, subjects, and levels are collapsed. Capitalization is retained for displa
 | Email | One `@`, a nonempty local part, and at least two nonempty dot-separated domain labels. No internal whitespace; domain labels use letters, digits, and internal hyphens. |
 | Address | 1–150 printable characters on one line. |
 | Subject | 1–40 characters; letters, digits, spaces, and `& + - ' / ( ) . ,`. |
-| Level | 1–30 characters; letters, digits, spaces, apostrophes, and hyphens. |
+| Level | `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, or `JC 1`–`JC 2`. Input is case-insensitive and stored as, for example, `Secondary 3` or `JC 2`. |
 | Note | 1–200 printable characters on one line, or empty to omit it. |
+
+`JC 5`, `Secondary 6`, `Primary 7`, abbreviations such as `P6`, and custom labels such as `Adult` are
+rejected. The error is `Level must be Primary 1-6, Secondary 1-5, or JC 1-2 (for example, Secondary 3).`
+The same rules apply to level values in JSON. Unsupported values make the file invalid and trigger
+the existing load warning; the file is preserved. Legacy contacts without a level remain supported.
 
 Duplicates require the same role and the same normalized name ignoring case, together with either the same
 phone digits (ignoring `+`, spaces, and hyphens) or the same email ignoring case. A matching name alone is
@@ -156,7 +162,8 @@ Examples:
 
 ### Listing all contacts: `list`
 
-Displays all contacts in insertion order, numbered from 1. If the list was filtered by a search, this command restores the complete list.
+Displays all contacts in insertion order, numbered from 1. This command clears filtering and sorting
+to restore the complete insertion-order list.
 
 Compact cards show only the index, role, name, and phone. `list` collapses any expanded card.
 
@@ -172,6 +179,22 @@ Format: `list`
 Example: `list`
 
 ![Result of the list command showing four compact contact cards](images/listContactsResult.png)
+
+### Sorting contacts by academic level: `sort`
+
+Format: `sort level`
+
+* Students come first: `Primary 1`–`Primary 6`, then `Secondary 1`–`Secondary 5`, then `JC 1`–`JC 2`.
+  Names break level ties, ignoring case. Legacy students without levels follow other students;
+  parents come last, ordered by name. Equal sort keys have no additional guaranteed order.
+* Sorts the current results, retaining the filter and any visible selected or expanded contact.
+  Sorting remains active as results change; `list` clears filtering and sorting.
+* `view`, `edit`, and `delete` use the displayed indices. Sorting does not save data or change stored order.
+* `SORT LEVEL` and surrounding whitespace are accepted. Success: `Contacts sorted by academic level.`,
+  including for an empty list. Missing, unsupported, or extra arguments give
+  `Invalid command format. Expected: sort level` and leave the display unchanged.
+
+Example: run `find Amy`, then `sort level` to order only the matching contacts. Run `list` to reset.
 
 ### Viewing a contact: `view`
 
@@ -325,6 +348,7 @@ Action | Format, Examples
 **Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List** | `list`
+**Sort** | `sort level`
 **View** | `view INDEX`<br> e.g., `view 2`
 **Help** | `help`
 **Exit** | `exit`

@@ -14,8 +14,12 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.PersonLevelComparator;
 import seedu.address.testutil.AddressBookBuilder;
 
+/**
+ * Tests model state, preferences, and the observable displayed contact list.
+ */
 public class ModelManagerTest {
 
     private ModelManager modelManager = new ModelManager();
@@ -108,5 +112,19 @@ public class ModelManagerTest {
         UserPrefs differentUserPrefs = new UserPrefs();
         differentUserPrefs.setGuiSettings(new GuiSettings(1, 2, 3, 4));
         assertFalse(modelManager.equals(new ModelManager(addressBook, differentUserPrefs)));
+    }
+
+    /**
+     * Checks that sorting updates the existing observable view used by UI bindings.
+     */
+    @Test
+    public void sortPersons_preservesObservableListIdentity() {
+        ModelManager model = new ModelManager();
+        model.addPerson(BENSON);
+        model.addPerson(ALICE);
+        var displayed = model.getFilteredPersonList();
+        model.sortPersons(new PersonLevelComparator());
+        assertTrue(displayed == model.getFilteredPersonList());
+        assertEquals(List.of(ALICE, BENSON), displayed);
     }
 }

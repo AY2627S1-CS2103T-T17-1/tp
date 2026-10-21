@@ -19,6 +19,7 @@ import seedu.address.model.person.Email;
 import seedu.address.model.person.Level;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
+import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.Role;
 import seedu.address.model.person.Subject;
@@ -216,4 +217,28 @@ public class JsonAdaptedPersonTest {
                 GEORGE.getNote().orElseThrow().toString(), VALID_TAGS);
     }
 
+
+    /**
+     * Checks that stored levels follow the same supported-year rules as command input.
+     */
+    @Test
+    public void toModelType_unsupportedYear_throwsIllegalValueException() {
+        for (String invalid : List.of("JC 5", "Secondary 6", "Adult")) {
+            JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
+                    VALID_SUBJECT, invalid, VALID_NOTE, VALID_TAGS);
+            assertThrows(IllegalValueException.class, Level.MESSAGE_CONSTRAINTS, person::toModelType);
+        }
+    }
+
+    /**
+     * Checks that loading canonicalizes a level and preserves it through adapter conversion.
+     */
+    @Test
+    public void toModelType_lowercaseLevel_roundTripsCanonicalLevel() throws Exception {
+        JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
+                VALID_SUBJECT, "  jc   2  ", VALID_NOTE, VALID_TAGS);
+        Person restored = person.toModelType();
+        assertEquals("JC 2", restored.getLevel().orElseThrow().value);
+        assertEquals(restored, new JsonAdaptedPerson(restored).toModelType());
+    }
 }
