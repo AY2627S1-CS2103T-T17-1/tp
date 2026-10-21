@@ -1,5 +1,6 @@
 package seedu.address.testutil;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -7,9 +8,12 @@ import java.util.stream.Stream;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.Level;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.Subject;
 import seedu.address.model.tag.Tag;
 
 /**
@@ -36,6 +40,9 @@ public class EditPersonDescriptorBuilder {
         descriptor.setPhone(person.getPhone());
         descriptor.setEmail(person.getEmail());
         descriptor.setAddress(person.getAddress());
+        person.getSubject().ifPresent(descriptor::setSubject);
+        person.getLevel().ifPresent(descriptor::setLevel);
+        descriptor.setNote(person.getNote());
         descriptor.setTags(person.getTags());
     }
 
@@ -68,6 +75,38 @@ public class EditPersonDescriptorBuilder {
      */
     public EditPersonDescriptorBuilder withAddress(String address) {
         descriptor.setAddress(new Address(address));
+        return this;
+    }
+
+    /**
+     * Sets the subject of the descriptor being built.
+     */
+    public EditPersonDescriptorBuilder withSubject(String subject) {
+        descriptor.setSubject(new Subject(subject));
+        return this;
+    }
+
+    /**
+     * Sets the academic level of the descriptor being built.
+     */
+    public EditPersonDescriptorBuilder withLevel(String level) {
+        descriptor.setLevel(new Level(level));
+        return this;
+    }
+
+    /**
+     * Sets the note of the descriptor being built.
+     */
+    public EditPersonDescriptorBuilder withNote(String note) {
+        descriptor.setNote(Optional.of(new Note(note)));
+        return this;
+    }
+
+    /**
+     * Clears the note of the contact being edited.
+     */
+    public EditPersonDescriptorBuilder withoutNote() {
+        descriptor.setNote(Optional.empty());
         return this;
     }
 

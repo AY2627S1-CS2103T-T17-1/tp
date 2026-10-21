@@ -74,6 +74,17 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_generatedEdit_preservesNoteAndLiteralPrefixes() throws Exception {
+        Person person = new PersonBuilder().withSubject("Biology/Chemistry")
+                .withNote("Discuss x/foo and n/bar").build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder(person).build();
+        String input = EditCommand.COMMAND_WORD + " " + INDEX_FIRST_PERSON.getOneBased() + " "
+                + PersonUtil.getEditPersonDescriptorDetails(descriptor);
+
+        assertEquals(new EditCommand(INDEX_FIRST_PERSON, descriptor), parser.parseCommand(input));
+    }
+
+    @Test
     public void parseCommand_exit() throws Exception {
         assertTrue(parser.parseCommand(ExitCommand.COMMAND_WORD) instanceof ExitCommand);
         assertTrue(parser.parseCommand(" ExIt  ") instanceof ExitCommand);

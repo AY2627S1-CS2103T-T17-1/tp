@@ -40,8 +40,11 @@ import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.Level;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.Subject;
 import seedu.address.model.tag.Tag;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 
@@ -223,5 +226,55 @@ public class EditCommandParserTest {
         EditCommand expectedCommand = new EditCommand(targetIndex, descriptor);
 
         assertParseSuccess(parser, userInput, expectedCommand);
+    }
+
+    @Test
+    public void parse_roleSpecificFields_success() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withSubject("A-Math").withLevel("Secondary 4").withNote("Prefers examples").build();
+        assertParseSuccess(parser, "1 S/A-Math L/Secondary 4 O/Prefers examples",
+                new EditCommand(INDEX_FIRST_PERSON, descriptor));
+
+        descriptor = new EditPersonDescriptorBuilder().withSubject("Biology/Chemistry").build();
+        assertParseSuccess(parser, "1 s/Biology/Chemistry", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+
+        descriptor = new EditPersonDescriptorBuilder().withLevel("JC 1").build();
+        assertParseSuccess(parser, "1 l/JC 1", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+    }
+
+    @Test
+    public void parse_noteAndExistingField_success() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withPhone(VALID_PHONE_AMY).withNote("Call after class").build();
+        assertParseSuccess(parser, "1 p/" + VALID_PHONE_AMY + " o/Call after class",
+                new EditCommand(INDEX_FIRST_PERSON, descriptor));
+    }
+
+    @Test
+    public void parse_emptyNote_clearsNote() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withoutNote().build();
+        assertParseSuccess(parser, "1 o/", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+        assertParseSuccess(parser, "1 o/   ", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+    }
+
+    @Test
+    public void parse_invalidRoleSpecificValues_failure() {
+        assertParseFailure(parser, "1 s/", Subject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 l/", Level.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 s/Math*", Subject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 l/Secondary.3", Level.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 o/" + "n".repeat(201), Note.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_repeatedRoleSpecificPrefixes_failure() {
+        assertParseFailure(parser, "1 s/Math S/English", "Prefix s/ may be specified only once.");
+        assertParseFailure(parser, "1 l/JC 1 L/JC 2", "Prefix l/ may be specified only once.");
+        assertParseFailure(parser, "1 o/First O/Second", "Prefix o/ may be specified only once.");
+    }
+
+    @Test
+    public void parse_roleChange_failure() {
+        assertParseFailure(parser, "1 r/parent", "Unknown prefix: r/.");
     }
 }
