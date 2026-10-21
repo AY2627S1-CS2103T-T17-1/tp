@@ -2,6 +2,8 @@ package seedu.address.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -12,10 +14,16 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.Person;
+import seedu.address.model.person.PersonNameComparator;
 import seedu.address.testutil.AddressBookBuilder;
 
+/**
+ * Tests model state and the independent filtering and ordering of the observable displayed list.
+ */
 public class ModelManagerTest {
 
     private ModelManager modelManager = new ModelManager();
@@ -71,6 +79,38 @@ public class ModelManagerTest {
     @Test
     public void getFilteredPersonList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> modelManager.getFilteredPersonList().remove(0));
+    }
+
+    /**
+     * Checks that display ordering preserves membership, stored order, and the observable list instance.
+     */
+    @Test
+    public void setPersonListComparator_preservesFilterAndStoredOrder() {
+        modelManager.addPerson(BENSON);
+        modelManager.addPerson(ALICE);
+        ObservableList<Person> displayed = modelManager.getFilteredPersonList();
+        modelManager.updateFilteredPersonList(ALICE::equals);
+        modelManager.setPersonListComparator(new PersonNameComparator());
+        assertEquals(List.of(ALICE), displayed);
+        modelManager.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
+        assertEquals(List.of(ALICE, BENSON), displayed);
+        assertEquals(List.of(BENSON, ALICE), modelManager.getAddressBook().getPersonList());
+        modelManager.setPersonListComparator(null);
+        assertEquals(List.of(BENSON, ALICE), displayed);
+        assertSame(displayed, modelManager.getFilteredPersonList());
+        assertNull(modelManager.getPersonListComparator());
+    }
+
+    /**
+     * Checks that models with different displayed orders are not equal.
+     */
+    @Test
+    public void equals_differentDisplayedOrder_returnsFalse() {
+        AddressBook addressBook = new AddressBookBuilder().withPerson(BENSON).withPerson(ALICE).build();
+        ModelManager ordered = new ModelManager(addressBook, new UserPrefs());
+        ModelManager insertion = new ModelManager(addressBook, new UserPrefs());
+        ordered.setPersonListComparator(new PersonNameComparator());
+        assertFalse(ordered.equals(insertion));
     }
 
     @Test
