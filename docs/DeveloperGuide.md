@@ -126,7 +126,9 @@ How the parsing works:
 The `Model` component,
 
 * stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
-* stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
+* selects contacts through a `FilteredList<Person>` and orders those results through a `SortedList<Person>`.
+  `getFilteredPersonList()` exposes the final displayed view as an unmodifiable `ObservableList<Person>`.
+  The UI and indexed commands use this same view, so their indices agree.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
@@ -189,6 +191,74 @@ show-or-focus behavior without parsing a command.
 wrap to keep long formats readable. The resizable window starts within the primary screen's visual bounds,
 including display scaling. Its User Guide URL and copy button remain outside the scrolling command list.
 When a command's syntax changes, update the reference alongside the User Guide.
+
+### Focused contact filtering
+
+`filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` requires at least one criterion.
+`FilterCommandParser` reuses `ArgumentTokenizer`, duplicate-prefix validation, and `ParserUtil`'s subject/level
+validation. It rejects unknown prefixes, duplicate prefixes, invalid structure, and invalid values in that order.
+Field checks use name, subject, then level order. Parsing finishes before any model state changes.
+
+`ContactMatchesCriteriaPredicate` combines every criterion and every name keyword using **AND**.
+Name matching reuses `StringUtil.containsWordIgnoreCase`, the same complete-word comparison used by `find`.
+The existing `find` command retains OR between keywords. Subject and level are normalized by their existing value
+classes and compared as complete values ignoring case. Missing fields cannot satisfy their respective criteria.
+
+`FilterCommand` replaces the active predicate using `ModelManager#updateFilteredPersonList`. If no comparator is
+active, it installs `PersonNameComparator`, which compares complete names ignoring case. `SortedList` retains
+source order for comparator ties, so equal names remain in insertion order. An active comparator is preserved.
+The predicate and comparator change only the view; `AddressBook` and JSON retain insertion order.
+The command reports its displayed count and returns `false` from `isDataChanging()`, so `LogicManager` does not
+call Storage.
+
+The following sequence shows the main Logic flow for a successful combined filter, including default ordering
+when no comparator is active. Parser construction, individual predicate evaluations, and routine command checks
+are omitted for clarity. JavaFX observes the resulting list changes. The existing `MainWindow`/`PersonListPanel`
+command handling retains visible selection and expansion or clears a hidden selection.
+
+![Combined contact filtering and display ordering](images/FilterContactsSequenceDiagram.png)
+
+#### Shared filtering and sorting API
+
+The pipeline is `AddressBook.getPersonList()` → `FilteredList<Person>` → `SortedList<Person>` → `PersonListPanel`.
+The displayed observable list object remains the same when its predicate or comparator changes.
+
+| API | Contract |
+| --- | --- |
+| `getFilteredPersonList()` | Returns the final filtered and ordered view used by the UI and `view`, `edit`, and `delete`. |
+| `updateFilteredPersonList(predicate)` | Changes membership without changing the active comparator. |
+| `getPersonListComparator()` | Returns the active comparator, or `null` for insertion order. |
+| `setPersonListComparator(comparator)` | Changes ordering without changing membership; `null` restores insertion order. |
+
+`list` installs `PREDICATE_SHOW_ALL_PERSONS` and clears the comparator. Existing `find` changes only the predicate.
+Successful `add` and `edit` retain their existing filter-clearing behavior and preserve active ordering.
+Save-failure rollback restores the previous contacts and predicate; the display comparator remains active.
+Filtering and ordering are session state and are not serialized.
+
+**Sorting integration contract:** a future `sort level` command should call `setPersonListComparator` with its
+level/name comparator and leave the predicate intact. Subsequent `filter` calls will preserve that comparator.
+`list` clears both states. The level comparator and `sort level` command are owned by the sorting feature and are
+not implemented here.
+
+#### Tests and manual checks
+
+JUnit covers all seven nonempty criterion combinations, AND name matching, exact values, missing fields, duplicate
+and unknown prefixes, validation precedence, normalized length boundaries, no matches, name-order ties, comparator
+composition, displayed indices, insertion-order restoration, unchanged JSON, and save-failure rollback.
+`ContactListStateTest` covers selection and expansion after filtering and invalid input.
+
+For a manual JavaFX check, use a disposable data folder with contacts inserted in this order:
+Zoe Tan (Mathematics, Secondary 3), Alice Tan (parent), Amy Tan (Mathematics, Secondary 3),
+Bob Lee (Physics, JC 2). Give the contacts distinct valid contact details.
+
+1. Run `filter s/Mathematics l/Secondary 3`: expect Amy then Zoe and `Showing 2 matching contacts.`
+2. Run `view 2`, then repeat that filter: Zoe stays selected and expanded at index 2.
+3. Run `filter n/Amy Tan`: expect only Amy; Zoe's selection and expansion clear.
+4. Run `view 1`, then `filter s/`: expect the subject error with Amy's selection, expansion, and list unchanged.
+5. Run `filter n/Amy Lee`: expect `No matching contacts.`; `find Amy Lee` should return Amy and Bob.
+6. Run `filter s/Mathematics`, then `delete 1`: Amy is deleted and Zoe becomes index 1. `view 1` shows Zoe.
+7. Run `list`: expect Zoe, Alice, Bob in insertion order with compact cards.
+8. Restart: the remaining contacts still follow insertion order. Filtering alone must not rewrite JSON.
 
 ### \[Proposed\] Undo/redo feature
 

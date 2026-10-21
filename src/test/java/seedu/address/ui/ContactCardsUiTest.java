@@ -97,6 +97,63 @@ public class ContactCardsUiTest {
         Platform.exit();
     }
 
+    /**
+     * Checks command-box filtering, card numbering, selection, expansion, and list restoration.
+     *
+     * @throws Exception If JavaFX execution, command handling, or saving the snapshot fails.
+     */
+    @Test
+    void window_filterCommands_updateOrderIndicesAndSelection() throws Exception {
+        runOnFxThread(() -> {
+            Person zoe = new PersonBuilder().withName("Zoe Tan").build();
+            Person amy = new PersonBuilder().withName("Amy Tan").build();
+            Person parent = new PersonBuilder().withName("Alice Tan").withRole("parent").build();
+            Model model = new ModelManager();
+            List.of(zoe, parent, amy).forEach(model::addPerson);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(1000, 620);
+            try {
+                enter(root, "filter s/Mathematics l/Secondary 3");
+                assertEquals(List.of(amy, zoe), list(root).getItems());
+                assertEquals("Showing 2 matching contacts.", ((TextArea) root.lookup("#resultDisplay")).getText());
+                enter(root, "view 2");
+                enter(root, "filter s/Mathematics");
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertEquals("2.", label(selectedCard(root), "id").getText());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                saveSnapshot(root, "filter-name-order");
+
+                enter(root, "filter n/");
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                enter(root, "filter n/Amy Tan");
+                assertEquals(List.of(amy), list(root).getItems());
+                assertTrue(list(root).getSelectionModel().isEmpty());
+                enter(root, "filter n/Amy Zoe");
+                assertTrue(list(root).getItems().isEmpty());
+                assertEquals("No matching contacts.", ((TextArea) root.lookup("#resultDisplay")).getText());
+
+                enter(root, "filter s/Mathematics");
+                enter(root, "delete 1");
+                assertEquals(List.of(zoe), list(root).getItems());
+                enter(root, "view 1");
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertEquals("1.", label(selectedCard(root), "id").getText());
+                enter(root, "list");
+                assertEquals(List.of(zoe, parent), list(root).getItems());
+                assertFalse(selectedCard(root).lookup("#details").isVisible());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     @Test
     void helpWindow_commandReference_showsSupportedCommandsAndCopiesTutorContactsUrl() throws Exception {
         runOnFxThread(() -> {
@@ -143,6 +200,11 @@ public class ContactCardsUiTest {
         });
     }
 
+    /**
+     * Checks the minimum-size Help layout and that scrolling can reveal the exit command without clipping.
+     *
+     * @throws Exception If JavaFX execution or layout synchronization fails.
+     */
     @Test
     void helpWindow_smallSize_keepsGuideScrollableAndFooterVisible() throws Exception {
         HelpWindow help = callOnFxThread(HelpWindow::new);
@@ -179,7 +241,16 @@ public class ContactCardsUiTest {
                 assertVisibleWithinWindow(root, root.lookup("#helpMessage"));
                 assertVisibleWithinWindow(root, root.lookup("#copyButton"));
                 saveSnapshot(root, "help-command-guide-small");
-                scrollPane.setVvalue(1);
+                // The legend below Exit can fill the viewport, so reveal Exit using its actual position.
+                Node exitSyntax = root.lookupAll(".command-syntax").stream()
+                        .filter(node -> ((Label) node).getText().equals("exit"))
+                        .findFirst().orElseThrow();
+                Bounds exitBounds = scrollPane.getContent().sceneToLocal(
+                        exitSyntax.localToScene(exitSyntax.getBoundsInLocal()));
+                double viewportHeight = scrollPane.getViewportBounds().getHeight();
+                double scrollableHeight = scrollPane.getContent().getLayoutBounds().getHeight() - viewportHeight;
+                double scrollOffset = exitBounds.getMinY() - (viewportHeight - exitBounds.getHeight()) / 2;
+                scrollPane.setVvalue(Math.max(0, Math.min(1, scrollOffset / scrollableHeight)));
             });
             waitForLayout(scene);
             runOnFxThread(() -> {

@@ -8,6 +8,7 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -148,6 +149,16 @@ public class AddCommandTest {
 
         @Override
         public void updateFilteredPersonList(Predicate<Person> predicate) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public Comparator<? super Person> getPersonListComparator() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void setPersonListComparator(Comparator<? super Person> comparator) {
             throw new AssertionError("This method should not be called.");
         }
     }

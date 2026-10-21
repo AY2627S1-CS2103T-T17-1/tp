@@ -161,7 +161,8 @@ Examples:
 
 ### Listing all contacts: `list`
 
-Displays all contacts in insertion order, numbered from 1. If the list was filtered by a search, this command restores the complete list.
+Displays all contacts in insertion order, numbered from 1. This clears any search/filter and display ordering,
+restoring the complete list of remaining contacts.
 
 Compact cards show only the index, role, name, and phone. `list` collapses any expanded card.
 
@@ -236,10 +237,70 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * The search considers only names.
 * Only full words match; for example, `Han` does not match `Hans`.
 * Contacts matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* A new `find` replaces the previous search/filter and retains the current display ordering.
 
 Examples:
 * `find John` returns `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`
+
+### Filtering contacts by name, subject, and level: `filter`
+
+Shows contacts that satisfy **all** supplied criteria.
+
+Format: `filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]`
+
+Supply at least one criterion. Square brackets indicate optional criteria and are not typed.
+Command words and prefixes are case-insensitive, and prefixes can appear in any order, at most once each.
+
+* **Name:** every keyword must match a complete word in the contact's name, ignoring case. Keyword order does not
+  matter. `n/Alice Tan` matches `Alice Tan` and `Tan Alice`, but not `Alice Lim` or `Alicia Tan`.
+  Hyphenated names are complete words: `n/Alice` does not match `Alice-Marie`.
+* **Subject and level:** match the complete stored value, ignoring case and leading/trailing spaces.
+  Repeated spaces are collapsed. `s/Additional Mathematics` does not match `Mathematics`;
+  `l/Secondary 3` does not match `Secondary 30`. There are no abbreviations, partial matches, or fuzzy matches.
+* **AND only:** every supplied field and every name keyword must match. Use the existing `find` command when you
+  want an OR search across name keywords.
+* Name-only filtering includes students and parents. Parents and older records without a subject or level cannot
+  match a criterion for that missing field. An omitted criterion imposes no restriction on that field.
+* Each successful `filter` replaces the previous search/filter across the full contact collection.
+* Results default to ascending full-name order, ignoring case. Equal names retain insertion order.
+  An already active display ordering is preserved.
+* `view INDEX`, `edit INDEX`, and `delete INDEX` use the numbered results currently displayed.
+  `list` clears both filtering and ordering, shows all remaining contacts in insertion order, and collapses details.
+* Selection and expansion stay with the selected contact if it remains visible; otherwise they clear.
+* Filtering does not change stored contacts or rewrite the data file. Filters and display ordering are not retained
+  when the application restarts. Startup uses insertion order.
+* Existing `add` and `edit` commands clear the filter after success and preserve active display ordering.
+
+Examples:
+
+* `filter n/Alice Tan` shows names containing both complete words.
+* `filter s/Mathematics l/Secondary 3` shows Mathematics students at Secondary 3.
+* `filter n/Alice s/Mathematics l/Secondary 3` requires all three criteria.
+* `filter s/Mathematics`, then `view 1`, shows the first result in the displayed order.
+* `filter s/Mathematics`, then `list`, restores the complete insertion-order list.
+
+Successful filtering reports `Showing N matching contacts.`, including `Showing 1 matching contacts.` for one match.
+Zero matches (including an empty address book) reports `No matching contacts.` and displays an empty list.
+
+Invalid input leaves contacts, the displayed list, ordering, selection, expansion, and saved data unchanged.
+
+| Input problem | Error message |
+| --- | --- |
+| No criteria, or text before the first prefix (such as `filter Alice`) | `Invalid command format. Expected: filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` |
+| Unknown prefix such as `x/` | `Unknown prefix: x/.` |
+| Repeated prefix such as `n/` and `N/` | `Prefix n/ may be specified only once.` |
+| Empty `n/` value | `Name filter requires at least one keyword.` |
+| Empty/invalid subject, or over 40 normalized characters | `Subject must be 1-40 characters and use only letters, digits, spaces, or common subject punctuation.` |
+| Empty/invalid level, or over 30 normalized characters | `Level must be 1-30 characters and contain only letters, digits, spaces, apostrophes, or hyphens.` |
+
+Subject values allow letters, digits, spaces, and `& + - ' / ( ) . ,`. Level values allow letters, digits,
+spaces, apostrophes, and hyphens. Tabs inside subject/level values are invalid. Name keywords follow `find`'s
+word-splitting rules. Literal prefix-shaped text uses the existing [backslash escape](#prefixes-and-literal-text),
+for example `filter s/Topic \x/foo` matches the subject `Topic x/foo`.
+
+When several errors occur, unknown prefixes are checked first, then repeated prefixes (in `n/`, `s/`, `l/` order),
+then command structure, then values in `n/`, `s/`, `l/` order.
 
 ### Deleting a contact: `delete`
 
@@ -285,7 +346,7 @@ Additional text is rejected with `Invalid command format. Expected: exit`; for e
 ### Saving the data
 
 TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `delete`, and
-`clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `help`, and `exit` do not rewrite
+`clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `filter`, `help`, and `exit` do not rewrite
 the data file. A failed save leaves both the displayed contacts and the existing data file unchanged.
 
 ### Editing the data file
@@ -329,6 +390,7 @@ Action | Format, Examples
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Filter** | `filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` (at least one criterion)<br> e.g., `filter s/Mathematics l/Secondary 3`
 **List** | `list`
 **View** | `view INDEX`<br> e.g., `view 2`
 **Help** | `help`
