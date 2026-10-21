@@ -160,6 +160,38 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Help command and command guide
+
+`HelpCommand` is read-only: it returns a `CommandResult` with `isShowHelp()` set to `true`.
+`LogicManager` returns that result without saving contact data. `MainWindow` then calls `handleHelp()`:
+it shows its existing `HelpWindow` if closed, or focuses that same window if already open.
+
+The overview below traces a successful typed `help` command. Its `ref` frames expand into the two focused
+diagrams that follow, keeping each diagram readable at the guide's normal page width.
+
+![Help command overview with references to the execution and window-handling sequences](images/HelpCommandSequenceDiagram.png)
+
+**Help execution** (`HelpCommandExecutionSequenceDiagram.puml`). `AddressBookParser` creates the command;
+the command creates result `r`. Constructor details and the routine read-only checks are omitted.
+The command returns without contact mutation or a Storage call.
+
+![Help command parsing and execution sequence](images/HelpCommandExecutionSequenceDiagram.png)
+
+**Help window handling** (`HelpWindowSequenceDiagram.puml`). This expands the UI portion of the overview after
+`Logic.execute("help")` returns. It shows the `isShowHelp()` check and the mutually exclusive show/focus paths.
+The activation of `executeCommand` includes earlier interactions shown separately in the overview and execution
+diagram. Result-display updates, logging, and clipboard operations are omitted from all three diagrams.
+
+![Applying the Help result and showing or focusing the existing window](images/HelpWindowSequenceDiagram.png)
+
+The Help menu and the F1 accelerator call `MainWindow#handleHelp()` directly, so they share the same
+show-or-focus behavior without parsing a command.
+
+`HelpWindow.fxml` contains the command reference. Its scroll pane fits the available width, and command labels
+wrap to keep long formats readable. The resizable window starts within the primary screen's visual bounds,
+including display scaling. Its User Guide URL and copy button remain outside the scrolling command list.
+When a command's syntax changes, update the reference alongside the User Guide.
+
 ### Focused contact filtering
 
 `filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` requires at least one criterion.
@@ -602,6 +634,28 @@ in the current AB3 codebase.)
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Appendix: Instructions for manual testing**
+
+### Help command guide
+
+Use a disposable data file containing at least two contacts. Before testing, run `view 1` and note the
+selected contact, expanded details, and the data file's contents and last-modified time.
+
+1. Enter `help`. Expect one window titled **TutorContacts — Command guide**, containing the command reference
+   and the TutorContacts User Guide URL. Enter `help` again in the main window: the same Help window should
+   receive focus, without opening a second window.
+2. Close Help, then choose **Help → Help** in the main window. Close it again and press **F1** in the main
+   window. Each action should reopen the guide. With Help already open, repeat both actions and check that
+   no additional Help window appears.
+3. Scroll to the end of the command list and back. Expect the `exit` entry to be reachable, while the User
+   Guide URL and **Copy User Guide URL** button stay visible outside the scrolling list.
+4. Resize Help to its minimum size (450 × 360), then enlarge it. Expect long command formats and the URL
+   to wrap without clipping, and the reference to remain scrollable. Repeat at 1920 × 1080 with 100% and
+   125% scaling, and at 1280 × 720 with 150% scaling on available supported systems.
+5. Select **Copy User Guide URL** and paste into a browser's address bar. Expect exactly
+   `https://ay2627s1-cs2103t-t17-1.github.io/tp/UserGuide.html`. With Internet access, navigate to it and
+   verify that it opens the TutorContacts User Guide, not the inherited AB3 guide.
+6. Close Help. Expect the contact list, selected contact, and expanded details to be unchanged. Check that
+   the data file's contents and last-modified time still match the values recorded before opening Help.
 
 ### Command parsing and validation
 

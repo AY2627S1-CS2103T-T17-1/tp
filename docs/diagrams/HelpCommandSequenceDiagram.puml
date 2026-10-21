@@ -1,0 +1,35 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+skinparam DefaultFontSize 16
+skinparam ParticipantPadding 5
+title Help command overview
+
+box UI UI_COLOR_T1
+participant ":CommandBox" as CommandBox UI_COLOR
+participant ":MainWindow" as MainWindow UI_COLOR
+end box
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+end box
+
+[-> CommandBox : enter "help"
+activate CommandBox
+CommandBox -> MainWindow : executeCommand("help")
+activate MainWindow
+MainWindow -> LogicManager : execute("help")
+activate LogicManager
+ref over LogicManager
+Help execution
+end ref
+LogicManager --> MainWindow : r
+deactivate LogicManager
+ref over MainWindow
+Help window handling
+end ref
+MainWindow --> CommandBox : r
+deactivate MainWindow
+[<-- CommandBox
+deactivate CommandBox
+@enduml
