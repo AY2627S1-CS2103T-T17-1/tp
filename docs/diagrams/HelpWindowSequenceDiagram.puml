@@ -1,0 +1,51 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+skinparam DefaultFontSize 16
+skinparam ParticipantPadding 5
+title Help window handling
+
+box UI UI_COLOR_T1
+participant ":MainWindow" as MainWindow UI_COLOR
+end box
+box Logic LOGIC_COLOR_T1
+participant "r:CommandResult" as Result LOGIC_COLOR
+end box
+box UI UI_COLOR_T1
+participant ":HelpWindow" as HelpWindow UI_COLOR
+end box
+
+[-> MainWindow : executeCommand("help")
+activate MainWindow
+note over MainWindow, Result
+After Logic.execute("help") returns r
+(shown in the execution diagram).
+end note
+MainWindow -> Result : isShowHelp()
+activate Result
+Result --> MainWindow : true
+deactivate Result
+MainWindow -> MainWindow : handleHelp()
+activate MainWindow
+MainWindow -> HelpWindow : isShowing()
+activate HelpWindow
+HelpWindow --> MainWindow : isShowing
+deactivate HelpWindow
+
+alt not isShowing
+    MainWindow -> HelpWindow : show()
+    activate HelpWindow
+    HelpWindow --> MainWindow
+    deactivate HelpWindow
+else isShowing
+    MainWindow -> HelpWindow : focus()
+    activate HelpWindow
+    HelpWindow --> MainWindow
+    deactivate HelpWindow
+end
+
+MainWindow --> MainWindow
+deactivate MainWindow
+[<-- MainWindow : r
+deactivate MainWindow
+@enduml

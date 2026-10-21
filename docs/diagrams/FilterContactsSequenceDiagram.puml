@@ -1,0 +1,48 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 180
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":FilterCommandParser" as FilterCommandParser LOGIC_COLOR
+participant "command:\nFilterCommand" as FilterCommand LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "model:\nModelManager" as ModelManager MODEL_COLOR
+end box
+
+[-> LogicManager : execute("filter s/Mathematics l/Secondary 3")
+activate LogicManager
+LogicManager -> AddressBookParser : parseCommand(commandText)
+activate AddressBookParser
+AddressBookParser -> FilterCommandParser : parse(" s/Mathematics l/Secondary 3")
+activate FilterCommandParser
+note over FilterCommandParser
+Validate input and construct
+ContactMatchesCriteriaPredicate (AND).
+end note
+create FilterCommand
+FilterCommandParser -> FilterCommand : new(criteria)
+FilterCommandParser --> AddressBookParser : command
+deactivate FilterCommandParser
+AddressBookParser --> LogicManager : command
+deactivate AddressBookParser
+LogicManager -> FilterCommand : execute(model)
+activate FilterCommand
+FilterCommand -> ModelManager : updateFilteredPersonList(criteria)
+FilterCommand -> ModelManager : getPersonListComparator()
+ModelManager --> FilterCommand : comparator
+opt No active comparator
+FilterCommand -> ModelManager : setPersonListComparator(\nnew PersonNameComparator())
+end
+FilterCommand -> ModelManager : getFilteredPersonList()
+ModelManager --> FilterCommand : displayed contacts
+FilterCommand --> LogicManager : CommandResult with match count
+deactivate FilterCommand
+LogicManager -->[ : result
+deactivate LogicManager
+@enduml
