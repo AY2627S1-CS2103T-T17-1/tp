@@ -606,6 +606,33 @@ Manual checks for the UI contribution:
 7. After the persistence rollback work is integrated, repeat add/delete with a failing save and check both
    the list data and selection remain unchanged. UI tests simulate model restoration; they do not verify storage rollback.
 
+### Main-window appearance and command entry
+
+`MainWindow.css` is loaded after the inherited stylesheets. Its selectors target the main window's menu,
+command area, feedback, and footer, leaving contact cards and the separate Help window unchanged.
+The layout follows the Figma palette and spacing while retaining native window controls and a portable
+system font. Cards still expand in place. The prototype's separate details pane and last-command chip
+are not implemented. The original intended-design image remains at `images/Ui.png`; the User Guide's
+`images/mainWindow.png` shows the implemented layout.
+
+Use disposable contact data for these checks:
+
+1. Click the command field and type `view 1`. Check the teal focus outline, unchanged command text,
+   and in-place expansion. The `>` and `Enter ↵` cues must not intercept clicks or receive keyboard focus.
+2. Enter `view 0` or `unknown`. Expect the existing error message, retained input with error styling,
+   and unchanged selection. Edit the input: error styling clears. Run `list`: the input clears and cards collapse.
+3. Trigger a long usage error, for example with `add`. Check that feedback wraps, scrolls, and can be
+   selected and copied in full. Also check the startup warning using an invalid disposable data file.
+4. Resize down to the existing 450 x 420 minimum. Command entry, feedback, and list scrolling must remain
+   usable. The footer guidance may wrap; hovering over a shortened storage path must show the full path.
+5. Check 1920 x 1080 at 100%/125% scaling and 1280 x 720 at 150% scaling on available supported systems.
+   Confirm menu access, native window controls, and saved window preferences still work.
+6. Check `help`, Help menu, and F1. After the other v1.4 features merge, repeat filter/sort/view/edit/delete
+   workflows against the integrated application; all index and card-state behavior should be preserved.
+
+The desktop tests check long feedback, full-path tooltips, input-error recovery, and several logical content
+sizes. Those content-size tests do not simulate OS display scaling; record native scale/platform checks separately.
+
 Given below are instructions to test the app manually.
 
 <div markdown="span" class="alert alert-info">:information_source: **Note:** These instructions only provide a starting point for testers to work on;

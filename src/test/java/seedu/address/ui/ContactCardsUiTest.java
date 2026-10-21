@@ -33,6 +33,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
@@ -162,7 +163,13 @@ public class ContactCardsUiTest {
             enter(root, "view nope");
             assertEquals(BOB, list(root).getSelectionModel().getSelectedItem());
             assertTrue(selectedCard(root).lookup("#details").isVisible());
+            TextField commandField = (TextField) root.lookup("#commandTextField");
+            assertEquals("view nope", commandField.getText());
+            assertTrue(commandField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+            commandField.setText("list");
+            assertFalse(commandField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
             enter(root, "list");
+            assertEquals("", commandField.getText());
             assertFalse(selectedCard(root).lookup("#details").isVisible());
 
             enter(root, "add r/parent n/New Parent p/81234567 e/new@example.com a/1 Road");
@@ -341,6 +348,105 @@ public class ContactCardsUiTest {
         });
     }
 
+    @Test
+    void window_narrowLayout_keepsLongFeedbackAndStoragePathAccessible() throws Exception {
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            model.addPerson(ALICE);
+            Path dataPath = temporaryFolder.resolve("a-long-directory-name/".repeat(10) + "contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            stage.setWidth(450);
+            stage.setHeight(420);
+            try {
+                window.show();
+                Region root = (Region) stage.getScene().getRoot();
+                String warning = MainApp.DATA_FILE_WARNING + "\n" + "Long error details. ".repeat(100);
+                window.showStartupWarning(warning);
+                layout(root);
+
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                assertEquals(warning, feedback.getText());
+                assertTrue(feedback.isWrapText());
+                assertFalse(feedback.isEditable());
+                feedback.selectAll();
+                assertEquals(warning, feedback.getSelectedText());
+                ScrollBar scrollbar = (ScrollBar) feedback.lookup(".scroll-bar:vertical");
+                assertNotNull(scrollbar);
+                assertTrue(scrollbar.isVisible());
+                feedback.setScrollTop(Double.MAX_VALUE);
+                assertTrue(feedback.getScrollTop() > 0);
+
+                Label pathLabel = label(root, "saveLocationStatus");
+                assertEquals(dataPath.toString(), pathLabel.getText());
+                assertNotNull(pathLabel.getTooltip());
+                assertEquals(dataPath.toString(), pathLabel.getTooltip().getText());
+                assertTrue(pathLabel.getTooltip().isWrapText());
+                assertVisibleWithinWindow(root, pathLabel);
+                assertVisibleWithinWindow(root, root.lookup(".status-guidance"));
+                assertVisibleWithinWindow(root, root.lookup(".command-guidance"));
+                assertVisibleWithinWindow(root, root.lookup("#commandTextField"));
+                assertTrue(list(root).getHeight() >= 80, "Contacts must remain scrollable at minimum size");
+                assertFalse(Files.exists(dataPath));
+                feedback.deselect();
+                feedback.setScrollTop(0);
+                saveSnapshot(root, "main-window-narrow-feedback");
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    void window_availableContentSizes_keepsCommandCuesAndContactsUsable() throws Exception {
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            model.addPerson(ALICE);
+            model.addPerson(BOB);
+            model.addPerson(GEORGE);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            try {
+                // Logical content budgets allow for native chrome; they do not emulate OS display scaling.
+                int[][] sizes = {{1900, 1000}, {1500, 800}, {830, 420}, {1000, 760}};
+                for (int[] size : sizes) {
+                    root.resize(size[0], size[1]);
+                    layout(root);
+                    TextField commandField = (TextField) root.lookup("#commandTextField");
+                    assertEquals("Type a command…", commandField.getPromptText());
+                    Node cues = root.lookup(".command-cues");
+                    assertTrue(cues.isMouseTransparent());
+                    assertFalse(cues.isFocusTraversable());
+                    assertFalse(root.lookup(".command-chevron").isFocusTraversable());
+                    assertFalse(root.lookup(".command-enter").isFocusTraversable());
+                    assertVisibleWithinWindow(root, commandField);
+                    assertVisibleWithinWindow(root, root.lookup(".command-guidance"));
+                    assertVisibleWithinWindow(root, root.lookup(".status-guidance"));
+                    assertVisibleWithinWindow(root, list(root));
+
+                    enter(root, "view 1");
+                    assertEquals("", commandField.getText());
+                    assertEquals(ALICE, list(root).getSelectionModel().getSelectedItem());
+                    assertTrue(selectedCard(root).lookup("#details").isVisible());
+                    saveSnapshot(root, "main-window-" + size[0] + "x" + size[1]);
+                    enter(root, "list");
+                    assertFalse(selectedCard(root).lookup("#details").isVisible());
+                }
+                assertFalse(Files.exists(dataPath));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /**
      * Saves the rendered UI for visual inspection without opening a window or adding a library.
      */
@@ -401,6 +507,8 @@ public class ContactCardsUiTest {
         assertNotNull(control);
         assertTrue(control.isVisible());
         assertTrue(control.getBoundsInLocal().getHeight() > 0);
+        assertTrue(control.localToScene(control.getBoundsInLocal()).getMinX() >= 0);
+        assertTrue(control.localToScene(control.getBoundsInLocal()).getMaxX() <= root.getWidth() + 1);
         assertTrue(control.localToScene(control.getBoundsInLocal()).getMaxY() <= root.getHeight() + 1);
     }
 

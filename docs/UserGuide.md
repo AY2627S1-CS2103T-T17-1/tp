@@ -24,7 +24,7 @@ help you find and manage this information faster than traditional GUI applicatio
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar tutorcontacts.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. On the first launch, the contact list is empty.<br>
-   ![Ui](images/Ui.png)
+   ![TutorContacts main window with a student contact expanded in place](images/mainWindow.png)
 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
@@ -42,6 +42,11 @@ help you find and manage this information faster than traditional GUI applicatio
    * `exit` : Exits the app.
 
 1. Refer to the [Features](#features) section below for details of each command.
+
+The command field shows `Type a command…` when empty. The `>` and `Enter ↵` cues are hints, not part of
+the command you type. Failed input stays in the field so you can correct it; successful commands clear it.
+Feedback appears below the field. Long messages wrap and can be scrolled or selected for copying.
+The **Local data** footer shows your contact-data path; hover over the path to see it in full if it is shortened.
 
 --------------------------------------------------------------------------------------------------------------------
 
