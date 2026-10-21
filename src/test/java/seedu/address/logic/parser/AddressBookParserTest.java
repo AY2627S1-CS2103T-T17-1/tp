@@ -73,6 +73,9 @@ public class AddressBookParserTest {
         assertEquals(new EditCommand(INDEX_FIRST_PERSON, descriptor), command);
     }
 
+    /**
+     * Checks that generated edit commands preserve notes and literal prefix-like text in field values.
+     */
     @Test
     public void parseCommand_generatedEdit_preservesNoteAndLiteralPrefixes() throws Exception {
         Person person = new PersonBuilder().withSubject("Biology/Chemistry")

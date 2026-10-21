@@ -299,6 +299,9 @@ public class LogicManagerTest {
         assertEquals(AMY, model.getFilteredPersonList().get(0));
     }
 
+    /**
+     * Checks that role-specific student edits and note clearing are saved and can be reloaded.
+     */
     @Test
     public void execute_editRoleSpecificFields_persistsThroughReload() throws Exception {
         Person student = new PersonBuilder().withNote("Old note").build();
@@ -319,6 +322,9 @@ public class LogicManagerTest {
         assertEquals(3, addressBookStorage.saveCount);
     }
 
+    /**
+     * Checks that student-only fields on a parent are rejected without changing displayed or saved data.
+     */
     @Test
     public void execute_editParentWithStudentField_preservesDisplayedAndSavedData() throws Exception {
         Person parent = new PersonBuilder().withRole("parent").withNote("Original note").build();
@@ -336,11 +342,18 @@ public class LogicManagerTest {
         assertEquals(1, addressBookStorage.saveCount);
     }
 
+    /**
+     * Checks that a failed role-specific edit save restores the filtered list and leaves saved data unchanged.
+     */
     @Test
     public void execute_editRoleSpecificSaveFailure_restoresFilteredListAndSavedData() throws Exception {
         Person student = new PersonBuilder().withNote("Original note").build();
+        Person parent = new PersonBuilder().withName("Bob Builder").withRole("parent").build();
         model.addPerson(student);
+        model.addPerson(parent);
         model.updateFilteredPersonList(person -> person.getSubject().isPresent());
+        assertEquals(1, model.getFilteredPersonList().size());
+        assertEquals(student, model.getFilteredPersonList().get(0));
         addressBookStorage.saveAddressBook(model.getAddressBook());
         String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
         addressBookStorage.failNextSave = true;
@@ -350,6 +363,7 @@ public class LogicManagerTest {
 
         assertEquals(student, model.getFilteredPersonList().get(0));
         assertEquals(1, model.getFilteredPersonList().size());
+        assertEquals(parent, model.getAddressBook().getPersonList().get(1));
         assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
         assertEquals(1, addressBookStorage.saveCount);
     }

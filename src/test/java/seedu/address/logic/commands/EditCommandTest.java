@@ -168,6 +168,9 @@ public class EditCommandTest {
         assertCommandFailure(editCommand, model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
     }
 
+    /**
+     * Checks that editing student-only fields and a note leaves unspecified contact details intact.
+     */
     @Test
     public void execute_studentRoleSpecificFields_updatesOnlySpecifiedFields() {
         Person editedPerson = new PersonBuilder(ALICE).withSubject("A-Math")
@@ -182,6 +185,9 @@ public class EditCommandTest {
         assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
     }
 
+    /**
+     * Checks that a subject-only edit preserves the student's academic level and note.
+     */
     @Test
     public void execute_studentSubjectOnly_preservesLevelAndNote() {
         model = new ModelManager();
@@ -197,6 +203,9 @@ public class EditCommandTest {
         assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
     }
 
+    /**
+     * Checks that an explicitly empty note removes the existing note.
+     */
     @Test
     public void execute_emptyNote_clearsExistingNote() {
         model = new ModelManager();
@@ -212,6 +221,9 @@ public class EditCommandTest {
         assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
     }
 
+    /**
+     * Checks that a tutor can update the note on a parent contact.
+     */
     @Test
     public void execute_parentNote_success() {
         model = new ModelManager();
@@ -227,6 +239,9 @@ public class EditCommandTest {
         assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
     }
 
+    /**
+     * Checks that student-only fields cannot be assigned to a parent or partially change its note.
+     */
     @Test
     public void execute_parentStudentFields_failureWithoutMutation() {
         model = new ModelManager();
@@ -242,6 +257,9 @@ public class EditCommandTest {
                 AddCommand.MESSAGE_PARENT_FIELDS);
     }
 
+    /**
+     * Checks that a legacy student without subject or level can still receive an unrelated edit.
+     */
     @Test
     public void execute_legacyStudentWithoutSubjectOrLevel_allowsUnrelatedEdit() {
         model = new ModelManager();
