@@ -64,6 +64,8 @@ end note
 
 note over ModelManager, SortedList
 The existing filter remains active.
+PersonListPanel's ListView observes this SortedList
+and updates automatically.
 end note
 
 create CommandResult

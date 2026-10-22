@@ -323,7 +323,7 @@ levels with the same `Level` rules. Unsupported values such as `JC 5` and `Secon
 their indices follow the displayed order. `PersonListPanel` supplies this observable view to its `ListView`
 using `setItems(...)`; JavaFX observes subsequent list changes automatically. After command execution,
 `PersonListPanel#completeCommand(...)` restores selection and expansion for any contact still visible and
-refreshes the cards. These JavaFX updates are omitted from the diagram because there is no direct method call
+refreshes the cards. The diagram note summarizes the automatic update without implying a direct method call
 from `SortedList` to `PersonListPanel`.
 
 Sorting stays active when `find` or `filter` replaces the predicate; successful `add` and `edit` clear filtering
