@@ -266,21 +266,43 @@ Invalid input leaves contact data, links, and the displayed list unchanged:
 
 ### Editing a contact: `edit`
 
-Edits an existing contact in TutorContacts.
+Updates a student or parent contact stored by the tutor.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`
+Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVEL] [o/NOTE] [t/TAG]…​`
 
-* Edits the contact at the specified `INDEX`. The index refers to the index number shown in the displayed contact list. The index **must be a positive integer** 1, 2, 3, …​
-* At least one of the optional fields must be provided.
-* Existing values will be updated to the input values.
-* `edit` cannot change a contact's role, subject, academic level, or note in this version.
-* When editing tags, all of the contact's existing tags are removed; adding tags is not cumulative.
-* To remove all of a contact's tags, enter `t/` without a tag after it.
+* `INDEX` is the positive number shown beside the contact in the currently displayed list. At least one field must
+  follow it. Prefixes may appear in any order, and fields not supplied remain unchanged.
+* The tutor may edit `s/SUBJECT` and `l/LEVEL` for a **student contact**. These fields may be changed independently;
+  `edit 1 s/Physics` keeps the student's existing level. A parent contact cannot be given either field. This includes
+  empty `s/` or `l/` prefixes. `edit` cannot change a contact's role.
+* Both student and parent contacts may have a note. `o/NOTE` replaces the note; an empty or whitespace-only `o/`
+  **clears** it. Omitting `o/` leaves the note unchanged. Older student records without a subject or level can still
+  have other fields edited without filling in the missing fields.
+* Subject, level, and note follow the [same field rules as `add`](#adding-a-student-or-parent-contact-add).
+  Repeated single-value prefixes and unknown prefixes are rejected as described under
+  [Prefixes and literal text](#prefixes-and-literal-text).
+* `t/TAG` replaces all existing tags, rather than adding to them. An empty `t/` clears all tags; repeated `t/`
+  prefixes can supply multiple replacement tags.
+* Edits still follow the existing duplicate-contact rule: the same role and normalized name, together with a
+  matching normalized phone or case-insensitive email, is a duplicate. Invalid input, a duplicate, or a failed save
+  leaves the displayed and saved contact data unchanged. Successful edits are saved automatically.
+* After a successful edit, TutorContacts reports `Edited person: ...` and displays the complete contact list again.
+  A search filter is cleared, so contact indices may change. Check the contact's current index, or search for the
+  contact again, before using `view INDEX` to inspect its subject, level, or note. The success message itself lists
+  only the general contact fields.
 * Editing a linked contact's name or phone keeps its links to other contacts.
 
-Examples:
-*  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st contact to be `91234567` and `johndoe@example.com` respectively.
-*  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd contact to be `Betsy Crower` and clears all existing tags.
+Examples (assuming contact 1 is a student and contact 2 is a parent):
+
+* `edit 1 s/Physics l/JC 1 o/Prefers worked examples` updates a student contact's subject, academic level, and note.
+* `edit 1 s/A-Math` changes only a student contact's subject.
+* `edit 2 o/Contact after 6 pm` updates a parent contact's note.
+* `edit 2 o/` clears an existing note on either role.
+* `edit 1 p/91234567 e/johndoe@example.com` updates the first displayed contact's phone and email.
+* `edit 2 n/Betsy Crower t/` changes the second displayed contact's name and clears all its tags.
+
+For a parent contact, `edit 2 s/Math` is rejected with `Subject and level are only valid for student contacts.` An
+empty `s/` or `l/` is invalid for a student contact rather than a way to remove its subject or level.
 
 ### Locating contacts by name: `find`
 
@@ -451,7 +473,7 @@ Action | Format, Examples
 **Add** | `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NOTE]` <br> e.g., `add r/student n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 s/Math l/Secondary 3`
 **Clear** | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
+**Edit** | `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVEL] [o/NOTE] [t/TAG]…​`<br> e.g., `edit 1 s/Physics l/JC 1 o/Prefers examples`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` (at least one criterion)<br> e.g., `filter s/Mathematics l/Secondary 3`
 **Link** | `link PARENT_INDEX STUDENT_INDEX`<br> e.g., `link 2 1`
