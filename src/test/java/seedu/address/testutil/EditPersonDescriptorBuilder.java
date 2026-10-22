@@ -1,5 +1,6 @@
 package seedu.address.testutil;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -7,9 +8,12 @@ import java.util.stream.Stream;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.Level;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.Subject;
 import seedu.address.model.tag.Tag;
 
 /**
@@ -28,7 +32,9 @@ public class EditPersonDescriptorBuilder {
     }
 
     /**
-     * Returns an {@code EditPersonDescriptor} with fields containing {@code person}'s details
+     * Creates a builder with the editable details of {@code person}.
+     *
+     * @param person Contact whose editable details are copied into the descriptor.
      */
     public EditPersonDescriptorBuilder(Person person) {
         descriptor = new EditPersonDescriptor();
@@ -36,6 +42,9 @@ public class EditPersonDescriptorBuilder {
         descriptor.setPhone(person.getPhone());
         descriptor.setEmail(person.getEmail());
         descriptor.setAddress(person.getAddress());
+        person.getSubject().ifPresent(descriptor::setSubject);
+        person.getLevel().ifPresent(descriptor::setLevel);
+        descriptor.setNote(person.getNote());
         descriptor.setTags(person.getTags());
     }
 
@@ -68,6 +77,49 @@ public class EditPersonDescriptorBuilder {
      */
     public EditPersonDescriptorBuilder withAddress(String address) {
         descriptor.setAddress(new Address(address));
+        return this;
+    }
+
+    /**
+     * Sets the student subject to include in the edit descriptor.
+     *
+     * @param subject Subject to assign to the student contact.
+     * @return This builder for chaining additional edit fields.
+     */
+    public EditPersonDescriptorBuilder withSubject(String subject) {
+        descriptor.setSubject(new Subject(subject));
+        return this;
+    }
+
+    /**
+     * Sets the student academic level to include in the edit descriptor.
+     *
+     * @param level Academic level to assign to the student contact.
+     * @return This builder for chaining additional edit fields.
+     */
+    public EditPersonDescriptorBuilder withLevel(String level) {
+        descriptor.setLevel(new Level(level));
+        return this;
+    }
+
+    /**
+     * Sets the contact note to include in the edit descriptor.
+     *
+     * @param note Note to assign to the student or parent contact.
+     * @return This builder for chaining additional edit fields.
+     */
+    public EditPersonDescriptorBuilder withNote(String note) {
+        descriptor.setNote(Optional.of(new Note(note)));
+        return this;
+    }
+
+    /**
+     * Marks the contact note for removal by the edit command.
+     *
+     * @return This builder for chaining additional edit fields.
+     */
+    public EditPersonDescriptorBuilder withoutNote() {
+        descriptor.setNote(Optional.empty());
         return this;
     }
 

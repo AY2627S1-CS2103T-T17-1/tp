@@ -31,9 +31,11 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Tests command execution and storage error handling.
@@ -295,6 +297,75 @@ public class LogicManagerTest {
         String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
         assertCommandFailure("edit 1 p/22222222", CommandException.class, expectedMessage, expectedModel);
         assertEquals(AMY, model.getFilteredPersonList().get(0));
+    }
+
+    /**
+     * Checks that role-specific student edits and note clearing are saved and can be reloaded.
+     */
+    @Test
+    public void execute_editRoleSpecificFields_persistsThroughReload() throws Exception {
+        Person student = new PersonBuilder().withNote("Old note").build();
+        model.addPerson(student);
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+
+        logic.execute("edit 1 s/Physics l/JC 1 o/New note");
+
+        Person expected = new PersonBuilder(student).withSubject("Physics").withLevel("JC 1")
+                .withNote("New note").build();
+        assertEquals(expected, model.getAddressBook().getPersonList().get(0));
+        assertEquals(model.getAddressBook(), addressBookStorage.readAddressBook().orElseThrow());
+        assertEquals(2, addressBookStorage.saveCount);
+
+        logic.execute("edit 1 o/");
+        Person withoutNote = new PersonBuilder(expected).withoutNote().build();
+        assertEquals(withoutNote, addressBookStorage.readAddressBook().orElseThrow().getPersonList().get(0));
+        assertEquals(3, addressBookStorage.saveCount);
+    }
+
+    /**
+     * Checks that student-only fields on a parent are rejected without changing displayed or saved data.
+     */
+    @Test
+    public void execute_editParentWithStudentField_preservesDisplayedAndSavedData() throws Exception {
+        Person parent = new PersonBuilder().withRole("parent").withNote("Original note").build();
+        model.addPerson(parent);
+        model.updateFilteredPersonList(person -> person.getRole() == parent.getRole());
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
+
+        assertThrows(CommandException.class, AddCommand.MESSAGE_PARENT_FIELDS, () -> logic.execute(
+                "edit 1 s/Math o/Changed note"));
+
+        assertEquals(parent, model.getFilteredPersonList().get(0));
+        assertEquals(1, model.getFilteredPersonList().size());
+        assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
+        assertEquals(1, addressBookStorage.saveCount);
+    }
+
+    /**
+     * Checks that a failed role-specific edit save restores the filtered list and leaves saved data unchanged.
+     */
+    @Test
+    public void execute_editRoleSpecificSaveFailure_restoresFilteredListAndSavedData() throws Exception {
+        Person student = new PersonBuilder().withNote("Original note").build();
+        Person parent = new PersonBuilder().withName("Bob Builder").withRole("parent").build();
+        model.addPerson(student);
+        model.addPerson(parent);
+        model.updateFilteredPersonList(person -> person.getSubject().isPresent());
+        assertEquals(1, model.getFilteredPersonList().size());
+        assertEquals(student, model.getFilteredPersonList().get(0));
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
+        addressBookStorage.failNextSave = true;
+
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
+        assertThrows(CommandException.class, expectedMessage, () -> logic.execute("edit 1 s/Physics o/"));
+
+        assertEquals(student, model.getFilteredPersonList().get(0));
+        assertEquals(1, model.getFilteredPersonList().size());
+        assertEquals(parent, model.getAddressBook().getPersonList().get(1));
+        assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
+        assertEquals(1, addressBookStorage.saveCount);
     }
 
     @Test
