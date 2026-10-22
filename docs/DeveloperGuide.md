@@ -311,6 +311,7 @@ duplicate-contact rules (`Name#isSameName` and `Phone#isSamePhone`). `ParentStud
 also check the contact's `Role`, because a parent and a student may share a name and phone. Within one role, name
 and phone identify at most one contact, so each link resolves to exactly one parent and one student.
 A parent can have 0..* linked students and a student can have 0..* linked parents.
+Cards and `link` messages show each linked contact as `Name (phone)`, because two contacts may share a name.
 
 **Normal path.** `LinkCommandParser` parses two displayed-list indices. `LinkCommand#execute` looks up both
 contacts in `Model#getFilteredPersonList()`, checks that the first is a parent and the second a student, creates the
@@ -878,20 +879,31 @@ testers are expected to do more *exploratory* testing.
 
 ### Linking a parent to a student
 
-1. Prerequisites: start with the sample data, which links Bernice Yu to Alex Yeoh and David Li to Charlotte Oliveiro.
-   Run `list`.
-1. Test case: `view 2`<br>
-   Expected: Bernice Yu's card expands and shows `Linked students: Alex Yeoh`.
-1. Test case: `link 2 3`<br>
-   Expected: `Linked parent Bernice Yu to student Charlotte Oliveiro.` Bernice Yu's card shows both students.
-1. Test case: `link 2 3` again, then `link 1 2`, then `link 2 2`<br>
-   Expected: errors for a duplicate link, a first contact that is not a parent, and a self-link. No data changes.
+1. Prerequisites: close TutorContacts, then move `data/tutorcontacts.json` (next to the JAR file) elsewhere so that
+   the app starts with an empty list. Start TutorContacts and enter these commands in order. The two students share
+   a name, so the steps also check that linked contacts can be told apart.
+   1. `add r/student n/Alex Tan p/91234567 e/alex@example.com a/1 Road s/Mathematics l/Secondary 3`
+   1. `add r/student n/Alex Tan p/98765432 e/alex.lim@example.com a/2 Road s/English l/Primary 6`
+   1. `add r/parent n/Mary Tan p/93334444 e/mary@example.com a/1 Road`
+   1. `list`
+
+   Expected: index 1 is Alex Tan (91234567), index 2 is Alex Tan (98765432), and index 3 is Mary Tan.
+1. Test case: `link 3 1`<br>
+   Expected: `Linked parent Mary Tan (93334444) to student Alex Tan (91234567).` Mary Tan's card expands and shows
+   `Linked students: Alex Tan (91234567)`.
+1. Test case: `link 3 2`<br>
+   Expected: Mary Tan's card shows `Linked students: Alex Tan (91234567), Alex Tan (98765432)`.
+1. Test case: `link 3 1`, then `link 1 2`, then `link 3 3`<br>
+   Expected: in turn, `Mary Tan (93334444) is already linked to Alex Tan (91234567).`,
+   `The contact at index 1 is not a parent.`, and `A contact cannot be linked to itself.` No data changes.
 1. Test case: `edit 1 p/80000000`, then `view 1`<br>
-   Expected: Alex Yeoh still shows `Linked parents: Bernice Yu`.
-1. Test case: close and reopen the app, then `view 2`<br>
-   Expected: Bernice Yu still shows both linked students.
+   Expected: the first Alex Tan shows `Linked parents: Mary Tan (93334444)`. `view 3` shows
+   `Linked students: Alex Tan (80000000), Alex Tan (98765432)`.
+1. Test case: close and reopen TutorContacts, then `view 3`<br>
+   Expected: Mary Tan still shows both linked students.
 1. Test case: `delete 1`<br>
-   Expected: `Deleted contact: Alex Yeoh. Removed 1 link(s).`
+   Expected: `Deleted contact: Alex Tan. Removed 1 link(s).` `view 2` shows only `Alex Tan (98765432)`.
+1. Clean-up: close TutorContacts and move your original `data/tutorcontacts.json` back.
 
 ### Launch and shutdown
 

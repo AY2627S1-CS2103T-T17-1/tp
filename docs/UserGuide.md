@@ -241,9 +241,10 @@ Format: `link PARENT_INDEX STUDENT_INDEX`
   list, including search and filter results.
 * Supply exactly two **positive integers**. The first must be a parent and the second must be a student.
 * A parent can be linked to several students, and a student can be linked to several parents.
-* On success, the message is `Linked parent PARENT_NAME to student STUDENT_NAME.` and the parent's card is
-  highlighted and expanded.
-* Expanded cards list linked contacts: a parent shows `Linked students: …` and a student shows `Linked parents: …`.
+* On success, the message is `Linked parent PARENT_NAME (PHONE) to student STUDENT_NAME (PHONE).`
+  The parent's card is highlighted and expanded.
+* Expanded cards list linked contacts with their phone numbers, so contacts with the same name can be told apart.
+  For example, a parent shows `Linked students: Alex Tan (91234567)` and a student shows `Linked parents: …`.
   A contact without links shows `None`.
 * Links are saved with your contacts. Deleting a linked contact removes its links, and editing a linked contact's
   name or phone keeps its links.
@@ -262,7 +263,7 @@ Invalid input leaves contact data, links, and the displayed list unchanged:
 | The same index twice | `A contact cannot be linked to itself.` |
 | The first contact is not a parent | `The contact at index INDEX is not a parent.` |
 | The second contact is not a student | `The contact at index INDEX is not a student.` |
-| The two contacts are already linked | `PARENT_NAME is already linked to STUDENT_NAME.` |
+| The two contacts are already linked | `PARENT_NAME (PHONE) is already linked to STUDENT_NAME (PHONE).` |
 
 ### Editing a contact: `edit`
 
