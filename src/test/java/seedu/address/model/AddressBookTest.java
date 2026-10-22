@@ -105,6 +105,34 @@ public class AddressBookTest {
     }
 
     @Test
+    public void hasContactsOf_missingParent_returnsFalse() {
+        addressBook.addPerson(ALICE);
+
+        assertFalse(addressBook.hasContactsOf(ParentStudentLink.between(GEORGE, ALICE)));
+    }
+
+    @Test
+    public void addLink_duplicateLink_throwsAssertionError() {
+        addLinkedGeorgeAliceAndBenson();
+
+        assertThrows(AssertionError.class, () -> addressBook.addLink(ParentStudentLink.between(GEORGE, ALICE)));
+    }
+
+    @Test
+    public void addLink_missingContact_throwsAssertionError() {
+        addressBook.addPerson(GEORGE);
+
+        assertThrows(AssertionError.class, () -> addressBook.addLink(ParentStudentLink.between(GEORGE, ALICE)));
+    }
+
+    @Test
+    public void setLinks_duplicateLinks_throwsAssertionError() {
+        ParentStudentLink link = ParentStudentLink.between(GEORGE, ALICE);
+
+        assertThrows(AssertionError.class, () -> addressBook.setLinks(List.of(link, link)));
+    }
+
+    @Test
     public void getLinkedPersons_parentWithTwoStudents_returnsBothStudents() {
         addLinkedGeorgeAliceAndBenson();
 
@@ -173,6 +201,18 @@ public class AddressBookTest {
         sameContactsWithoutLinks.setPersons(addressBook.getPersonList());
 
         assertFalse(addressBook.equals(sameContactsWithoutLinks));
+    }
+
+    @Test
+    public void equals() {
+        addLinkedGeorgeAliceAndBenson();
+        AddressBook copy = new AddressBook(addressBook);
+
+        assertTrue(addressBook.equals(addressBook));
+        assertTrue(addressBook.equals(copy));
+        assertEquals(addressBook.hashCode(), copy.hashCode());
+        assertFalse(addressBook.equals(null));
+        assertFalse(addressBook.equals(5));
     }
 
     @Test
