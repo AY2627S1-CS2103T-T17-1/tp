@@ -97,7 +97,7 @@ public class PersonCard extends UiPart<Region> {
         subject.setText("Subject: " + person.getSubject().map(Object::toString).orElse("Not recorded"));
         level.setText("Academic level: " + person.getLevel().map(Object::toString).orElse("Not recorded"));
         note.setText("Note: " + person.getNote().map(Object::toString).orElse("None"));
-        links.setText((isStudent ? "Linked parents: " : "Linked students: ") + formatNames(linkedPersons));
+        links.setText((isStudent ? "Linked parents: " : "Linked students: ") + formatLinkedPersons(linkedPersons));
         subject.setVisible(isStudent);
         subject.setManaged(isStudent);
         level.setVisible(isStudent);
@@ -111,10 +111,15 @@ public class PersonCard extends UiPart<Region> {
         tags.setManaged(!person.getTags().isEmpty());
     }
 
-    private static String formatNames(List<Person> persons) {
+    /**
+     * Returns each linked contact as {@code Name (phone)}, so that contacts with the same name can be told apart.
+     */
+    private static String formatLinkedPersons(List<Person> persons) {
         if (persons.isEmpty()) {
             return "None";
         }
-        return persons.stream().map(person -> person.getName().fullName).collect(Collectors.joining(", "));
+        return persons.stream()
+                .map(person -> person.getName().fullName + " (" + person.getPhone().value + ")")
+                .collect(Collectors.joining(", "));
     }
 }

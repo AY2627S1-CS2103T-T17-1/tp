@@ -47,8 +47,10 @@ public class LinkCommandIntegrationTest {
 
     @Test
     public void execute_linkEditRestartDelete_keepsLinksConsistent() throws Exception {
-        assertEquals("Linked parent Alex Tan to student Alex Tan.", logic.execute("link 2 1").getFeedbackToUser());
-        assertEquals("Linked parent Alex Tan to student Bea Tan.", logic.execute("link 2 3").getFeedbackToUser());
+        assertEquals("Linked parent Alex Tan (91234567) to student Alex Tan (91234567).",
+                logic.execute("link 2 1").getFeedbackToUser());
+        assertEquals("Linked parent Alex Tan (91234567) to student Bea Tan (92345678).",
+                logic.execute("link 2 3").getFeedbackToUser());
         Person parent = model.getFilteredPersonList().get(1);
         assertEquals(List.of("Alex Tan", "Bea Tan"), linkedNames(model, parent));
 
@@ -68,12 +70,22 @@ public class LinkCommandIntegrationTest {
     public void execute_invalidLink_leavesSavedDataUnchanged() throws Exception {
         logic.execute("link 2 1");
 
-        assertThrows(CommandException.class, "Alex Tan is already linked to Alex Tan.", () ->
+        assertThrows(CommandException.class, "Alex Tan (91234567) is already linked to Alex Tan (91234567).", () ->
                 logic.execute("link 2 1"));
         assertThrows(CommandException.class, "The contact at index 1 is not a parent.", () ->
                 logic.execute("link 1 3"));
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
         assertEquals(1, model.getAddressBook().getLinkList().size());
+    }
+
+    @Test
+    public void execute_studentsWithSameName_linksTheChosenStudent() throws Exception {
+        logic.execute("add r/student n/Alex Tan p/98765432 e/alex.other@example.com a/2 Road s/English l/Primary 6");
+
+        assertEquals("Linked parent Alex Tan (91234567) to student Alex Tan (98765432).",
+                logic.execute("link 2 4").getFeedbackToUser());
+        Person parent = model.getFilteredPersonList().get(1);
+        assertEquals(List.of(model.getFilteredPersonList().get(3)), model.getLinkedPersons(parent));
     }
 
     private static List<String> linkedNames(Model model, Person person) {

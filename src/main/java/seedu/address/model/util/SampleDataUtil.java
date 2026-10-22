@@ -12,7 +12,6 @@ import seedu.address.model.person.Email;
 import seedu.address.model.person.Level;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
-import seedu.address.model.person.ParentStudentLink;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.Role;
@@ -61,13 +60,9 @@ public class SampleDataUtil {
 
     public static ReadOnlyAddressBook getSampleAddressBook() {
         AddressBook sampleAb = new AddressBook();
-        Person[] samplePersons = getSamplePersons();
-        for (Person samplePerson : samplePersons) {
+        for (Person samplePerson : getSamplePersons()) {
             sampleAb.addPerson(samplePerson);
         }
-        // Bernice Yu is Alex Yeoh's parent, and David Li is Charlotte Oliveiro's parent.
-        sampleAb.addLink(ParentStudentLink.between(samplePersons[1], samplePersons[0]));
-        sampleAb.addLink(ParentStudentLink.between(samplePersons[3], samplePersons[2]));
         return sampleAb;
     }
 
