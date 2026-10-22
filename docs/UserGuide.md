@@ -136,7 +136,8 @@ Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NO
 * The newly added contact is selected and scrolled into view as a compact card.
 
 Field rules apply to normalized values. Leading and trailing whitespace is trimmed; consecutive spaces in
-names, subjects, and levels are collapsed. Capitalization is retained for display and storage.
+names, subjects, and levels are collapsed. Capitalization is retained except for roles and academic levels,
+which are stored in their canonical forms.
 
 | Field | Accepted values |
 | --- | --- |
@@ -146,8 +147,13 @@ names, subjects, and levels are collapsed. Capitalization is retained for displa
 | Email | One `@`, a nonempty local part, and at least two nonempty dot-separated domain labels. No internal whitespace; domain labels use letters, digits, and internal hyphens. |
 | Address | 1–150 printable characters on one line. |
 | Subject | 1–40 characters; letters, digits, spaces, and `& + - ' / ( ) . ,`. |
-| Level | 1–30 characters; letters, digits, spaces, apostrophes, and hyphens. |
+| Level | `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, or `JC 1`–`JC 2`. Input is case-insensitive and stored as, for example, `Secondary 3` or `JC 2`. |
 | Note | 1–200 printable characters on one line, or empty to omit it. |
+
+`JC 5`, `Secondary 6`, `Primary 7`, abbreviations such as `P6`, and custom labels such as `Adult` are
+rejected. The error is `Level must be Primary 1-6, Secondary 1-5, or JC 1-2 (for example, Secondary 3).`
+The same rules apply to level values in JSON. Unsupported values make the file invalid and trigger
+the existing load warning; the file is preserved. Legacy contacts without a level remain supported.
 
 Duplicates require the same role and the same normalized name ignoring case, together with either the same
 phone digits (ignoring `+`, spaces, and hyphens) or the same email ignoring case. A matching name alone is
@@ -161,8 +167,8 @@ Examples:
 
 ### Listing all contacts: `list`
 
-Displays all contacts in insertion order, numbered from 1. This clears any search/filter and display ordering,
-restoring the complete list of remaining contacts.
+Displays all contacts in insertion order, numbered from 1. This command clears filtering and sorting
+to restore the complete insertion-order list.
 
 Compact cards show only the index, role, name, and phone. `list` collapses any expanded card.
 
@@ -178,6 +184,22 @@ Format: `list`
 Example: `list`
 
 ![Result of the list command showing four compact contact cards](images/listContactsResult.png)
+
+### Sorting contacts by academic level: `sort`
+
+Format: `sort level`
+
+* Students come first: `Primary 1`–`Primary 6`, then `Secondary 1`–`Secondary 5`, then `JC 1`–`JC 2`.
+  Names break level ties, ignoring case. Legacy students without levels follow other students;
+  parents come last, ordered by name. Equal sort keys have no additional guaranteed order.
+* Sorts the current results, retaining the filter and any visible selected or expanded contact.
+  Sorting remains active as results change; `list` clears filtering and sorting.
+* `view`, `edit`, and `delete` use the displayed indices. Sorting does not save data or change stored order.
+* `SORT LEVEL` and surrounding whitespace are accepted. Success: `Contacts sorted by academic level.`,
+  including for an empty list. Missing, unsupported, or extra arguments give
+  `Invalid command format. Expected: sort level` and leave the display unchanged.
+
+Example: run `find Amy`, then `sort level` to order only the matching contacts. Run `list` to reset.
 
 ### Viewing a contact: `view`
 
@@ -257,7 +279,7 @@ Command words and prefixes are case-insensitive, and prefixes can appear in any 
   Hyphenated names are complete words: `n/Alice` does not match `Alice-Marie`.
 * **Subject and level:** match the complete stored value, ignoring case and leading/trailing spaces.
   Repeated spaces are collapsed. `s/Additional Mathematics` does not match `Mathematics`;
-  `l/Secondary 3` does not match `Secondary 30`. There are no abbreviations, partial matches, or fuzzy matches.
+  `l/Secondary 3` does not match `Secondary 4`. There are no abbreviations, partial matches, or fuzzy matches.
 * **AND only:** every supplied field and every name keyword must match. Use the existing `find` command when you
   want an OR search across name keywords.
 * Name-only filtering includes students and parents. Parents and older records without a subject or level cannot
@@ -292,10 +314,11 @@ Invalid input leaves contacts, the displayed list, ordering, selection, expansio
 | Repeated prefix such as `n/` and `N/` | `Prefix n/ may be specified only once.` |
 | Empty `n/` value | `Name filter requires at least one keyword.` |
 | Empty/invalid subject, or over 40 normalized characters | `Subject must be 1-40 characters and use only letters, digits, spaces, or common subject punctuation.` |
-| Empty/invalid level, or over 30 normalized characters | `Level must be 1-30 characters and contain only letters, digits, spaces, apostrophes, or hyphens.` |
+| Empty or unsupported academic level | `Level must be Primary 1-6, Secondary 1-5, or JC 1-2 (for example, Secondary 3).` |
 
-Subject values allow letters, digits, spaces, and `& + - ' / ( ) . ,`. Level values allow letters, digits,
-spaces, apostrophes, and hyphens. Tabs inside subject/level values are invalid. Name keywords follow `find`'s
+Subject values allow letters, digits, spaces, and `& + - ' / ( ) . ,`. Levels use the predefined labels
+`Primary 1` to `Primary 6`, `Secondary 1` to `Secondary 5`, and `JC 1` to `JC 2`, ignoring case and repeated spaces.
+Tabs inside subject/level values are invalid. Name keywords follow `find`'s
 word-splitting rules. Literal prefix-shaped text uses the existing [backslash escape](#prefixes-and-literal-text),
 for example `filter s/Topic \x/foo` matches the subject `Topic x/foo`.
 
@@ -392,6 +415,7 @@ Action | Format, Examples
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` (at least one criterion)<br> e.g., `filter s/Mathematics l/Secondary 3`
 **List** | `list`
+**Sort** | `sort level`
 **View** | `view INDEX`<br> e.g., `view 2`
 **Help** | `help`
 **Exit** | `exit`

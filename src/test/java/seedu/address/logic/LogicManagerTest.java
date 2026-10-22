@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -142,9 +143,12 @@ public class LogicManagerTest {
         assertEquals(savedData, Files.readString(dataPath));
     }
 
+    /**
+     * Checks that read-only commands leave storage untouched before and after a data change.
+     */
     @Test
     public void execute_readOnlyCommands_doesNotSaveAddressBook() throws Exception {
-        String[] readOnlyCommands = {"list", "find Amy", "help", "exit"};
+        String[] readOnlyCommands = {"list", "find Amy", "sort level", "help", "exit"};
 
         for (String command : readOnlyCommands) {
             logic.execute(command);
@@ -260,6 +264,9 @@ public class LogicManagerTest {
         assertEquals(new AddressBook(), model.getAddressBook());
         assertEquals("invalid data", Files.readString(dataPath));
         assertEquals(0, addressBookStorage.saveCount);
+        logic.execute("sort level");
+        assertEquals(0, addressBookStorage.saveCount);
+        assertEquals("invalid data", Files.readString(dataPath));
         assertTrue(logic.execute("exit").isExit());
     }
 
@@ -476,5 +483,52 @@ public class LogicManagerTest {
             super.saveAddressBook(addressBook);
             saveCount++;
         }
+    }
+
+    /**
+     * Checks that invalid input and failed mutations preserve the sorted view, filter, and saved data.
+     */
+    @Test
+    public void execute_failedCommands_preservesSortedFilterAndSavedData() throws Exception {
+        Person later = new PersonBuilder().withName("Zoe").withLevel("JC 2").build();
+        Person earlier = new PersonBuilder().withName("Amy").withLevel("Primary 1").build();
+        Person hidden = new PersonBuilder().withRole("parent").withName("Parent").build();
+        model.addPerson(later);
+        model.addPerson(hidden);
+        model.addPerson(earlier);
+        model.updateFilteredPersonList(person -> person.getLevel().isPresent());
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+        String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
+        logic.execute("sort level");
+
+        assertThrows(ParseException.class, "Invalid command format. Expected: sort level", () -> {
+            logic.execute("sort name");
+        });
+        assertEquals(List.of(earlier, later), model.getFilteredPersonList());
+        addressBookStorage.failNextSave = true;
+
+        assertThrows(CommandException.class, LogicManager.MESSAGE_DELETE_SAVE_FAILURE, () -> {
+            logic.execute("delete 1");
+        });
+        assertEquals(List.of(earlier, later), model.getFilteredPersonList());
+
+        addressBookStorage.failNextSave = true;
+        assertThrows(CommandException.class,
+                String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error"), () -> {
+                    logic.execute("edit 1 n/Zed");
+                });
+        assertEquals(List.of(earlier, later), model.getFilteredPersonList());
+
+        addressBookStorage.failNextSave = true;
+        assertThrows(CommandException.class, LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> {
+            logic.execute("add r/student n/Bob p/99999999 e/bob@example.com a/Street"
+                    + " s/Mathematics l/Primary 2");
+        });
+
+        assertEquals(List.of(earlier, later), model.getFilteredPersonList());
+        assertFalse(model.getFilteredPersonPredicate().test(hidden));
+        assertEquals(List.of(later, hidden, earlier), model.getAddressBook().getPersonList());
+        assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
+        assertEquals(1, addressBookStorage.saveCount);
     }
 }

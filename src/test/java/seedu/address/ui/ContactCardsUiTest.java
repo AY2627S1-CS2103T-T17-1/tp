@@ -59,6 +59,7 @@ import javafx.stage.Window;
 import seedu.address.MainApp;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.person.Person;
@@ -166,13 +167,17 @@ public class ContactCardsUiTest {
             for (Node syntax : root.lookupAll(".command-syntax")) {
                 commands.add(((Label) syntax).getText().split(" ")[0]);
             }
-            assertEquals(Set.of("add", "list", "view", "edit", "find", "filter", "delete", "clear", "help", "exit"),
-                    commands);
+            assertEquals(Set.of("add", "list", "sort", "view", "edit", "find", "filter", "delete", "clear", "help",
+                    "exit"), commands);
 
             Clipboard clipboard = Clipboard.getSystemClipboard();
             Map<DataFormat, Object> previousContent = new HashMap<>();
             for (DataFormat format : clipboard.getContentTypes()) {
-                previousContent.put(format, clipboard.getContent(format));
+                // Native formats can be advertised even when JavaFX cannot retrieve their content.
+                Object content = clipboard.getContent(format);
+                if (content != null) {
+                    previousContent.put(format, content);
+                }
             }
             try {
                 Button copyButton = (Button) root.lookup("#copyButton");
@@ -720,5 +725,30 @@ public class ContactCardsUiTest {
         FutureTask<T> task = new FutureTask<>(action);
         Platform.runLater(task);
         return task.get(15, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Checks that an expanded card follows its contact when sorting changes the displayed index.
+     */
+    @Test
+    void panel_sort_preservesExpandedContactAndUpdatesIndex() throws Exception {
+        runOnFxThread(() -> {
+            Person later = new PersonBuilder().withName("Zoe").withLevel("JC 2").build();
+            Person earlier = new PersonBuilder().withName("Amy").withLevel("Primary 1").build();
+            Model model = new ModelManager();
+            model.addPerson(later);
+            model.addPerson(earlier);
+            PersonListPanel panel = new PersonListPanel(model.getFilteredPersonList());
+            new Scene(panel.getRoot(), 760, 600);
+            panel.completeCommand(CommandResult.expandContact("view", later));
+
+            panel.beginCommand();
+            panel.completeCommand(new SortCommand().execute(model));
+            layout(panel.getRoot());
+            assertEquals(later, list(panel.getRoot()).getSelectionModel().getSelectedItem());
+            assertEquals("2.", label(selectedCard(panel.getRoot()), "id").getText());
+            assertTrue(selectedCard(panel.getRoot()).lookup("#details").isVisible());
+
+        });
     }
 }

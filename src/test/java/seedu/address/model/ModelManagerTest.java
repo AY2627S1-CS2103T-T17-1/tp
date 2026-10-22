@@ -18,6 +18,7 @@ import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.PersonLevelComparator;
 import seedu.address.model.person.PersonNameComparator;
 import seedu.address.testutil.AddressBookBuilder;
 
@@ -148,5 +149,19 @@ public class ModelManagerTest {
         UserPrefs differentUserPrefs = new UserPrefs();
         differentUserPrefs.setGuiSettings(new GuiSettings(1, 2, 3, 4));
         assertFalse(modelManager.equals(new ModelManager(addressBook, differentUserPrefs)));
+    }
+
+    /**
+     * Checks that sorting updates the existing observable view used by UI bindings.
+     */
+    @Test
+    public void setPersonListComparator_levelOrder_preservesObservableListIdentity() {
+        ModelManager model = new ModelManager();
+        model.addPerson(BENSON);
+        model.addPerson(ALICE);
+        var displayed = model.getFilteredPersonList();
+        model.setPersonListComparator(new PersonLevelComparator());
+        assertTrue(displayed == model.getFilteredPersonList());
+        assertEquals(List.of(ALICE, BENSON), displayed);
     }
 }

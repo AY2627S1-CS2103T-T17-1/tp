@@ -62,15 +62,14 @@ public class ContactMatchesCriteriaPredicateTest {
     }
 
     /**
-     * Checks that subject and level fragments cannot match complete stored values.
+     * Checks that subject fragments and different academic levels cannot match stored values.
      */
     @Test
-    public void test_subjectAndLevel_rejectsPartialValues() {
+    public void test_subjectAndLevel_requiresCompleteMatchingValues() {
         assertFalse(criteria("Mathematics", null).test(alice));
         assertFalse(criteria("Additional", null).test(alice));
-        assertFalse(criteria(null, "Secondary").test(alice));
-        assertFalse(criteria(null, "3").test(alice));
-        assertFalse(criteria("Additional Mathematics", "Secondary 30").test(alice));
+        assertFalse(criteria(null, "Secondary 4").test(alice));
+        assertFalse(criteria("Additional Mathematics", "JC 1").test(alice));
     }
 
     /**

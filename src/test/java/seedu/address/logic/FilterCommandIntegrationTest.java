@@ -142,6 +142,47 @@ public class FilterCommandIntegrationTest {
     }
 
     /**
+     * Checks that sorting a filtered list retains membership and uses sorted indices without saving.
+     *
+     * @throws Exception If executing valid commands or reading the saved fixture unexpectedly fails.
+     */
+    @Test
+    public void execute_sortAfterFilter_preservesMembershipAndDoesNotSave() throws Exception {
+        String saved = Files.readString(storage.getAddressBookFilePath());
+        ObservableList<Person> displayed = logic.getFilteredPersonList();
+        logic.execute("filter n/Tan");
+        assertEquals(List.of(PARENT, AMY, AMY_LOWER, ZOE), displayed);
+        logic.execute("sort level");
+        assertEquals(List.of(AMY, AMY_LOWER, ZOE, PARENT), displayed);
+        assertSame(displayed, logic.getFilteredPersonList());
+        assertEquals(PARENT, logic.execute("view 4").getContact().orElseThrow());
+        assertEquals(INSERTION_ORDER, model.getAddressBook().getPersonList());
+        assertEquals(saved, Files.readString(storage.getAddressBookFilePath()));
+        assertEquals(0, saveCount);
+    }
+
+    /**
+     * Checks that filtering retains academic ordering and listing restores all contacts in insertion order.
+     *
+     * @throws Exception If executing valid commands or reading the saved fixture unexpectedly fails.
+     */
+    @Test
+    public void execute_filterAfterSort_retainsAcademicOrderAndListResetsBoth() throws Exception {
+        String saved = Files.readString(storage.getAddressBookFilePath());
+        logic.execute("sort level");
+        assertEquals(List.of(AMY, AMY_LOWER, ZOE, BOB, PARENT), logic.getFilteredPersonList());
+        Comparator<? super Person> comparator = model.getPersonListComparator();
+        logic.execute("filter n/Tan");
+        assertSame(comparator, model.getPersonListComparator());
+        assertEquals(List.of(AMY, AMY_LOWER, ZOE, PARENT), logic.getFilteredPersonList());
+        logic.execute("list");
+        assertEquals(INSERTION_ORDER, logic.getFilteredPersonList());
+        assertNull(model.getPersonListComparator());
+        assertEquals(saved, Files.readString(storage.getAddressBookFilePath()));
+        assertEquals(0, saveCount);
+    }
+
+    /**
      * Checks displayed indices before and after deletion and verifies the saved remaining contacts.
      *
      * @throws Exception If an expected successful command or storage read fails.
@@ -192,7 +233,7 @@ public class FilterCommandIntegrationTest {
         Comparator<? super Person> comparator = model.getPersonListComparator();
         String saved = Files.readString(storage.getAddressBookFilePath());
         for (String command : List.of("filter", "filter Alice", "filter n/", "filter s/", "filter l/",
-                "filter x/foo", "filter s/Math S/Physics")) {
+                "filter x/foo", "filter s/Math S/Physics", "filter l/JC 5", "filter l/Secondary 6")) {
             assertThrows(ParseException.class, () -> logic.execute(command));
             assertEquals(before, logic.getFilteredPersonList());
             assertSame(comparator, model.getPersonListComparator());
