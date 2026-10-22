@@ -1,10 +1,12 @@
 package seedu.address.model;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Predicate;
 
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
+import seedu.address.model.person.ParentStudentLink;
 import seedu.address.model.person.Person;
 
 /**
@@ -60,6 +62,22 @@ public interface Model {
      * The person identity of {@code editedPerson} must not be the same as another existing person in the address book.
      */
     void setPerson(Person target, Person editedPerson);
+
+    /**
+     * Returns true if {@code link} already exists in the address book.
+     */
+    boolean hasLink(ParentStudentLink link);
+
+    /**
+     * Adds the given link.
+     * {@code link} must not already exist, and both of its contacts must exist in the address book.
+     */
+    void addLink(ParentStudentLink link);
+
+    /**
+     * Returns the contacts linked to {@code person}: the students of a parent, or the parents of a student.
+     */
+    List<Person> getLinkedPersons(Person person);
 
     /**
      * Returns the observable, unmodifiable displayed list after filtering and ordering.

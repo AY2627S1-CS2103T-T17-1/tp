@@ -1,0 +1,35 @@
+{
+  "_comment": "George Best is linked to his child Alice Pauline",
+  "persons": [
+    {
+      "role": "parent",
+      "name": "George Best",
+      "phone": "9482442",
+      "email": "anna@example.com",
+      "address": "4th street",
+      "note": "Contact after 6 pm",
+      "tags": []
+    },
+    {
+      "role": "student",
+      "name": "Alice Pauline",
+      "phone": "94351253",
+      "email": "alice@example.com",
+      "address": "123, Jurong West Ave 6, #08-111",
+      "subject": "Mathematics",
+      "level": "Secondary 3",
+      "note": "Prefers visual examples",
+      "tags": [
+        "friends"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "parentName": "George Best",
+      "parentPhone": "9482442",
+      "studentName": "Alice Pauline",
+      "studentPhone": "94351253"
+    }
+  ]
+}
