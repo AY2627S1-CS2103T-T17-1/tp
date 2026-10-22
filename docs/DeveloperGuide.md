@@ -280,15 +280,15 @@ so `LogicManager` takes its read-only execution branch without a Storage call.
 `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, and `JC 1`–`JC 2`.
 `PersonLevelComparator` orders students by rank, then case-insensitive name; parents follow by name.
 Legacy students without a level follow other students and precede parents. Equal sort keys compare equal.
-`add` and `filter` reuse this validation through `ParserUtil#parseLevel(...)`; JSON loading validates recorded
+`add`, `edit`, and `filter` reuse this validation through `ParserUtil#parseLevel(...)`; JSON loading validates recorded
 levels with the same `Level` rules. Unsupported values such as `JC 5` and `Secondary 6` are rejected.
-`edit` does not accept level changes and preserves the existing level when other fields are edited.
+`edit` accepts level changes for students and preserves the existing level when `l/` is omitted.
 
 `getFilteredPersonList()` returns the same displayed view to the UI and to `view`, `edit`, and `delete`, so
 their indices follow the displayed order. `PersonListPanel` supplies this observable view to its `ListView`
 using `setItems(...)`; JavaFX observes subsequent list changes automatically. After command execution,
 `PersonListPanel#completeCommand(...)` restores selection and expansion for any contact still visible and
-refreshes the cards. The diagram's UI note summarizes this behavior without implying a direct method call
+refreshes the cards. These JavaFX updates are omitted from the diagram because there is no direct method call
 from `SortedList` to `PersonListPanel`.
 
 Sorting stays active when `find` or `filter` replaces the predicate; successful `add` and `edit` clear filtering
@@ -297,7 +297,7 @@ but retain the comparator. `list` sets `PREDICATE_SHOW_ALL_PERSONS` and clears t
 The filter and comparator are session state: neither is saved, and restarting restores insertion order.
 
 The diagram shows creation of the command parser, command, and result, with synchronous calls and dashed returns.
-Existing model, list, and UI objects are created before this scenario. Routine read-only checks in `LogicManager`,
+Existing model and list objects are created before this scenario. Routine read-only checks in `LogicManager`,
 invalid-input paths, validation helpers, object lifetime endings, and JavaFX notification and rendering internals
 are omitted to keep the diagram focused on parsing and applying the sort.
 
