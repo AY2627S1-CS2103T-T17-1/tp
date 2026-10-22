@@ -228,6 +228,9 @@ public class EditCommandParserTest {
         assertParseSuccess(parser, userInput, expectedCommand);
     }
 
+    /**
+     * Checks that student subject, academic level, and note prefixes produce the expected edit descriptor.
+     */
     @Test
     public void parse_roleSpecificFields_success() {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
@@ -242,6 +245,9 @@ public class EditCommandParserTest {
         assertParseSuccess(parser, "1 l/JC 1", new EditCommand(INDEX_FIRST_PERSON, descriptor));
     }
 
+    /**
+     * Checks that a note can be edited together with an existing contact field.
+     */
     @Test
     public void parse_noteAndExistingField_success() {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
@@ -250,6 +256,9 @@ public class EditCommandParserTest {
                 new EditCommand(INDEX_FIRST_PERSON, descriptor));
     }
 
+    /**
+     * Checks that an empty note prefix requests removal of the existing note.
+     */
     @Test
     public void parse_emptyNote_clearsNote() {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withoutNote().build();
@@ -257,6 +266,9 @@ public class EditCommandParserTest {
         assertParseSuccess(parser, "1 o/   ", new EditCommand(INDEX_FIRST_PERSON, descriptor));
     }
 
+    /**
+     * Checks that invalid student fields and oversized notes fail validation.
+     */
     @Test
     public void parse_invalidRoleSpecificValues_failure() {
         assertParseFailure(parser, "1 s/", Subject.MESSAGE_CONSTRAINTS);
@@ -266,6 +278,9 @@ public class EditCommandParserTest {
         assertParseFailure(parser, "1 o/" + "n".repeat(201), Note.MESSAGE_CONSTRAINTS);
     }
 
+    /**
+     * Checks that a role-specific field cannot be specified more than once.
+     */
     @Test
     public void parse_repeatedRoleSpecificPrefixes_failure() {
         assertParseFailure(parser, "1 s/Math S/English", "Prefix s/ may be specified only once.");
@@ -273,6 +288,9 @@ public class EditCommandParserTest {
         assertParseFailure(parser, "1 o/First O/Second", "Prefix o/ may be specified only once.");
     }
 
+    /**
+     * Checks that editing a contact cannot change its student or parent role.
+     */
     @Test
     public void parse_roleChange_failure() {
         assertParseFailure(parser, "1 r/parent", "Unknown prefix: r/.");

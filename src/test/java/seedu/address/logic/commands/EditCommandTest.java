@@ -168,6 +168,113 @@ public class EditCommandTest {
         assertCommandFailure(editCommand, model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
     }
 
+    /**
+     * Checks that editing student-only fields and a note leaves unspecified contact details intact.
+     */
+    @Test
+    public void execute_studentRoleSpecificFields_updatesOnlySpecifiedFields() {
+        Person editedPerson = new PersonBuilder(ALICE).withSubject("A-Math")
+                .withLevel("Secondary 4").withNote("Prefers examples").build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withSubject("A-Math").withLevel("Secondary 4").withNote("Prefers examples").build();
+
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(ALICE, editedPerson);
+        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson));
+
+        assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
+    }
+
+    /**
+     * Checks that a subject-only edit preserves the student's academic level and note.
+     */
+    @Test
+    public void execute_studentSubjectOnly_preservesLevelAndNote() {
+        model = new ModelManager();
+        Person original = new PersonBuilder().withNote("Call after class").build();
+        model.addPerson(original);
+        Person editedPerson = new PersonBuilder(original).withSubject("Physics").build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withSubject("Physics").build();
+
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(original, editedPerson);
+        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson));
+
+        assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
+    }
+
+    /**
+     * Checks that an explicitly empty note removes the existing note.
+     */
+    @Test
+    public void execute_emptyNote_clearsExistingNote() {
+        model = new ModelManager();
+        Person original = new PersonBuilder().withNote("Call after class").build();
+        model.addPerson(original);
+        Person editedPerson = new PersonBuilder(original).withoutNote().build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withoutNote().build();
+
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(original, editedPerson);
+        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson));
+
+        assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
+    }
+
+    /**
+     * Checks that a tutor can update the note on a parent contact.
+     */
+    @Test
+    public void execute_parentNote_success() {
+        model = new ModelManager();
+        Person original = new PersonBuilder().withRole("parent").build();
+        model.addPerson(original);
+        Person editedPerson = new PersonBuilder(original).withNote("Contact after 6 pm").build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote("Contact after 6 pm").build();
+
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(original, editedPerson);
+        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson));
+
+        assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
+    }
+
+    /**
+     * Checks that student-only fields cannot be assigned to a parent or partially change its note.
+     */
+    @Test
+    public void execute_parentStudentFields_failureWithoutMutation() {
+        model = new ModelManager();
+        Person parent = new PersonBuilder().withRole("parent").build();
+        model.addPerson(parent);
+
+        EditPersonDescriptor subject = new EditPersonDescriptorBuilder().withSubject("Mathematics").build();
+        EditPersonDescriptor levelAndNote = new EditPersonDescriptorBuilder()
+                .withLevel("Secondary 3").withNote("Do not change").build();
+
+        assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, subject), model, AddCommand.MESSAGE_PARENT_FIELDS);
+        assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, levelAndNote), model,
+                AddCommand.MESSAGE_PARENT_FIELDS);
+    }
+
+    /**
+     * Checks that a legacy student without subject or level can still receive an unrelated edit.
+     */
+    @Test
+    public void execute_legacyStudentWithoutSubjectOrLevel_allowsUnrelatedEdit() {
+        model = new ModelManager();
+        Person original = new PersonBuilder().withoutSubject().withoutLevel().build();
+        model.addPerson(original);
+        Person editedPerson = new PersonBuilder(original).withNote("Call after class").build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote("Call after class").build();
+
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(original, editedPerson);
+        String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson));
+
+        assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model, expectedMessage, expectedModel);
+    }
+
     @Test
     public void execute_studentRoleSpecificFields_updatesOnlySpecifiedFields() {
         Person editedPerson = new PersonBuilder(ALICE).withSubject("A-Math")

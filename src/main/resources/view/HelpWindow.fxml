@@ -55,6 +55,15 @@
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Sort contacts by academic level" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="sort level" styleClass="command-syntax" />
+                <Label minHeight="-Infinity"
+                    text="Order the displayed students by academic level, then name; parents follow by name."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity" text="Keep the current filter. Use list to reset filtering and ordering."
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="View contact details" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="view INDEX" styleClass="command-syntax" />
                 <Label minHeight="-Infinity" text="Expand the contact at INDEX in the displayed list. Example: view 1"
