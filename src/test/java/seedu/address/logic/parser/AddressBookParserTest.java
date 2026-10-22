@@ -6,6 +6,7 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
+import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 
 import java.util.List;
 import java.util.Locale;
@@ -21,6 +22,7 @@ import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
+import seedu.address.logic.commands.LinkCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -120,6 +122,12 @@ public class AddressBookParserTest {
     public void parseCommand_listWithArguments_throwsParseException() {
         assertThrows(ParseException.class, "Invalid command format. Expected: list", ()
                 -> parser.parseCommand("list 3"));
+    }
+
+    @Test
+    public void parseCommand_link() throws Exception {
+        LinkCommand command = (LinkCommand) parser.parseCommand(LinkCommand.COMMAND_WORD + " 1 2");
+        assertEquals(new LinkCommand(INDEX_FIRST_PERSON, INDEX_SECOND_PERSON), command);
     }
 
     @Test

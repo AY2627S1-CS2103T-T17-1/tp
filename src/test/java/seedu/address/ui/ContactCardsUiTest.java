@@ -373,6 +373,13 @@ public class ContactCardsUiTest {
             assertFalse(parent.getRoot().lookup("#subject").isManaged());
             assertFalse(parent.getRoot().lookup("#level").isManaged());
             assertEquals("Note: " + GEORGE.getNote().orElseThrow(), label(parent.getRoot(), "note").getText());
+            assertEquals("Linked students: None", label(parent.getRoot(), "links").getText());
+
+            PersonCard linkedParent = new PersonCard(GEORGE, 3, true, List.of(ALICE, BOB));
+            assertEquals("Linked students: " + ALICE.getName() + ", " + BOB.getName(),
+                    label(linkedParent.getRoot(), "links").getText());
+            PersonCard linkedStudent = new PersonCard(ALICE, 1, true, List.of(GEORGE));
+            assertEquals("Linked parents: " + GEORGE.getName(), label(linkedStudent.getRoot(), "links").getText());
         });
     }
 

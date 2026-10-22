@@ -25,6 +25,7 @@
     <Label fx:id="subject" styleClass="cell_small_label" wrapText="true" minWidth="0" />
     <Label fx:id="level" styleClass="cell_small_label" wrapText="true" minWidth="0" />
     <Label fx:id="note" styleClass="cell_small_label" wrapText="true" minWidth="0" />
+    <Label fx:id="links" styleClass="cell_small_label" wrapText="true" minWidth="0" />
     <FlowPane fx:id="tags" />
   </VBox>
 </VBox>
