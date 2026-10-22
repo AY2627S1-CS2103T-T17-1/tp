@@ -231,6 +231,39 @@ Invalid input leaves contact data, the displayed list, and the current selection
 | An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
 | An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
 
+### Linking a parent to a student: `link`
+
+Records that a parent contact is the parent of a student contact.
+
+Format: `link PARENT_INDEX STUDENT_INDEX`
+
+* Links the parent at `PARENT_INDEX` to the student at `STUDENT_INDEX`, using the indices in the currently displayed
+  list, including search and filter results.
+* Supply exactly two **positive integers**. The first must be a parent and the second must be a student.
+* A parent can be linked to several students, and a student can be linked to several parents.
+* On success, the message is `Linked parent PARENT_NAME to student STUDENT_NAME.` and the parent's card is
+  highlighted and expanded.
+* Expanded cards list linked contacts: a parent shows `Linked students: …` and a student shows `Linked parents: …`.
+  A contact without links shows `None`.
+* Links are saved with your contacts. Deleting a linked contact removes its links, and editing a linked contact's
+  name or phone keeps its links.
+
+Examples:
+* `list` followed by `link 2 1` links the parent at index 2 to the student at index 1.
+* `find Tan` followed by `link 1 3` links the first search result (a parent) to the third (a student).
+
+Invalid input leaves contact data, links, and the displayed list unchanged:
+
+| Input problem | Error message |
+| --- | --- |
+| Missing or extra arguments | `Invalid command format. Expected: link PARENT_INDEX STUDENT_INDEX` |
+| An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
+| An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
+| The same index twice | `A contact cannot be linked to itself.` |
+| The first contact is not a parent | `The contact at index INDEX is not a parent.` |
+| The second contact is not a student | `The contact at index INDEX is not a student.` |
+| The two contacts are already linked | `PARENT_NAME is already linked to STUDENT_NAME.` |
+
 ### Editing a contact: `edit`
 
 Edits an existing contact in TutorContacts.
@@ -243,6 +276,7 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`
 * `edit` cannot change a contact's role, subject, academic level, or note in this version.
 * When editing tags, all of the contact's existing tags are removed; adding tags is not cumulative.
 * To remove all of a contact's tags, enter `t/` without a tag after it.
+* Editing a linked contact's name or phone keeps its links to other contacts.
 
 Examples:
 *  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st contact to be `91234567` and `johndoe@example.com` respectively.
@@ -334,6 +368,7 @@ Format: `delete INDEX`
 * Deletes the contact at the specified `INDEX` in the currently displayed list, including search results.
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
 * On success, the message is `Deleted contact: NAME.` The remaining contacts keep their order and are renumbered.
+* Deleting a linked contact also removes its links. The message then ends with `Removed COUNT link(s).`
 * Deleting the selected contact clears the selection and expansion. Deleting another contact keeps the selected
   contact highlighted, with its new index and any expanded details.
 
@@ -351,7 +386,7 @@ Invalid input leaves contact data and the displayed list unchanged:
 
 ### Clearing all contacts: `clear`
 
-Deletes all contacts from TutorContacts.
+Deletes all contacts and links from TutorContacts.
 
 Format: `clear`
 
@@ -368,7 +403,7 @@ Additional text is rejected with `Invalid command format. Expected: exit`; for e
 
 ### Saving the data
 
-TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `delete`, and
+TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `link`, `delete`, and
 `clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `filter`, `help`, and `exit` do not rewrite
 the data file. A failed save leaves both the displayed contacts and the existing data file unchanged.
 
@@ -378,6 +413,11 @@ Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
 to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
 the first successful data-changing command. Advanced users can edit the JSON file directly.
+
+Links are saved in a `links` list. Each link names the parent and student by their name and phone, for example
+`{ "parentName": "Bernice Yu", "parentPhone": "99272758", "studentName": "Alex Yeoh", "studentPhone": "87438807" }`.
+If you change a contact's name or phone in the file, update its links too: a link to a contact that does not exist
+makes the file invalid.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
 If the data file is invalid or unreadable, TutorContacts starts with an empty list and displays
@@ -414,6 +454,7 @@ Action | Format, Examples
 **Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` (at least one criterion)<br> e.g., `filter s/Mathematics l/Secondary 3`
+**Link** | `link PARENT_INDEX STUDENT_INDEX`<br> e.g., `link 2 1`
 **List** | `list`
 **Sort** | `sort level`
 **View** | `view INDEX`<br> e.g., `view 2`
