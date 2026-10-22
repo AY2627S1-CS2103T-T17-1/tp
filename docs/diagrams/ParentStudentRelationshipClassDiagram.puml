@@ -1,0 +1,76 @@
+@startuml
+!include style.puml
+skinparam arrowThickness 1.1
+skinparam arrowColor MODEL_COLOR
+skinparam classBackgroundColor MODEL_COLOR
+show members
+hide empty members
+
+Package Model as ModelPackage <<Rectangle>> {
+Class "<<interface>>\nModel" as Model {
+    +hasLink(link: ParentStudentLink): boolean
+    +addLink(link: ParentStudentLink)
+    +getLinkedPersons(person: Person): List<Person>
+    +deletePerson(target: Person)
+    +setPerson(target: Person, editedPerson: Person)
+}
+Class ModelManager
+Class AddressBook {
+    +hasContactsOf(link: ParentStudentLink): boolean
+    +removePerson(key: Person)
+    +setPerson(target: Person, editedPerson: Person)
+}
+Class UniquePersonList
+Class Person {
+    -name: Name
+    -phone: Phone
+    +isSamePerson(otherPerson: Person): boolean
+}
+Class "<<enumeration>>\nRole" as Role {
+    STUDENT
+    PARENT
+}
+Class ParentStudentLink {
+    -parentName: Name
+    -parentPhone: Phone
+    -studentName: Name
+    -studentPhone: Phone
+    +{static} between(parent: Person, student: Person): ParentStudentLink
+    +isParent(person: Person): boolean
+    +isStudent(person: Person): boolean
+    +withContactReplaced(target: Person, editedPerson: Person): ParentStudentLink
+}
+}
+
+Package Storage as StoragePackage <<Rectangle>> {
+Class JsonSerializableAddressBook STORAGE_COLOR
+Class JsonAdaptedLink STORAGE_COLOR {
+    -parentName: String
+    -parentPhone: String
+    -studentName: String
+    -studentPhone: String
+    +toModelType(): ParentStudentLink
+}
+}
+
+ModelManager .up.|> Model
+ModelManager --> "1" AddressBook
+AddressBook *--> "1" UniquePersonList
+UniquePersonList --> "*" Person
+AddressBook *--> "*" ParentStudentLink : links >
+Person -right-> "1" Role
+
+' Each link identifies its contacts by name and phone; a contact can appear in any number of links.
+ParentStudentLink "0..*" ---> "1" Person : parent >
+ParentStudentLink "0..*" --> "1" Person : student >
+
+note right of ParentStudentLink
+  A parent can be linked to 0..* students,
+  and a student can be linked to 0..* parents.
+  Links refer to contacts by normalized
+  name and phone, not object references.
+end note
+
+JsonSerializableAddressBook *-[STORAGE_COLOR]-> "*" JsonAdaptedLink
+JsonAdaptedLink .[STORAGE_COLOR].> ParentStudentLink : converts to/from >
+@enduml

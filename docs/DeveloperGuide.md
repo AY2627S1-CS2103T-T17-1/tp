@@ -125,7 +125,8 @@ How the parsing works:
 
 The `Model` component,
 
-* stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
+* stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object),
+  and the `ParentStudentLink` objects that connect parent contacts to student contacts.
 * selects contacts through a `FilteredList<Person>` and orders those results through a `SortedList<Person>`.
   `getFilteredPersonList()` exposes the final displayed view as an unmodifiable `ObservableList<Person>`.
   The UI and indexed commands use this same view, so their indices agree.
@@ -294,6 +295,57 @@ Bob Lee (Physics, JC 2). Give the contacts distinct valid contact details.
 7. Run `list`: expect Zoe, Alice, Bob in insertion order with compact cards.
 8. Restart: the remaining contacts still follow insertion order. Filtering alone must not rewrite JSON.
 
+### Parent-student links
+
+`link PARENT_INDEX STUDENT_INDEX` records that a parent contact is the parent of a student contact.
+Expanded contact cards then list the contact's linked students or parents.
+
+The class diagram below shows how a link is represented and persisted. Fields and classes unrelated to links,
+such as `Email`, `Address`, `Tag`, `UserPrefs`, and the storage managers, are omitted.
+
+![Classes that represent and persist parent-student links](images/ParentStudentRelationshipClassDiagram.png)
+
+**Representation.** `AddressBook` keeps a list of `ParentStudentLink` objects beside its `UniquePersonList`.
+Each link identifies its parent and its student by `Name` and `Phone`, compared in the same normalized way as the
+duplicate-contact rules (`Name#isSameName` and `Phone#isSamePhone`). `ParentStudentLink#isParent` and `#isStudent`
+also check the contact's `Role`, because a parent and a student may share a name and phone. Within one role, name
+and phone identify at most one contact, so each link resolves to exactly one parent and one student.
+A parent can have 0..* linked students and a student can have 0..* linked parents.
+Cards and `link` messages show each linked contact as `Name (phone)`, because two contacts may share a name.
+
+**Normal path.** `LinkCommandParser` parses two displayed-list indices. `LinkCommand#execute` looks up both
+contacts in `Model#getFilteredPersonList()`, checks that the first is a parent and the second a student, creates the
+link with `ParentStudentLink#between`, and rejects a duplicate using `Model#hasLink`. It then calls
+`Model#addLink` and returns a result that expands the parent's card. `LogicManager` saves the address book because
+the command changes data. `PersonListPanel` asks `Logic#getLinkedPersons` for each card's linked contacts.
+
+**Keeping links consistent.** `AddressBook` updates links whenever contacts change, so every command that changes
+contacts keeps links valid without extra code:
+
+* `removePerson` removes every link that involves the deleted contact. `DeleteCommand` reports how many it removed.
+* `setPerson` calls `ParentStudentLink#withContactReplaced`, which rewrites the side of a link that matched the
+  edited contact. Editing a name or phone therefore keeps the link.
+* `resetData` copies links, so `clear` and the save-failure rollback restore links together with contacts.
+
+**Storage.** `JsonSerializableAddressBook` saves links in a `links` list of `JsonAdaptedLink` objects, each holding the
+two names and phones as strings. When loading, it rejects a link with invalid fields, a link whose parent or student
+is not in the `persons` list, and a duplicate link, so a corrupted file is reported instead of loading broken links.
+A file without a `links` list loads with no links, so data files from earlier versions remain valid.
+
+**Design considerations.**
+
+* **Alternative 1 (current choice):** store links in `AddressBook`, identified by name and phone.
+  * Pros: `Person` and its equality are unchanged, deleting and editing update links in one place, and the data file
+    stays readable and editable by hand.
+  * Cons: a link must be rewritten when a linked contact's name or phone changes.
+* **Alternative 2:** store a list of linked students inside each parent `Person`.
+  * Pros: a card can read links straight from its contact.
+  * Cons: every `Person` copy (for example in `edit`) must carry the links, and deleting a student must update every
+    parent object.
+* **Alternative 3:** give each `Person` a generated ID and link by ID.
+  * Pros: links survive any edit without rewriting.
+  * Cons: IDs must be generated, saved, and validated, which adds risk to every existing command and data file.
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation
@@ -405,7 +457,7 @@ information while preparing lessons or communicating with parents.
 **Value proposition**: TutorContacts keeps student and parent contact information, together with essential tutoring
 details, in one place. Typed commands let the tutor record contacts and retrieve the information needed for lesson
 preparation or parent communication. The initial MVP focuses on creating, viewing, deleting, and retaining contact
-records. Relationship links and other contact-organization features are possible future extensions.
+records. Version 1.4 adds parent-student links so the tutor can see which parents belong to which students.
 
 ### User stories
 
@@ -824,6 +876,34 @@ Given below are instructions to test the app manually.
 testers are expected to do more *exploratory* testing.
 
 </div>
+
+### Linking a parent to a student
+
+1. Prerequisites: close TutorContacts, then move `data/tutorcontacts.json` (next to the JAR file) elsewhere so that
+   the app starts with an empty list. Start TutorContacts and enter these commands in order. The two students share
+   a name, so the steps also check that linked contacts can be told apart.
+   1. `add r/student n/Alex Tan p/91234567 e/alex@example.com a/1 Road s/Mathematics l/Secondary 3`
+   1. `add r/student n/Alex Tan p/98765432 e/alex.lim@example.com a/2 Road s/English l/Primary 6`
+   1. `add r/parent n/Mary Tan p/93334444 e/mary@example.com a/1 Road`
+   1. `list`
+
+   Expected: index 1 is Alex Tan (91234567), index 2 is Alex Tan (98765432), and index 3 is Mary Tan.
+1. Test case: `link 3 1`<br>
+   Expected: `Linked parent Mary Tan (93334444) to student Alex Tan (91234567).` Mary Tan's card expands and shows
+   `Linked students: Alex Tan (91234567)`.
+1. Test case: `link 3 2`<br>
+   Expected: Mary Tan's card shows `Linked students: Alex Tan (91234567), Alex Tan (98765432)`.
+1. Test case: `link 3 1`, then `link 1 2`, then `link 3 3`<br>
+   Expected: in turn, `Mary Tan (93334444) is already linked to Alex Tan (91234567).`,
+   `The contact at index 1 is not a parent.`, and `A contact cannot be linked to itself.` No data changes.
+1. Test case: `edit 1 p/80000000`, then `view 1`<br>
+   Expected: the first Alex Tan shows `Linked parents: Mary Tan (93334444)`. `view 3` shows
+   `Linked students: Alex Tan (80000000), Alex Tan (98765432)`.
+1. Test case: close and reopen TutorContacts, then `view 3`<br>
+   Expected: Mary Tan still shows both linked students.
+1. Test case: `delete 1`<br>
+   Expected: `Deleted contact: Alex Tan. Removed 1 link(s).` `view 2` shows only `Alex Tan (98765432)`.
+1. Clean-up: close TutorContacts and move your original `data/tutorcontacts.json` back.
 
 ### Launch and shutdown
 
