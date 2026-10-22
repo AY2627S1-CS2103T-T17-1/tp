@@ -9,6 +9,7 @@ import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BENSON;
+import static seedu.address.testutil.TypicalPersons.GEORGE;
 
 import java.util.List;
 
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.ParentStudentLink;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.PersonLevelComparator;
 import seedu.address.model.person.PersonNameComparator;
@@ -75,6 +77,36 @@ public class ModelManagerTest {
     public void hasPerson_personInAddressBook_returnsTrue() {
         modelManager.addPerson(ALICE);
         assertTrue(modelManager.hasPerson(ALICE));
+    }
+
+    @Test
+    public void addLink_validLink_linksContacts() {
+        modelManager.addPerson(GEORGE);
+        modelManager.addPerson(ALICE);
+        ParentStudentLink link = ParentStudentLink.between(GEORGE, ALICE);
+
+        modelManager.addLink(link);
+
+        assertTrue(modelManager.hasLink(link));
+        assertEquals(List.of(ALICE), modelManager.getLinkedPersons(GEORGE));
+    }
+
+    @Test
+    public void deletePerson_linkedStudent_removesLink() {
+        modelManager.addPerson(GEORGE);
+        modelManager.addPerson(ALICE);
+        ParentStudentLink link = ParentStudentLink.between(GEORGE, ALICE);
+        modelManager.addLink(link);
+
+        modelManager.deletePerson(ALICE);
+
+        assertFalse(modelManager.hasLink(link));
+        assertEquals(List.of(), modelManager.getLinkedPersons(GEORGE));
+    }
+
+    @Test
+    public void hasLink_nullLink_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> modelManager.hasLink(null));
     }
 
     @Test

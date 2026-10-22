@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
@@ -12,6 +13,7 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
+import seedu.address.model.person.ParentStudentLink;
 import seedu.address.model.person.Person;
 
 /**
@@ -85,7 +87,11 @@ public class ModelManager implements Model {
 
     @Override
     public void deletePerson(Person target) {
+        int linkCount = addressBook.getLinkedPersons(target).size();
         addressBook.removePerson(target);
+        if (linkCount > 0) {
+            logger.info("Removed " + linkCount + " link(s) of deleted contact " + target.getName());
+        }
     }
 
     @Override
@@ -99,6 +105,25 @@ public class ModelManager implements Model {
         requireAllNonNull(target, editedPerson);
 
         addressBook.setPerson(target, editedPerson);
+    }
+
+    @Override
+    public boolean hasLink(ParentStudentLink link) {
+        requireNonNull(link);
+        return addressBook.hasLink(link);
+    }
+
+    @Override
+    public void addLink(ParentStudentLink link) {
+        requireNonNull(link);
+        addressBook.addLink(link);
+        logger.info("Linked parent " + link.getParentName() + " to student " + link.getStudentName());
+    }
+
+    @Override
+    public List<Person> getLinkedPersons(Person person) {
+        requireNonNull(person);
+        return addressBook.getLinkedPersons(person);
     }
 
     //=========== Filtered Person List Accessors =============================================================
