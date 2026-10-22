@@ -93,7 +93,7 @@ public class FilterCommandParserTest {
     }
 
     /**
-     * Checks subject and level length boundaries and rejects invalid field characters.
+     * Checks subject length boundaries and rejects invalid subject characters.
      */
     @Test
     public void parse_fieldLengthBoundaries_acceptsOnlyValidLengths() {
@@ -101,15 +101,22 @@ public class FilterCommandParserTest {
             String subject = "A".repeat(length);
             assertParseSuccess(parser, "s/ " + subject + " ", command(List.of(), subject, null));
         }
-        for (int length : List.of(1, 30)) {
-            String level = "A".repeat(length);
+        assertParseFailure(parser, "s/" + "A".repeat(41), Subject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "s/Math!", Subject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "s/Additional\tMathematics", Subject.MESSAGE_CONSTRAINTS);
+    }
+
+    /**
+     * Checks that filters accept supported academic levels and reject unsupported stages and years.
+     */
+    @Test
+    public void parse_level_acceptsOnlySupportedAcademicLevels() {
+        for (String level : List.of("Primary 1", "Primary 6", "Secondary 1", "Secondary 5", "JC 1", "JC 2")) {
             assertParseSuccess(parser, "l/ " + level + " ", command(List.of(), null, level));
         }
-        assertParseFailure(parser, "s/" + "A".repeat(41), Subject.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, "l/" + "A".repeat(31), Level.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, "s/Math!", Subject.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, "l/Secondary!", Level.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, "s/Additional\tMathematics", Subject.MESSAGE_CONSTRAINTS);
+        for (String invalid : List.of("Primary 7", "Secondary 6", "JC 5", "Secondary", "3", "Secondary!", "Adult")) {
+            assertParseFailure(parser, "l/" + invalid, Level.MESSAGE_CONSTRAINTS);
+        }
     }
 
     /**

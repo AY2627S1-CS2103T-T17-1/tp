@@ -136,7 +136,8 @@ Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NO
 * The newly added contact is selected and scrolled into view as a compact card.
 
 Field rules apply to normalized values. Leading and trailing whitespace is trimmed; consecutive spaces in
-names, subjects, and levels are collapsed. Capitalization is retained for display and storage.
+names, subjects, and levels are collapsed. Capitalization is retained except for roles and academic levels,
+which are stored in their canonical forms.
 
 | Field | Accepted values |
 | --- | --- |
@@ -146,8 +147,13 @@ names, subjects, and levels are collapsed. Capitalization is retained for displa
 | Email | One `@`, a nonempty local part, and at least two nonempty dot-separated domain labels. No internal whitespace; domain labels use letters, digits, and internal hyphens. |
 | Address | 1–150 printable characters on one line. |
 | Subject | 1–40 characters; letters, digits, spaces, and `& + - ' / ( ) . ,`. |
-| Level | 1–30 characters; letters, digits, spaces, apostrophes, and hyphens. |
+| Level | `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, or `JC 1`–`JC 2`. Input is case-insensitive and stored as, for example, `Secondary 3` or `JC 2`. |
 | Note | 1–200 printable characters on one line, or empty to omit it. |
+
+`JC 5`, `Secondary 6`, `Primary 7`, abbreviations such as `P6`, and custom labels such as `Adult` are
+rejected. The error is `Level must be Primary 1-6, Secondary 1-5, or JC 1-2 (for example, Secondary 3).`
+The same rules apply to level values in JSON. Unsupported values make the file invalid and trigger
+the existing load warning; the file is preserved. Legacy contacts without a level remain supported.
 
 Duplicates require the same role and the same normalized name ignoring case, together with either the same
 phone digits (ignoring `+`, spaces, and hyphens) or the same email ignoring case. A matching name alone is
@@ -161,8 +167,8 @@ Examples:
 
 ### Listing all contacts: `list`
 
-Displays all contacts in insertion order, numbered from 1. This clears any search/filter and display ordering,
-restoring the complete list of remaining contacts.
+Displays all contacts in insertion order, numbered from 1. This command clears filtering and sorting
+to restore the complete insertion-order list.
 
 Compact cards show only the index, role, name, and phone. `list` collapses any expanded card.
 
@@ -178,6 +184,22 @@ Format: `list`
 Example: `list`
 
 ![Result of the list command showing four compact contact cards](images/listContactsResult.png)
+
+### Sorting contacts by academic level: `sort`
+
+Format: `sort level`
+
+* Students come first: `Primary 1`–`Primary 6`, then `Secondary 1`–`Secondary 5`, then `JC 1`–`JC 2`.
+  Names break level ties, ignoring case. Legacy students without levels follow other students;
+  parents come last, ordered by name. Equal sort keys have no additional guaranteed order.
+* Sorts the current results, retaining the filter and any visible selected or expanded contact.
+  Sorting remains active as results change; `list` clears filtering and sorting.
+* `view`, `edit`, and `delete` use the displayed indices. Sorting does not save data or change stored order.
+* `SORT LEVEL` and surrounding whitespace are accepted. Success: `Contacts sorted by academic level.`,
+  including for an empty list. Missing, unsupported, or extra arguments give
+  `Invalid command format. Expected: sort level` and leave the display unchanged.
+
+Example: run `find Amy`, then `sort level` to order only the matching contacts. Run `list` to reset.
 
 ### Viewing a contact: `view`
 
@@ -209,22 +231,79 @@ Invalid input leaves contact data, the displayed list, and the current selection
 | An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
 | An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
 
-### Editing a contact: `edit`
+### Linking a parent to a student: `link`
 
-Edits an existing contact in TutorContacts.
+Records that a parent contact is the parent of a student contact.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`
+Format: `link PARENT_INDEX STUDENT_INDEX`
 
-* Edits the contact at the specified `INDEX`. The index refers to the index number shown in the displayed contact list. The index **must be a positive integer** 1, 2, 3, …​
-* At least one of the optional fields must be provided.
-* Existing values will be updated to the input values.
-* `edit` cannot change a contact's role, subject, academic level, or note in this version.
-* When editing tags, all of the contact's existing tags are removed; adding tags is not cumulative.
-* To remove all of a contact's tags, enter `t/` without a tag after it.
+* Links the parent at `PARENT_INDEX` to the student at `STUDENT_INDEX`, using the indices in the currently displayed
+  list, including search and filter results.
+* Supply exactly two **positive integers**. The first must be a parent and the second must be a student.
+* A parent can be linked to several students, and a student can be linked to several parents.
+* On success, the message is `Linked parent PARENT_NAME (PHONE) to student STUDENT_NAME (PHONE).`
+  The parent's card is highlighted and expanded.
+* Expanded cards list linked contacts with their phone numbers, so contacts with the same name can be told apart.
+  For example, a parent shows `Linked students: Alex Tan (91234567)` and a student shows `Linked parents: …`.
+  A contact without links shows `None`.
+* Links are saved with your contacts. Deleting a linked contact removes its links, and editing a linked contact's
+  name or phone keeps its links.
 
 Examples:
-*  `edit 1 p/91234567 e/johndoe@example.com` Edits the phone number and email address of the 1st contact to be `91234567` and `johndoe@example.com` respectively.
-*  `edit 2 n/Betsy Crower t/` Edits the name of the 2nd contact to be `Betsy Crower` and clears all existing tags.
+* `list` followed by `link 2 1` links the parent at index 2 to the student at index 1.
+* `find Tan` followed by `link 1 3` links the first search result (a parent) to the third (a student).
+
+Invalid input leaves contact data, links, and the displayed list unchanged:
+
+| Input problem | Error message |
+| --- | --- |
+| Missing or extra arguments | `Invalid command format. Expected: link PARENT_INDEX STUDENT_INDEX` |
+| An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
+| An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
+| The same index twice | `A contact cannot be linked to itself.` |
+| The first contact is not a parent | `The contact at index INDEX is not a parent.` |
+| The second contact is not a student | `The contact at index INDEX is not a student.` |
+| The two contacts are already linked | `PARENT_NAME (PHONE) is already linked to STUDENT_NAME (PHONE).` |
+
+### Editing a contact: `edit`
+
+Updates a student or parent contact stored by the tutor.
+
+Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVEL] [o/NOTE] [t/TAG]…​`
+
+* `INDEX` is the positive number shown beside the contact in the currently displayed list. At least one field must
+  follow it. Prefixes may appear in any order, and fields not supplied remain unchanged.
+* The tutor may edit `s/SUBJECT` and `l/LEVEL` for a **student contact**. These fields may be changed independently;
+  `edit 1 s/Physics` keeps the student's existing level. A parent contact cannot be given either field. This includes
+  empty `s/` or `l/` prefixes. `edit` cannot change a contact's role.
+* Both student and parent contacts may have a note. `o/NOTE` replaces the note; an empty or whitespace-only `o/`
+  **clears** it. Omitting `o/` leaves the note unchanged. Older student records without a subject or level can still
+  have other fields edited without filling in the missing fields.
+* Subject, level, and note follow the [same field rules as `add`](#adding-a-student-or-parent-contact-add).
+  Repeated single-value prefixes and unknown prefixes are rejected as described under
+  [Prefixes and literal text](#prefixes-and-literal-text).
+* `t/TAG` replaces all existing tags, rather than adding to them. An empty `t/` clears all tags; repeated `t/`
+  prefixes can supply multiple replacement tags.
+* Edits still follow the existing duplicate-contact rule: the same role and normalized name, together with a
+  matching normalized phone or case-insensitive email, is a duplicate. Invalid input, a duplicate, or a failed save
+  leaves the displayed and saved contact data unchanged. Successful edits are saved automatically.
+* After a successful edit, TutorContacts reports `Edited person: ...` and displays the complete contact list again.
+  A search filter is cleared, so contact indices may change. Check the contact's current index, or search for the
+  contact again, before using `view INDEX` to inspect its subject, level, or note. The success message itself lists
+  only the general contact fields.
+* Editing a linked contact's name or phone keeps its links to other contacts.
+
+Examples (assuming contact 1 is a student and contact 2 is a parent):
+
+* `edit 1 s/Physics l/JC 1 o/Prefers worked examples` updates a student contact's subject, academic level, and note.
+* `edit 1 s/A-Math` changes only a student contact's subject.
+* `edit 2 o/Contact after 6 pm` updates a parent contact's note.
+* `edit 2 o/` clears an existing note on either role.
+* `edit 1 p/91234567 e/johndoe@example.com` updates the first displayed contact's phone and email.
+* `edit 2 n/Betsy Crower t/` changes the second displayed contact's name and clears all its tags.
+
+For a parent contact, `edit 2 s/Math` is rejected with `Subject and level are only valid for student contacts.` An
+empty `s/` or `l/` is invalid for a student contact rather than a way to remove its subject or level.
 
 ### Locating contacts by name: `find`
 
@@ -257,7 +336,7 @@ Command words and prefixes are case-insensitive, and prefixes can appear in any 
   Hyphenated names are complete words: `n/Alice` does not match `Alice-Marie`.
 * **Subject and level:** match the complete stored value, ignoring case and leading/trailing spaces.
   Repeated spaces are collapsed. `s/Additional Mathematics` does not match `Mathematics`;
-  `l/Secondary 3` does not match `Secondary 30`. There are no abbreviations, partial matches, or fuzzy matches.
+  `l/Secondary 3` does not match `Secondary 4`. There are no abbreviations, partial matches, or fuzzy matches.
 * **AND only:** every supplied field and every name keyword must match. Use the existing `find` command when you
   want an OR search across name keywords.
 * Name-only filtering includes students and parents. Parents and older records without a subject or level cannot
@@ -292,10 +371,11 @@ Invalid input leaves contacts, the displayed list, ordering, selection, expansio
 | Repeated prefix such as `n/` and `N/` | `Prefix n/ may be specified only once.` |
 | Empty `n/` value | `Name filter requires at least one keyword.` |
 | Empty/invalid subject, or over 40 normalized characters | `Subject must be 1-40 characters and use only letters, digits, spaces, or common subject punctuation.` |
-| Empty/invalid level, or over 30 normalized characters | `Level must be 1-30 characters and contain only letters, digits, spaces, apostrophes, or hyphens.` |
+| Empty or unsupported academic level | `Level must be Primary 1-6, Secondary 1-5, or JC 1-2 (for example, Secondary 3).` |
 
-Subject values allow letters, digits, spaces, and `& + - ' / ( ) . ,`. Level values allow letters, digits,
-spaces, apostrophes, and hyphens. Tabs inside subject/level values are invalid. Name keywords follow `find`'s
+Subject values allow letters, digits, spaces, and `& + - ' / ( ) . ,`. Levels use the predefined labels
+`Primary 1` to `Primary 6`, `Secondary 1` to `Secondary 5`, and `JC 1` to `JC 2`, ignoring case and repeated spaces.
+Tabs inside subject/level values are invalid. Name keywords follow `find`'s
 word-splitting rules. Literal prefix-shaped text uses the existing [backslash escape](#prefixes-and-literal-text),
 for example `filter s/Topic \x/foo` matches the subject `Topic x/foo`.
 
@@ -311,6 +391,7 @@ Format: `delete INDEX`
 * Deletes the contact at the specified `INDEX` in the currently displayed list, including search results.
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
 * On success, the message is `Deleted contact: NAME.` The remaining contacts keep their order and are renumbered.
+* Deleting a linked contact also removes its links. The message then ends with `Removed COUNT link(s).`
 * Deleting the selected contact clears the selection and expansion. Deleting another contact keeps the selected
   contact highlighted, with its new index and any expanded details.
 
@@ -328,7 +409,7 @@ Invalid input leaves contact data and the displayed list unchanged:
 
 ### Clearing all contacts: `clear`
 
-Deletes all contacts from TutorContacts.
+Deletes all contacts and links from TutorContacts.
 
 Format: `clear`
 
@@ -345,7 +426,7 @@ Additional text is rejected with `Invalid command format. Expected: exit`; for e
 
 ### Saving the data
 
-TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `delete`, and
+TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `link`, `delete`, and
 `clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `filter`, `help`, and `exit` do not rewrite
 the data file. A failed save leaves both the displayed contacts and the existing data file unchanged.
 
@@ -355,6 +436,11 @@ Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
 to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
 the first successful data-changing command. Advanced users can edit the JSON file directly.
+
+Links are saved in a `links` list. Each link names the parent and student by their name and phone, for example
+`{ "parentName": "Bernice Yu", "parentPhone": "99272758", "studentName": "Alex Yeoh", "studentPhone": "87438807" }`.
+If you change a contact's name or phone in the file, update its links too: a link to a contact that does not exist
+makes the file invalid.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
 If the data file is invalid or unreadable, TutorContacts starts with an empty list and displays
@@ -388,10 +474,12 @@ Action | Format, Examples
 **Add** | `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NOTE]` <br> e.g., `add r/student n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 s/Math l/Secondary 3`
 **Clear** | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
+**Edit** | `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVEL] [o/NOTE] [t/TAG]…​`<br> e.g., `edit 1 s/Physics l/JC 1 o/Prefers examples`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` (at least one criterion)<br> e.g., `filter s/Mathematics l/Secondary 3`
+**Link** | `link PARENT_INDEX STUDENT_INDEX`<br> e.g., `link 2 1`
 **List** | `list`
+**Sort** | `sort level`
 **View** | `view INDEX`<br> e.g., `view 2`
 **Help** | `help`
 **Exit** | `exit`

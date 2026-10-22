@@ -22,6 +22,7 @@ If you plan to use IntelliJ IDEA (highly recommended):
 1. **Configure the JDK**: Follow the guide [_[se-edu/guides] IDEA: Configuring the JDK_](https://se-education.org/guides/tutorials/intellijJdk.html) to ensure IntelliJ is configured to use **JDK 25**.
 1. **Import the project as a Gradle project**: Follow the guide [_[se-edu/guides] IDEA: Importing a Gradle project_](https://se-education.org/guides/tutorials/intellijImportGradleProject.html) to import the project into IDEA.<br>
   :exclamation: Note: Importing a Gradle project is slightly different from importing a normal Java project.
+1. **Enable assertions**: In IDEA, open _Run_ > _Edit Configurations..._, select the run configuration for `seedu.address.Main`, choose _Modify options_ > _Add VM options_, and enter `-ea`. Gradle already enables assertions for `gradlew run` and `gradlew test`.
 1. **Verify the setup**:
    1. Run `seedu.address.Main` and try a few commands.
    1. [Run the tests](Testing.md) to ensure they all pass.

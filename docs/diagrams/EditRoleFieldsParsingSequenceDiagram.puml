@@ -1,0 +1,24 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+title Parsing edit 1 s/Physics l/JC 1 o/Prefers examples
+
+participant "UI" as UI UI_COLOR
+participant "LogicManager" as LogicManager LOGIC_COLOR
+participant "AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant "EditCommandParser" as EditCommandParser LOGIC_COLOR
+participant "EditPersonDescriptor" as EditPersonDescriptor LOGIC_COLOR
+
+UI -> LogicManager : execute(commandText)
+LogicManager -> AddressBookParser : parseCommand(...)
+activate AddressBookParser
+AddressBookParser -> EditCommandParser : parse(...)
+activate EditCommandParser
+EditCommandParser -> EditPersonDescriptor : setSubject(Physics)
+EditCommandParser -> EditPersonDescriptor : setLevel(JC 1)
+EditCommandParser -> EditPersonDescriptor : setNote(Optional.of(note))
+EditCommandParser --> AddressBookParser : EditCommand(descriptor)
+deactivate EditCommandParser
+AddressBookParser --> LogicManager : editCommand
+deactivate AddressBookParser
+@enduml

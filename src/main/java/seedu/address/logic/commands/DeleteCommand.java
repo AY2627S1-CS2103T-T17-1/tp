@@ -19,6 +19,7 @@ public class DeleteCommand extends Command {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + " INDEX";
     public static final String MESSAGE_DELETE_CONTACT_SUCCESS = "Deleted contact: %1$s.";
+    public static final String MESSAGE_LINKS_REMOVED = " Removed %1$d link(s).";
     public static final String MESSAGE_INVALID_FORMAT =
             "Invalid command format. Expected: " + MESSAGE_USAGE;
     public static final String MESSAGE_INVALID_INDEX =
@@ -47,8 +48,14 @@ public class DeleteCommand extends Command {
         }
 
         Person contactToDelete = displayedContacts.get(targetIndex.getZeroBased());
+        int removedLinkCount = model.getLinkedPersons(contactToDelete).size();
         model.deletePerson(contactToDelete);
-        return new CommandResult(String.format(MESSAGE_DELETE_CONTACT_SUCCESS, contactToDelete.getName().fullName));
+
+        String message = String.format(MESSAGE_DELETE_CONTACT_SUCCESS, contactToDelete.getName().fullName);
+        if (removedLinkCount > 0) {
+            message += String.format(MESSAGE_LINKS_REMOVED, removedLinkCount);
+        }
+        return new CommandResult(message);
     }
 
     @Override
