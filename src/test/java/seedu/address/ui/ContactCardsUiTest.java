@@ -167,8 +167,8 @@ public class ContactCardsUiTest {
             for (Node syntax : root.lookupAll(".command-syntax")) {
                 commands.add(((Label) syntax).getText().split(" ")[0]);
             }
-            assertEquals(Set.of("add", "list", "sort", "view", "edit", "find", "filter", "delete", "clear", "help",
-                    "exit"), commands);
+            assertEquals(Set.of("add", "list", "sort", "view", "link", "edit", "find", "filter", "delete", "clear",
+                    "help", "exit"), commands);
 
             Clipboard clipboard = Clipboard.getSystemClipboard();
             Map<DataFormat, Object> previousContent = new HashMap<>();
@@ -373,6 +373,19 @@ public class ContactCardsUiTest {
             assertFalse(parent.getRoot().lookup("#subject").isManaged());
             assertFalse(parent.getRoot().lookup("#level").isManaged());
             assertEquals("Note: " + GEORGE.getNote().orElseThrow(), label(parent.getRoot(), "note").getText());
+            assertEquals("Linked students: None", label(parent.getRoot(), "links").getText());
+
+            PersonCard linkedParent = new PersonCard(GEORGE, 3, true, List.of(ALICE, BOB));
+            assertEquals("Linked students: Alice Pauline (94351253), Bob Choo (22222222)",
+                    label(linkedParent.getRoot(), "links").getText());
+            PersonCard linkedStudent = new PersonCard(ALICE, 1, true, List.of(GEORGE));
+            assertEquals("Linked parents: George Best (9482442)", label(linkedStudent.getRoot(), "links").getText());
+
+            // Students who share a name are told apart by phone.
+            Person otherAlice = new PersonBuilder(ALICE).withPhone("81112222").withEmail("alice2@example.com").build();
+            PersonCard parentOfNamesakes = new PersonCard(GEORGE, 3, true, List.of(ALICE, otherAlice));
+            assertEquals("Linked students: Alice Pauline (94351253), Alice Pauline (81112222)",
+                    label(parentOfNamesakes.getRoot(), "links").getText());
         });
     }
 

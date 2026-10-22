@@ -70,6 +70,13 @@
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Link a parent to a student" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="link PARENT_INDEX STUDENT_INDEX" styleClass="command-syntax" />
+                <Label minHeight="-Infinity"
+                    text="Link the parent at PARENT_INDEX to the student at STUDENT_INDEX. Example: link 2 1"
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="Edit a contact" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]..."
                     styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />
