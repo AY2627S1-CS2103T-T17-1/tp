@@ -10,6 +10,11 @@ application {
     mainClass = 'seedu.address.Main'
 }
 
+// Enables Java assertions when the app is launched with `gradlew run`, so assertion failures surface during testing.
+run {
+    enableAssertions = true
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_25
     targetCompatibility = JavaVersion.VERSION_25
