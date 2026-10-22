@@ -1,0 +1,21 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+title Applying a role-specific edit
+
+participant "LogicManager" as LogicManager LOGIC_COLOR
+participant "EditCommand" as EditCommand LOGIC_COLOR
+participant "ModelManager" as ModelManager MODEL_COLOR
+
+LogicManager -> LogicManager : snapshot book and filter
+LogicManager -> EditCommand : execute(model)
+activate EditCommand
+EditCommand -> ModelManager : getFilteredPersonList()
+ModelManager --> EditCommand : displayed contacts
+EditCommand -> EditCommand : check parent fields
+EditCommand -> EditCommand : check duplicates
+EditCommand -> ModelManager : setPerson(original, replacement)
+EditCommand -> ModelManager : updateFilteredPersonList(showAll)
+EditCommand --> LogicManager : CommandResult
+deactivate EditCommand
+@enduml

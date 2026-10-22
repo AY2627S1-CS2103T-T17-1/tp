@@ -160,6 +160,40 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Role-specific contact editing
+
+`edit INDEX` updates a contact chosen from the currently displayed list. It retains the contact's role and any
+omitted fields. The v1.4 extension adds `s/SUBJECT`, `l/LEVEL`, and `o/NOTE` to the existing edit grammar. Subject
+and level can be changed independently on student contacts, while either role can have its note changed. An empty
+`o/` explicitly clears the note; a missing `o/` preserves it. Legacy student records lacking subject or level can
+still be edited without supplying those fields.
+
+The following three smaller sequence diagrams follow `edit 1 s/Physics l/JC 1 o/Prefers examples`. Splitting the
+parsing, model update, and save phases keeps their labels readable at the guide's normal width.
+
+**Parsing:** `AddressBookParser` delegates to `EditCommandParser`, which validates the index syntax, repeated
+prefixes, and each supplied value before setting the `EditPersonDescriptor` fields. The descriptor keeps an omitted
+note distinct from a specified empty note, so `EditCommand` can preserve or clear the stored value correctly.
+
+![Parsing the role-specific edit](images/EditRoleFieldsParsingSequenceDiagram.png)
+
+**Model update:** `LogicManager` snapshots the `AddressBook` and current filter before executing the command.
+`EditCommand#execute` resolves the target in `ModelManager#getFilteredPersonList`, rejects subject or level edits on
+a parent, builds a replacement `Person`, and checks the existing duplicate rule before calling
+`ModelManager#setPerson`. It then restores the full displayed list and returns a `CommandResult`. The role itself is
+never changed.
+
+![Applying the role-specific edit to the model](images/EditRoleFieldsSequenceDiagram.png)
+
+**Save or rollback:** Only after successful command execution does `LogicManager` call `Storage#saveAddressBook`.
+The `alt` fragment shows the save outcome: on an `IOException`, `LogicManager` restores the snapshot and filter,
+then reports a `CommandException` instead of returning the successful result.
+
+![Saving the role-specific edit or rolling it back](images/EditRoleFieldsPersistenceSequenceDiagram.png)
+
+Other failures are omitted from the diagrams to keep them focused. An invalid index or field value, a repeated or
+unknown prefix, an invalid parent-field combination, or a duplicate aborts before `setPerson`, so no data is mutated
+or saved. Storage already serializes subject, level, and note, so this extension does not change the JSON format.
 ### Help command and command guide
 
 `HelpCommand` is read-only: it returns a `CommandResult` with `isShowHelp()` set to `true`.
@@ -379,7 +413,7 @@ Priority describes the importance of a user need, not whether the feature has al
 
 Priorities:
 * High (must-have for the agreed MVP) - `* * *`;
-* Medium (nice-to-have for future versions) - `* *`.
+* Medium (post-MVP enhancement) - `* *`.
 
 | Priority | As a… | I can… | So that I can… |
 | --- | --- | --- | --- |
@@ -406,9 +440,10 @@ Priorities:
 
 ### Use cases
 
-(For all use cases below, the **System** is `TutorContacts` and the **Actor** is the `user`, unless specified
-otherwise. `INDEX` is the one-based position in the displayed contact list. These use cases follow the
-[V2 TutorContacts MVP specification](https://docs.google.com/document/d/13atDT_z6unnRSmTLVOimhPvUcavvWek9Xy9jy5YNyFY/edit?tab=t.pgg9f79ckkj4).
+(For all use cases below, the **System** is `TutorContacts` and the **Actor** is the tutor, unless specified
+otherwise. `INDEX` is the one-based position in the displayed contact list. The original MVP use cases follow the
+[V2 TutorContacts MVP specification](https://docs.google.com/document/d/13atDT_z6unnRSmTLVOimhPvUcavvWek9Xy9jy5YNyFY/edit?tab=t.pgg9f79ckkj4);
+the edit use case describes the subsequent v1.4 extension.
 Failed commands leave the displayed and saved contact data unchanged. Some specified behavior is not yet implemented
 in the current AB3 codebase.)
 
@@ -534,11 +569,44 @@ in the current AB3 codebase.)
 
     Use case ends.
 
+**Use case: Edit a student or parent contact**
+
+**MSS**
+
+1. The tutor enters `edit INDEX` with at least one field to change. For a student, this may include subject and
+   academic level; either role may have a note.
+2. TutorContacts resolves `INDEX` in the currently displayed list, validates the supplied fields against the
+   contact's role, and checks that the edited contact does not duplicate another record.
+3. TutorContacts replaces the contact while retaining its role and omitted fields, then shows the complete list.
+4. TutorContacts saves the updated data and reports `Edited person: ...`.
+
+   Use case ends.
+
+**Extensions**
+
+* 1a. The index is invalid, no field is supplied, or a prefix or value is invalid.
+  * 1a1. TutorContacts reports the relevant error. No contact data is changed.
+
+    Use case resumes at step 1.
+* 2a. The tutor supplies `s/` or `l/` for a parent contact.
+  * 2a1. TutorContacts reports `Subject and level are only valid for student contacts.` No contact data is changed.
+
+    Use case resumes at step 1.
+* 2b. The replacement contact would duplicate another contact under the existing role, name, phone, and email rule.
+  * 2b1. TutorContacts reports `This person already exists in the address book.` No contact data is changed.
+
+    Use case resumes at step 1.
+* 4a. TutorContacts cannot save the data file.
+  * 4a1. TutorContacts restores the previous contact data and displayed filter, then reports a storage error. The
+    existing data file remains unchanged.
+
+    Use case ends.
+
 **Use case: Save data and exit safely**
 
 **MSS**
 
-1. User adds or deletes a contact.
+1. User adds, edits, or deletes a contact.
 2. TutorContacts saves the contacts and their role-specific fields to `data/tutorcontacts.json` before confirming the
    command.
 3. User enters `exit`.
@@ -551,7 +619,7 @@ in the current AB3 codebase.)
 **Extensions**
 
 * 2a. TutorContacts cannot save the data file.
-  * 2a1. TutorContacts reports the `add` or `delete` save-failure message. The displayed and saved data remain
+  * 2a1. TutorContacts reports the relevant save-failure message. The displayed and saved data remain
     unchanged.
 
     Use case ends.
@@ -628,7 +696,8 @@ in the current AB3 codebase.)
 * **Private tutor**: An independent tutor who works alone, teaching students privately rather than through a school
   or tuition agency.
 * **Role**: The type of a contact, either `student` or `parent`, which determines the fields the contact has.
-* **Student contact**: A contact with the `student` role, which must also have a subject and an academic level.
+* **Student contact**: A contact with the `student` role. Newly added student contacts require a subject and an
+  academic level; legacy records may lack either field.
 * **Subject**: The subject that the tutor teaches a student, such as `A-Math`. Recorded only for student contacts.
 
 --------------------------------------------------------------------------------------------------------------------
@@ -673,6 +742,10 @@ and is retained in stored data. `ExitCommandParser` rejects arguments before an 
 data after rejected input, presentation requests, and JSON round trips. `ParserUtilTest` and field tests cover
 limits and invalid values. `ExitCommandParserTest` checks the parameterless exit grammar.
 
+`EditCommandParserTest` covers the new edit prefixes, empty-note clearing, and invalid values. `EditCommandTest`
+checks student and parent edits, legacy students, and rejection before mutation. `LogicManagerTest` checks that
+edited fields survive a storage round trip and that a failed save restores the previous data and displayed filter.
+
 With a disposable data file, manually verify:
 
 1. Add a student with subject, level, a formatted phone, and a note. Run `view 1` and check every stored field.
@@ -684,6 +757,21 @@ With a disposable data file, manually verify:
 5. Run `list`, `view INDEX`, and `delete INDEX`. Check feedback, insertion order, visible indexes, and selection.
 6. Restart and verify all added fields are restored. Check read-only commands do not rewrite the JSON file.
 7. Run `exit 3`: the window must remain open. Run `exit`: it should close successfully.
+
+### Editing subject, level, and note
+
+Use a disposable data file for these checks:
+
+1. Add a student with `s/Math l/Secondary 3 o/Original note` and a parent with a note. Run
+   `edit 1 s/Physics l/JC 1 o/Prefers examples`, then `view 1`. Check the three updated values and unchanged role,
+   name, phone, email, and address. Restart and check the same values are restored from JSON.
+2. Run `edit 1 s/A-Math`. Check the student's existing level and note remain unchanged. Run `edit 1 o/`, then
+   `view 1`; the note should be absent. Update and clear the parent's note in the same way.
+3. Try `edit 2 s/Math`, `edit 2 l/JC 1`, empty `s/` and `l/` on the student, a repeated `o/`, and a duplicate
+   identity edit. Check the applicable error and that neither the displayed contact nor JSON changes.
+4. With a legacy student record lacking subject or level, edit an unrelated field. Check the edit succeeds without
+   inventing the missing field. Repeat a valid edit with a failing storage save and check the contact, displayed
+   filter, and saved JSON remain as they were before the command.
 
 ### Contact-card UI
 
@@ -727,8 +815,8 @@ Manual checks for the UI contribution:
    Delete that selected contact: selection should clear. Repeat within filtered search results.
 6. Check resizing and scrolling at 1920x1080 with 100%/125% scaling and 1280x720 with 150% scaling.
    Keyboard command entry must remain usable after selection changes.
-7. After the persistence rollback work is integrated, repeat add/delete with a failing save and check both
-   the list data and selection remain unchanged. UI tests simulate model restoration; they do not verify storage rollback.
+7. Repeat add, edit, and delete with a failing save and check both the list data and selection remain unchanged.
+   UI tests simulate model restoration; they do not verify storage rollback.
 
 Given below are instructions to test the app manually.
 
