@@ -32,6 +32,8 @@ public class ParentStudentLinkTest {
                 ParentStudentLink.between(ALICE, GEORGE));
         assertThrows(IllegalArgumentException.class, ParentStudentLink.MESSAGE_CONSTRAINTS, () ->
                 ParentStudentLink.between(ALICE, BENSON));
+        assertThrows(IllegalArgumentException.class, ParentStudentLink.MESSAGE_CONSTRAINTS, () ->
+                ParentStudentLink.between(GEORGE, GEORGE));
     }
 
     @Test
@@ -84,6 +86,13 @@ public class ParentStudentLinkTest {
     }
 
     @Test
+    public void withContactReplaced_roleChanged_throwsAssertionError() {
+        Person studentGeorge = new PersonBuilder(GEORGE).withRole("student").build();
+
+        assertThrows(AssertionError.class, () -> georgeAlice.withContactReplaced(GEORGE, studentGeorge));
+    }
+
+    @Test
     public void withContactReplaced_unrelatedContact_returnsSameLink() {
         Person editedBenson = new PersonBuilder(BENSON).withPhone("81114444").build();
 
@@ -113,5 +122,24 @@ public class ParentStudentLinkTest {
 
         // different student -> returns false
         assertFalse(georgeAlice.equals(ParentStudentLink.between(GEORGE, BENSON)));
+
+        // only one identity field differs -> returns false
+        Name otherName = new Name("Grace Best");
+        Phone otherPhone = new Phone("81234567");
+        assertFalse(georgeAlice.equals(new ParentStudentLink(otherName, GEORGE.getPhone(),
+                ALICE.getName(), ALICE.getPhone())));
+        assertFalse(georgeAlice.equals(new ParentStudentLink(GEORGE.getName(), otherPhone,
+                ALICE.getName(), ALICE.getPhone())));
+        assertFalse(georgeAlice.equals(new ParentStudentLink(GEORGE.getName(), GEORGE.getPhone(),
+                ALICE.getName(), otherPhone)));
+    }
+
+    @Test
+    public void toStringMethod() {
+        String expected = ParentStudentLink.class.getCanonicalName() + "{parentName=" + GEORGE.getName()
+                + ", parentPhone=" + GEORGE.getPhone() + ", studentName=" + ALICE.getName()
+                + ", studentPhone=" + ALICE.getPhone() + "}";
+
+        assertEquals(expected, georgeAlice.toString());
     }
 }
