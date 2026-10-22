@@ -71,13 +71,19 @@ public class LinkCommand extends Command {
 
         ParentStudentLink link = ParentStudentLink.between(parent, student);
         if (model.hasLink(link)) {
-            throw new CommandException(String.format(MESSAGE_DUPLICATE_LINK,
-                    parent.getName().fullName, student.getName().fullName));
+            throw new CommandException(String.format(MESSAGE_DUPLICATE_LINK, describe(parent), describe(student)));
         }
 
         model.addLink(link);
-        return CommandResult.expandContact(String.format(MESSAGE_LINK_SUCCESS,
-                parent.getName().fullName, student.getName().fullName), parent);
+        return CommandResult.expandContact(String.format(MESSAGE_LINK_SUCCESS, describe(parent), describe(student)),
+                parent);
+    }
+
+    /**
+     * Returns {@code Name (phone)}, so that messages distinguish contacts with the same name.
+     */
+    private static String describe(Person person) {
+        return person.getName().fullName + " (" + person.getPhone().value + ")";
     }
 
     private static Person getDisplayedContact(List<Person> displayedContacts, Index index) throws CommandException {

@@ -36,7 +36,7 @@ public class LinkCommandTest {
     public void execute_parentAndStudent_success() {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.addLink(ParentStudentLink.between(GEORGE, ALICE));
-        String expectedMessage = "Linked parent George Best to student Alice Pauline.";
+        String expectedMessage = "Linked parent George Best (9482442) to student Alice Pauline (94351253).";
 
         assertCommandSuccess(new LinkCommand(INDEX_GEORGE, INDEX_FIRST_PERSON), model,
                 CommandResult.expandContact(expectedMessage, GEORGE), expectedModel);
@@ -48,7 +48,7 @@ public class LinkCommandTest {
         model.addLink(ParentStudentLink.between(GEORGE, ALICE));
 
         assertCommandFailure(new LinkCommand(INDEX_GEORGE, INDEX_FIRST_PERSON), model,
-                "George Best is already linked to Alice Pauline.");
+                "George Best (9482442) is already linked to Alice Pauline (94351253).");
     }
 
     @Test
