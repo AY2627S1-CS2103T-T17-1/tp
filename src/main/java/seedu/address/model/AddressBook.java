@@ -67,8 +67,10 @@ public class AddressBook implements ReadOnlyAddressBook {
         requireNonNull(links);
         assert links.stream().distinct().count() == links.size() : "Links must not contain duplicates";
 
+        // Copy first, as links may be a view of this.links (e.g. from getLinkList()) that clear() would empty.
+        List<ParentStudentLink> replacement = new ArrayList<>(links);
         this.links.clear();
-        this.links.addAll(links);
+        this.links.addAll(replacement);
     }
 
     //// person-level operations

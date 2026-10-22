@@ -195,6 +195,26 @@ public class AddressBookTest {
     }
 
     @Test
+    public void setLinks_ownLinkList_keepsLinks() {
+        addLinkedGeorgeAliceAndBenson();
+        List<ParentStudentLink> expectedLinks = List.copyOf(addressBook.getLinkList());
+
+        addressBook.setLinks(addressBook.getLinkList());
+
+        assertEquals(expectedLinks, addressBook.getLinkList());
+    }
+
+    @Test
+    public void resetData_itself_keepsLinks() {
+        addLinkedGeorgeAliceAndBenson();
+        List<ParentStudentLink> expectedLinks = List.copyOf(addressBook.getLinkList());
+
+        addressBook.resetData(addressBook);
+
+        assertEquals(expectedLinks, addressBook.getLinkList());
+    }
+
+    @Test
     public void equals_differentLinks_returnsFalse() {
         addLinkedGeorgeAliceAndBenson();
         AddressBook sameContactsWithoutLinks = new AddressBook();
