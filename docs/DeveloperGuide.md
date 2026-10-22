@@ -270,16 +270,14 @@ Successful `add` and `edit` retain their existing filter-clearing behavior and p
 Save-failure rollback restores the previous contacts and predicate; the display comparator remains active.
 Filtering and ordering are session state and are not serialized.
 
-**Sorting integration contract:** a future `sort level` command should call `setPersonListComparator` with its
-level/name comparator and leave the predicate intact. Subsequent `filter` calls will preserve that comparator.
-`list` clears both states. The level comparator and `sort level` command are owned by the sorting feature and are
-not implemented here.
+**Sorting integration:** `sort level` calls `setPersonListComparator` with its level/name comparator and leaves
+the predicate intact. Subsequent `filter` calls preserve that comparator. `list` clears both states.
 
 #### Tests and manual checks
 
 JUnit covers all seven nonempty criterion combinations, AND name matching, exact values, missing fields, duplicate
-and unknown prefixes, validation precedence, normalized length boundaries, no matches, name-order ties, comparator
-composition, displayed indices, insertion-order restoration, unchanged JSON, and save-failure rollback.
+and unknown prefixes, validation precedence, subject length and academic-level boundaries, no matches, name-order ties,
+comparator composition, displayed indices, insertion-order restoration, unchanged JSON, and save-failure rollback.
 `ContactListStateTest` covers selection and expansion after filtering and invalid input.
 
 For a manual JavaFX check, use a disposable data folder with contacts inserted in this order:
@@ -294,6 +292,49 @@ Bob Lee (Physics, JC 2). Give the contacts distinct valid contact details.
 6. Run `filter s/Mathematics`, then `delete 1`: Amy is deleted and Zoe becomes index 1. `view 1` shows Zoe.
 7. Run `list`: expect Zoe, Alice, Bob in insertion order with compact cards.
 8. Restart: the remaining contacts still follow insertion order. Filtering alone must not rewrite JSON.
+
+### Sort by academic level
+
+`sort level` orders the currently displayed contacts without changing their details or stored order.
+`AddressBookParser` creates a `SortCommandParser`, which accepts only `level`, ignoring case and surrounding
+whitespace. Missing, unsupported, or extra arguments produce `Invalid command format. Expected: sort level`
+before any model state changes. Successful execution returns `Contacts sorted by academic level.`, even for
+an empty list.
+
+The following sequence diagram shows successful parsing and application of the display comparator.
+
+![Interactions for sorting contacts by academic level](images/SortByLevelSequenceDiagram.png)
+
+`SortCommand#execute(model)` calls `Model#setPersonListComparator(LEVEL_COMPARATOR)`.
+`ModelManager` applies this comparator to its persistent `displayedPersons:SortedList<Person>`, which wraps
+`filteredPersons:FilteredList<Person>` over `AddressBook.getPersonList()`. Changing the comparator preserves
+the active predicate and does not reorder the source collection. `SortCommand#isDataChanging()` returns `false`,
+so `LogicManager` takes its read-only execution branch without a Storage call.
+
+`Level` uses one ordered list for validation, canonical spelling, and the rank returned by `getSortRank()`:
+`Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, and `JC 1`–`JC 2`.
+`PersonLevelComparator` orders students by rank, then case-insensitive name; parents follow by name.
+Legacy students without a level follow other students and precede parents. Equal sort keys compare equal.
+`add`, `edit`, and `filter` reuse this validation through `ParserUtil#parseLevel(...)`; JSON loading validates recorded
+levels with the same `Level` rules. Unsupported values such as `JC 5` and `Secondary 6` are rejected.
+`edit` accepts level changes for students and preserves the existing level when `l/` is omitted.
+
+`getFilteredPersonList()` returns the same displayed view to the UI and to `view`, `edit`, and `delete`, so
+their indices follow the displayed order. `PersonListPanel` supplies this observable view to its `ListView`
+using `setItems(...)`; JavaFX observes subsequent list changes automatically. After command execution,
+`PersonListPanel#completeCommand(...)` restores selection and expansion for any contact still visible and
+refreshes the cards. The diagram note summarizes the automatic update without implying a direct method call
+from `SortedList` to `PersonListPanel`.
+
+Sorting stays active when `find` or `filter` replaces the predicate; successful `add` and `edit` clear filtering
+but retain the comparator. `list` sets `PREDICATE_SHOW_ALL_PERSONS` and clears the comparator with
+`setPersonListComparator(null)`, restoring all remaining contacts in insertion order and collapsing details.
+The filter and comparator are session state: neither is saved, and restarting restores insertion order.
+
+The diagram shows creation of the command parser, command, and result, with synchronous calls and dashed returns.
+Existing model and list objects are created before this scenario. Routine read-only checks in `LogicManager`,
+invalid-input paths, validation helpers, object lifetime endings, and JavaFX notification and rendering internals
+are omitted to keep the diagram focused on parsing and applying the sort.
 
 ### Parent-student links
 
@@ -728,8 +769,8 @@ in the current AB3 codebase.)
 
 ### Glossary
 
-* **Academic level**: A student's stage of study, such as `Primary 6`, `Secondary 3`, or `JC 2`. Recorded only for
-  student contacts.
+* **Academic level**: A student's stage of study: `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`,
+  or `JC 1`–`JC 2`. Recorded only for student contacts, using canonical capitalization.
 * **Compact card**: The summary of a contact shown in the contact list, displaying its index, role, name, and phone.
 * **Data file**: The file `data/tutorcontacts.json`, in the same folder as the JAR file, in which TutorContacts saves
   all contacts.

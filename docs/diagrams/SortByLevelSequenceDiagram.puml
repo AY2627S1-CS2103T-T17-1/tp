@@ -1,0 +1,87 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+skinparam ParticipantFontColor #FFFFFF
+
+title Sort by academic level
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":SortCommandParser" as SortCommandParser LOGIC_COLOR
+participant "c:SortCommand" as SortCommand LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "model:ModelManager" as ModelManager MODEL_COLOR
+participant "displayedPersons:SortedList" as SortedList MODEL_COLOR
+end box
+
+[-> LogicManager : execute("sort level")
+activate LogicManager
+LogicManager -> AddressBookParser : parseCommand("sort level")
+activate AddressBookParser
+
+create SortCommandParser
+AddressBookParser -> SortCommandParser
+activate SortCommandParser
+SortCommandParser --> AddressBookParser
+deactivate SortCommandParser
+
+AddressBookParser -> SortCommandParser : parse(" level")
+activate SortCommandParser
+
+create SortCommand
+SortCommandParser -> SortCommand
+activate SortCommand
+SortCommand --> SortCommandParser : c
+deactivate SortCommand
+
+SortCommandParser --> AddressBookParser : c
+deactivate SortCommandParser
+
+AddressBookParser --> LogicManager : c
+deactivate AddressBookParser
+
+LogicManager -> SortCommand : execute(model)
+activate SortCommand
+SortCommand -> ModelManager : setPersonListComparator(LEVEL_COMPARATOR)
+activate ModelManager
+ModelManager -> SortedList : setComparator(comparator)
+activate SortedList
+
+SortedList --> ModelManager
+deactivate SortedList
+ModelManager --> SortCommand
+deactivate ModelManager
+
+note over ModelManager, SortedList
+comparator:PersonLevelComparator
+Students: academic level, then case-insensitive name.
+Students without levels follow; parents last by name.
+end note
+
+note over ModelManager, SortedList
+The existing filter remains active.
+PersonListPanel's ListView observes this SortedList
+and updates automatically.
+end note
+
+create CommandResult
+SortCommand -> CommandResult : CommandResult(MESSAGE_SUCCESS)
+activate CommandResult
+CommandResult --> SortCommand : r
+deactivate CommandResult
+
+SortCommand --> LogicManager : r
+deactivate SortCommand
+[<-- LogicManager : r
+deactivate LogicManager
+
+note over ModelManager, SortedList
+Sorting does not mutate AddressBook or call Storage.
+list clears filtering and ordering to restore
+all contacts in insertion order.
+end note
+@enduml
