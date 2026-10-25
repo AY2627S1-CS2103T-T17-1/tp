@@ -3,6 +3,7 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BOB;
@@ -13,6 +14,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -28,20 +35,31 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollBar;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.DataFormat;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import seedu.address.MainApp;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.person.Person;
@@ -51,7 +69,7 @@ import seedu.address.storage.StorageManager;
 import seedu.address.testutil.PersonBuilder;
 
 /**
- * Exercises FXML cards and command-to-UI wiring on a desktop with {@code RUN_UI_TESTS=true}.
+ * Exercises FXML cards, Help, and command-to-UI wiring on a desktop with {@code RUN_UI_TESTS=true}.
  * Core selection tests run separately without a display in {@link ContactListStateTest}.
  */
 @EnabledIfEnvironmentVariable(named = "RUN_UI_TESTS", matches = "true")
@@ -80,6 +98,255 @@ public class ContactCardsUiTest {
         Platform.exit();
     }
 
+    /**
+     * Checks command-box filtering, card numbering, selection, expansion, and list restoration.
+     *
+     * @throws Exception If JavaFX execution, command handling, or saving the snapshot fails.
+     */
+    @Test
+    void window_filterCommands_updateOrderIndicesAndSelection() throws Exception {
+        runOnFxThread(() -> {
+            Person zoe = new PersonBuilder().withName("Zoe Tan").build();
+            Person amy = new PersonBuilder().withName("Amy Tan").build();
+            Person parent = new PersonBuilder().withName("Alice Tan").withRole("parent").build();
+            Model model = new ModelManager();
+            List.of(zoe, parent, amy).forEach(model::addPerson);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(1000, 620);
+            try {
+                enter(root, "filter s/Mathematics l/Secondary 3");
+                assertEquals(List.of(amy, zoe), list(root).getItems());
+                assertEquals("Showing 2 matching contacts.", ((TextArea) root.lookup("#resultDisplay")).getText());
+                enter(root, "view 2");
+                enter(root, "filter s/Mathematics");
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertEquals("2.", label(selectedCard(root), "id").getText());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                saveSnapshot(root, "filter-name-order");
+
+                enter(root, "filter n/");
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                enter(root, "filter n/Amy Tan");
+                assertEquals(List.of(amy), list(root).getItems());
+                assertTrue(list(root).getSelectionModel().isEmpty());
+                enter(root, "filter n/Amy Zoe");
+                assertTrue(list(root).getItems().isEmpty());
+                assertEquals("No matching contacts.", ((TextArea) root.lookup("#resultDisplay")).getText());
+
+                enter(root, "filter s/Mathematics");
+                enter(root, "delete 1");
+                assertEquals(List.of(zoe), list(root).getItems());
+                enter(root, "view 1");
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertEquals("1.", label(selectedCard(root), "id").getText());
+                enter(root, "list");
+                assertEquals(List.of(zoe, parent), list(root).getItems());
+                assertFalse(selectedCard(root).lookup("#details").isVisible());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    void helpWindow_commandReference_showsSupportedCommandsAndCopiesTutorContactsUrl() throws Exception {
+        runOnFxThread(() -> {
+            HelpWindow help = new HelpWindow();
+            Region root = (Region) help.getRoot().getScene().getRoot();
+            layout(root);
+            assertEquals("https://ay2627s1-cs2103t-t17-1.github.io/tp/UserGuide.html", HelpWindow.USERGUIDE_URL);
+            assertTrue(label(root, "helpMessage").getText().contains(HelpWindow.USERGUIDE_URL));
+            Set<String> commands = new HashSet<>();
+            for (Node syntax : root.lookupAll(".command-syntax")) {
+                commands.add(((Label) syntax).getText().split(" ")[0]);
+            }
+            assertEquals(Set.of("add", "list", "sort", "view", "link", "edit", "find", "filter", "delete", "clear",
+                    "help", "exit"), commands);
+
+            Clipboard clipboard = Clipboard.getSystemClipboard();
+            Map<DataFormat, Object> previousContent = new HashMap<>();
+            for (DataFormat format : clipboard.getContentTypes()) {
+                // Native formats can be advertised even when JavaFX cannot retrieve their content.
+                Object content = clipboard.getContent(format);
+                if (content != null) {
+                    previousContent.put(format, content);
+                }
+            }
+            try {
+                Button copyButton = (Button) root.lookup("#copyButton");
+                copyButton.fire();
+                assertEquals(HelpWindow.USERGUIDE_URL, clipboard.getString());
+            } finally {
+                clipboard.setContent(previousContent);
+            }
+        });
+    }
+
+    @Test
+    void helpWindow_labels_usePreferredMinimumHeight() throws Exception {
+        runOnFxThread(() -> {
+            HelpWindow help = new HelpWindow();
+            Region root = (Region) help.getRoot().getScene().getRoot();
+            layout(root);
+            Set<Node> labels = root.lookupAll(".label");
+            assertFalse(labels.isEmpty());
+            for (Node node : labels) {
+                Label label = (Label) node;
+                assertEquals(Region.USE_PREF_SIZE, label.getMinHeight(), label.getText());
+                assertEquals(label.prefHeight(label.getWidth()), label.minHeight(label.getWidth()), label.getText());
+            }
+        });
+    }
+
+    /**
+     * Checks the minimum-size Help layout and that scrolling can reveal the exit command without clipping.
+     *
+     * @throws Exception If JavaFX execution or layout synchronization fails.
+     */
+    @Test
+    void helpWindow_smallSize_keepsGuideScrollableAndFooterVisible() throws Exception {
+        HelpWindow help = callOnFxThread(HelpWindow::new);
+        Stage stage = callOnFxThread(help::getRoot);
+        Scene scene = callOnFxThread(stage::getScene);
+        try {
+            runOnFxThread(help::show);
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) stage.getScene().getRoot();
+                saveSnapshot(root, "help-command-guide");
+                stage.setWidth(450);
+                stage.setHeight(360);
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                assertTrue(scene.getWidth() > 0);
+                assertTrue(scene.getHeight() > 0);
+                assertEquals(scene.getWidth(), root.getWidth(), 1);
+                assertEquals(scene.getHeight(), root.getHeight(), 1);
+                assertEquals(stage.getMinWidth(), stage.getWidth(), 1);
+                assertEquals(stage.getMinHeight(), stage.getHeight(), 1);
+                ScrollPane scrollPane = (ScrollPane) root.lookup("#commandScrollPane");
+                assertEquals(450, stage.getMinWidth());
+                assertEquals(360, stage.getMinHeight());
+                assertTrue(stage.isResizable());
+                assertTrue(scrollPane.isFitToWidth());
+                assertTrue(scrollPane.getContent().getBoundsInLocal().getHeight()
+                        > scrollPane.getViewportBounds().getHeight());
+                assertTrue(scrollPane.getContent().getBoundsInLocal().getWidth()
+                        <= scrollPane.getViewportBounds().getWidth() + 1);
+                assertVisibleWithinWindow(root, scrollPane);
+                assertVisibleWithinWindow(root, root.lookup("#helpMessage"));
+                assertVisibleWithinWindow(root, root.lookup("#copyButton"));
+                saveSnapshot(root, "help-command-guide-small");
+                // The legend below Exit can fill the viewport, so reveal Exit using its actual position.
+                Node exitSyntax = root.lookupAll(".command-syntax").stream()
+                        .filter(node -> ((Label) node).getText().equals("exit"))
+                        .findFirst().orElseThrow();
+                Bounds exitBounds = scrollPane.getContent().sceneToLocal(
+                        exitSyntax.localToScene(exitSyntax.getBoundsInLocal()));
+                double viewportHeight = scrollPane.getViewportBounds().getHeight();
+                double scrollableHeight = scrollPane.getContent().getLayoutBounds().getHeight() - viewportHeight;
+                double scrollOffset = exitBounds.getMinY() - (viewportHeight - exitBounds.getHeight()) / 2;
+                scrollPane.setVvalue(Math.max(0, Math.min(1, scrollOffset / scrollableHeight)));
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                ScrollPane scrollPane = (ScrollPane) root.lookup("#commandScrollPane");
+                Node exitSyntax = root.lookupAll(".command-syntax").stream()
+                        .filter(node -> ((Label) node).getText().equals("exit"))
+                        .findFirst().orElseThrow();
+                Node viewport = scrollPane.lookup(".viewport");
+                Bounds exitBounds = exitSyntax.localToScene(exitSyntax.getBoundsInLocal());
+                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                assertTrue(exitBounds.getMinY() >= viewportBounds.getMinY() - 1,
+                        "Exit must not be clipped above the viewport");
+                assertTrue(exitBounds.getMaxY() <= viewportBounds.getMaxY() + 1,
+                        "Exit must not be clipped below the viewport");
+            });
+        } finally {
+            runOnFxThread(help::hide);
+        }
+    }
+
+    @Test
+    void window_helpCommandAndMenu_reuseHelpWindowAndKeepContactsUnchanged() throws Exception {
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            model.addPerson(ALICE);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            List<Window> existingWindows = List.copyOf(Window.getWindows());
+            try {
+                enter(root, "help");
+                Stage helpStage = (Stage) Window.getWindows().stream()
+                        .filter(candidate -> candidate instanceof Stage candidateStage
+                                && candidateStage.getTitle().equals("TutorContacts — Command guide"))
+                        .findFirst().orElseThrow();
+                int windowCount = Window.getWindows().size();
+                enter(root, "help");
+                assertEquals(windowCount, Window.getWindows().size());
+
+                MenuBar menuBar = (MenuBar) root.lookup("#menuBar");
+                MenuItem helpMenu = menuBar.getMenus().get(1).getItems().getFirst();
+                assertEquals(KeyCombination.valueOf("F1"), helpMenu.getAccelerator());
+                helpMenu.fire();
+                assertTrue(helpStage.isShowing());
+                assertEquals(windowCount, Window.getWindows().size());
+                assertEquals(List.of(ALICE), model.getAddressBook().getPersonList());
+                assertFalse(Files.exists(dataPath));
+                helpStage.hide();
+                helpMenu.fire();
+                assertTrue(helpStage.isShowing());
+                helpStage.hide();
+                TextField commandField = (TextField) root.lookup("#commandTextField");
+                commandField.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.F1,
+                        false, false, false, false));
+                assertTrue(helpStage.isShowing());
+                helpStage.hide();
+            } finally {
+                try {
+                    closeNewWindows(existingWindows);
+                } finally {
+                    stage.close();
+                }
+            }
+        });
+    }
+
+    @Test
+    void closeNewWindows_assertionFailure_hidesHelpWindow() throws Exception {
+        runOnFxThread(() -> {
+            List<Window> existingWindows = List.copyOf(Window.getWindows());
+            HelpWindow help = new HelpWindow();
+            AssertionError failure = assertThrows(AssertionError.class, () -> {
+                try {
+                    help.show();
+                    assertTrue(help.isShowing());
+                    throw new AssertionError("Simulated failure before capturing the Help stage");
+                } finally {
+                    closeNewWindows(existingWindows);
+                }
+            });
+            assertEquals("Simulated failure before capturing the Help stage", failure.getMessage());
+            assertFalse(help.isShowing());
+            assertEquals(existingWindows, List.copyOf(Window.getWindows()));
+        });
+    }
+
     @Test
     void cards_compactAndExpanded_showApplicableFields() throws Exception {
         runOnFxThread(() -> {
@@ -106,6 +373,19 @@ public class ContactCardsUiTest {
             assertFalse(parent.getRoot().lookup("#subject").isManaged());
             assertFalse(parent.getRoot().lookup("#level").isManaged());
             assertEquals("Note: " + GEORGE.getNote().orElseThrow(), label(parent.getRoot(), "note").getText());
+            assertEquals("Linked students: None", label(parent.getRoot(), "links").getText());
+
+            PersonCard linkedParent = new PersonCard(GEORGE, 3, true, List.of(ALICE, BOB));
+            assertEquals("Linked students: Alice Pauline (94351253), Bob Choo (22222222)",
+                    label(linkedParent.getRoot(), "links").getText());
+            PersonCard linkedStudent = new PersonCard(ALICE, 1, true, List.of(GEORGE));
+            assertEquals("Linked parents: George Best (9482442)", label(linkedStudent.getRoot(), "links").getText());
+
+            // Students who share a name are told apart by phone.
+            Person otherAlice = new PersonBuilder(ALICE).withPhone("81112222").withEmail("alice2@example.com").build();
+            PersonCard parentOfNamesakes = new PersonCard(GEORGE, 3, true, List.of(ALICE, otherAlice));
+            assertEquals("Linked students: Alice Pauline (94351253), Alice Pauline (81112222)",
+                    label(parentOfNamesakes.getRoot(), "links").getText());
         });
     }
 
@@ -507,17 +787,86 @@ public class ContactCardsUiTest {
         assertNotNull(control);
         assertTrue(control.isVisible());
         assertTrue(control.getBoundsInLocal().getHeight() > 0);
-        assertTrue(control.localToScene(control.getBoundsInLocal()).getMinX() >= 0);
+        assertTrue(control.localToScene(control.getBoundsInLocal()).getMinX() >= -1);
         assertTrue(control.localToScene(control.getBoundsInLocal()).getMaxX() <= root.getWidth() + 1);
+        assertTrue(control.localToScene(control.getBoundsInLocal()).getMinY() >= -1);
         assertTrue(control.localToScene(control.getBoundsInLocal()).getMaxY() <= root.getHeight() + 1);
+    }
+
+    /**
+     * Hides windows opened by a test, including Help when an assertion fails before it can be captured.
+     */
+    private static void closeNewWindows(List<Window> existingWindows) {
+        for (Window window : List.copyOf(Window.getWindows())) {
+            if (!existingWindows.contains(window)) {
+                window.hide();
+            }
+        }
+    }
+
+    /**
+     * Waits off the JavaFX thread for two post-layout pulses after showing, resizing, or scrolling a scene.
+     */
+    private static void waitForLayout(Scene scene) throws Exception {
+        CountDownLatch pulses = new CountDownLatch(2);
+        Runnable listener = () -> {
+            pulses.countDown();
+            if (pulses.getCount() > 0) {
+                Platform.requestNextPulse();
+            }
+        };
+        runOnFxThread(() -> {
+            scene.addPostLayoutPulseListener(listener);
+            Platform.requestNextPulse();
+        });
+        try {
+            assertTrue(pulses.await(10, TimeUnit.SECONDS), "Timed out waiting for JavaFX layout");
+        } finally {
+            runOnFxThread(() -> scene.removePostLayoutPulseListener(listener));
+        }
     }
 
     /**
      * Runs assertions on the JavaFX thread and propagates failures to JUnit.
      */
     private static void runOnFxThread(Runnable action) throws Exception {
-        FutureTask<Void> task = new FutureTask<>(action, null);
+        callOnFxThread(() -> {
+            action.run();
+            return null;
+        });
+    }
+
+    /**
+     * Returns a value from the JavaFX thread and propagates failures to JUnit.
+     */
+    private static <T> T callOnFxThread(Callable<T> action) throws Exception {
+        FutureTask<T> task = new FutureTask<>(action);
         Platform.runLater(task);
-        task.get(15, TimeUnit.SECONDS);
+        return task.get(15, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Checks that an expanded card follows its contact when sorting changes the displayed index.
+     */
+    @Test
+    void panel_sort_preservesExpandedContactAndUpdatesIndex() throws Exception {
+        runOnFxThread(() -> {
+            Person later = new PersonBuilder().withName("Zoe").withLevel("JC 2").build();
+            Person earlier = new PersonBuilder().withName("Amy").withLevel("Primary 1").build();
+            Model model = new ModelManager();
+            model.addPerson(later);
+            model.addPerson(earlier);
+            PersonListPanel panel = new PersonListPanel(model.getFilteredPersonList());
+            new Scene(panel.getRoot(), 760, 600);
+            panel.completeCommand(CommandResult.expandContact("view", later));
+
+            panel.beginCommand();
+            panel.completeCommand(new SortCommand().execute(model));
+            layout(panel.getRoot());
+            assertEquals(later, list(panel.getRoot()).getSelectionModel().getSelectedItem());
+            assertEquals("2.", label(selectedCard(panel.getRoot()), "id").getText());
+            assertTrue(selectedCard(panel.getRoot()).lookup("#details").isVisible());
+
+        });
     }
 }

@@ -125,8 +125,11 @@ How the parsing works:
 
 The `Model` component,
 
-* stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
-* stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
+* stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object),
+  and the `ParentStudentLink` objects that connect parent contacts to student contacts.
+* selects contacts through a `FilteredList<Person>` and orders those results through a `SortedList<Person>`.
+  `getFilteredPersonList()` exposes the final displayed view as an unmodifiable `ObservableList<Person>`.
+  The UI and indexed commands use this same view, so their indices agree.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
@@ -157,6 +160,232 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
+
+### Role-specific contact editing
+
+`edit INDEX` updates a contact chosen from the currently displayed list. It retains the contact's role and any
+omitted fields. The v1.4 extension adds `s/SUBJECT`, `l/LEVEL`, and `o/NOTE` to the existing edit grammar. Subject
+and level can be changed independently on student contacts, while either role can have its note changed. An empty
+`o/` explicitly clears the note; a missing `o/` preserves it. Legacy student records lacking subject or level can
+still be edited without supplying those fields.
+
+The following three smaller sequence diagrams follow `edit 1 s/Physics l/JC 1 o/Prefers examples`. Splitting the
+parsing, model update, and save phases keeps their labels readable at the guide's normal width.
+
+**Parsing:** `AddressBookParser` delegates to `EditCommandParser`, which validates the index syntax, repeated
+prefixes, and each supplied value before setting the `EditPersonDescriptor` fields. The descriptor keeps an omitted
+note distinct from a specified empty note, so `EditCommand` can preserve or clear the stored value correctly.
+
+![Parsing the role-specific edit](images/EditRoleFieldsParsingSequenceDiagram.png)
+
+**Model update:** `LogicManager` snapshots the `AddressBook` and current filter before executing the command.
+`EditCommand#execute` resolves the target in `ModelManager#getFilteredPersonList`, rejects subject or level edits on
+a parent, builds a replacement `Person`, and checks the existing duplicate rule before calling
+`ModelManager#setPerson`. It then restores the full displayed list and returns a `CommandResult`. The role itself is
+never changed.
+
+![Applying the role-specific edit to the model](images/EditRoleFieldsSequenceDiagram.png)
+
+**Save or rollback:** Only after successful command execution does `LogicManager` call `Storage#saveAddressBook`.
+The `alt` fragment shows the save outcome: on an `IOException`, `LogicManager` restores the snapshot and filter,
+then reports a `CommandException` instead of returning the successful result.
+
+![Saving the role-specific edit or rolling it back](images/EditRoleFieldsPersistenceSequenceDiagram.png)
+
+Other failures are omitted from the diagrams to keep them focused. An invalid index or field value, a repeated or
+unknown prefix, an invalid parent-field combination, or a duplicate aborts before `setPerson`, so no data is mutated
+or saved. Storage already serializes subject, level, and note, so this extension does not change the JSON format.
+### Help command and command guide
+
+`HelpCommand` is read-only: it returns a `CommandResult` with `isShowHelp()` set to `true`.
+`LogicManager` returns that result without saving contact data. `MainWindow` then calls `handleHelp()`:
+it shows its existing `HelpWindow` if closed, or focuses that same window if already open.
+
+The overview below traces a successful typed `help` command. Its `ref` frames expand into the two focused
+diagrams that follow, keeping each diagram readable at the guide's normal page width.
+
+![Help command overview with references to the execution and window-handling sequences](images/HelpCommandSequenceDiagram.png)
+
+**Help execution** (`HelpCommandExecutionSequenceDiagram.puml`). `AddressBookParser` creates the command;
+the command creates result `r`. Constructor details and the routine read-only checks are omitted.
+The command returns without contact mutation or a Storage call.
+
+![Help command parsing and execution sequence](images/HelpCommandExecutionSequenceDiagram.png)
+
+**Help window handling** (`HelpWindowSequenceDiagram.puml`). This expands the UI portion of the overview after
+`Logic.execute("help")` returns. It shows the `isShowHelp()` check and the mutually exclusive show/focus paths.
+The activation of `executeCommand` includes earlier interactions shown separately in the overview and execution
+diagram. Result-display updates, logging, and clipboard operations are omitted from all three diagrams.
+
+![Applying the Help result and showing or focusing the existing window](images/HelpWindowSequenceDiagram.png)
+
+The Help menu and the F1 accelerator call `MainWindow#handleHelp()` directly, so they share the same
+show-or-focus behavior without parsing a command.
+
+`HelpWindow.fxml` contains the command reference. Its scroll pane fits the available width, and command labels
+wrap to keep long formats readable. The resizable window starts within the primary screen's visual bounds,
+including display scaling. Its User Guide URL and copy button remain outside the scrolling command list.
+When a command's syntax changes, update the reference alongside the User Guide.
+
+### Focused contact filtering
+
+`filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` requires at least one criterion.
+`FilterCommandParser` reuses `ArgumentTokenizer`, duplicate-prefix validation, and `ParserUtil`'s subject/level
+validation. It rejects unknown prefixes, duplicate prefixes, invalid structure, and invalid values in that order.
+Field checks use name, subject, then level order. Parsing finishes before any model state changes.
+
+`ContactMatchesCriteriaPredicate` combines every criterion and every name keyword using **AND**.
+Name matching reuses `StringUtil.containsWordIgnoreCase`, the same complete-word comparison used by `find`.
+The existing `find` command retains OR between keywords. Subject and level are normalized by their existing value
+classes and compared as complete values ignoring case. Missing fields cannot satisfy their respective criteria.
+
+`FilterCommand` replaces the active predicate using `ModelManager#updateFilteredPersonList`. If no comparator is
+active, it installs `PersonNameComparator`, which compares complete names ignoring case. `SortedList` retains
+source order for comparator ties, so equal names remain in insertion order. An active comparator is preserved.
+The predicate and comparator change only the view; `AddressBook` and JSON retain insertion order.
+The command reports its displayed count and returns `false` from `isDataChanging()`, so `LogicManager` does not
+call Storage.
+
+The following sequence shows the main Logic flow for a successful combined filter, including default ordering
+when no comparator is active. Parser construction, individual predicate evaluations, and routine command checks
+are omitted for clarity. JavaFX observes the resulting list changes. The existing `MainWindow`/`PersonListPanel`
+command handling retains visible selection and expansion or clears a hidden selection.
+
+![Combined contact filtering and display ordering](images/FilterContactsSequenceDiagram.png)
+
+#### Shared filtering and sorting API
+
+The pipeline is `AddressBook.getPersonList()` → `FilteredList<Person>` → `SortedList<Person>` → `PersonListPanel`.
+The displayed observable list object remains the same when its predicate or comparator changes.
+
+| API | Contract |
+| --- | --- |
+| `getFilteredPersonList()` | Returns the final filtered and ordered view used by the UI and `view`, `edit`, and `delete`. |
+| `updateFilteredPersonList(predicate)` | Changes membership without changing the active comparator. |
+| `getPersonListComparator()` | Returns the active comparator, or `null` for insertion order. |
+| `setPersonListComparator(comparator)` | Changes ordering without changing membership; `null` restores insertion order. |
+
+`list` installs `PREDICATE_SHOW_ALL_PERSONS` and clears the comparator. Existing `find` changes only the predicate.
+Successful `add` and `edit` retain their existing filter-clearing behavior and preserve active ordering.
+Save-failure rollback restores the previous contacts and predicate; the display comparator remains active.
+Filtering and ordering are session state and are not serialized.
+
+**Sorting integration:** `sort level` calls `setPersonListComparator` with its level/name comparator and leaves
+the predicate intact. Subsequent `filter` calls preserve that comparator. `list` clears both states.
+
+#### Tests and manual checks
+
+JUnit covers all seven nonempty criterion combinations, AND name matching, exact values, missing fields, duplicate
+and unknown prefixes, validation precedence, subject length and academic-level boundaries, no matches, name-order ties,
+comparator composition, displayed indices, insertion-order restoration, unchanged JSON, and save-failure rollback.
+`ContactListStateTest` covers selection and expansion after filtering and invalid input.
+
+For a manual JavaFX check, use a disposable data folder with contacts inserted in this order:
+Zoe Tan (Mathematics, Secondary 3), Alice Tan (parent), Amy Tan (Mathematics, Secondary 3),
+Bob Lee (Physics, JC 2). Give the contacts distinct valid contact details.
+
+1. Run `filter s/Mathematics l/Secondary 3`: expect Amy then Zoe and `Showing 2 matching contacts.`
+2. Run `view 2`, then repeat that filter: Zoe stays selected and expanded at index 2.
+3. Run `filter n/Amy Tan`: expect only Amy; Zoe's selection and expansion clear.
+4. Run `view 1`, then `filter s/`: expect the subject error with Amy's selection, expansion, and list unchanged.
+5. Run `filter n/Amy Lee`: expect `No matching contacts.`; `find Amy Lee` should return Amy and Bob.
+6. Run `filter s/Mathematics`, then `delete 1`: Amy is deleted and Zoe becomes index 1. `view 1` shows Zoe.
+7. Run `list`: expect Zoe, Alice, Bob in insertion order with compact cards.
+8. Restart: the remaining contacts still follow insertion order. Filtering alone must not rewrite JSON.
+
+### Sort by academic level
+
+`sort level` orders the currently displayed contacts without changing their details or stored order.
+`AddressBookParser` creates a `SortCommandParser`, which accepts only `level`, ignoring case and surrounding
+whitespace. Missing, unsupported, or extra arguments produce `Invalid command format. Expected: sort level`
+before any model state changes. Successful execution returns `Contacts sorted by academic level.`, even for
+an empty list.
+
+The following sequence diagram shows successful parsing and application of the display comparator.
+
+![Interactions for sorting contacts by academic level](images/SortByLevelSequenceDiagram.png)
+
+`SortCommand#execute(model)` calls `Model#setPersonListComparator(LEVEL_COMPARATOR)`.
+`ModelManager` applies this comparator to its persistent `displayedPersons:SortedList<Person>`, which wraps
+`filteredPersons:FilteredList<Person>` over `AddressBook.getPersonList()`. Changing the comparator preserves
+the active predicate and does not reorder the source collection. `SortCommand#isDataChanging()` returns `false`,
+so `LogicManager` takes its read-only execution branch without a Storage call.
+
+`Level` uses one ordered list for validation, canonical spelling, and the rank returned by `getSortRank()`:
+`Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, and `JC 1`–`JC 2`.
+`PersonLevelComparator` orders students by rank, then case-insensitive name; parents follow by name.
+Legacy students without a level follow other students and precede parents. Equal sort keys compare equal.
+`add`, `edit`, and `filter` reuse this validation through `ParserUtil#parseLevel(...)`; JSON loading validates recorded
+levels with the same `Level` rules. Unsupported values such as `JC 5` and `Secondary 6` are rejected.
+`edit` accepts level changes for students and preserves the existing level when `l/` is omitted.
+
+`getFilteredPersonList()` returns the same displayed view to the UI and to `view`, `edit`, and `delete`, so
+their indices follow the displayed order. `PersonListPanel` supplies this observable view to its `ListView`
+using `setItems(...)`; JavaFX observes subsequent list changes automatically. After command execution,
+`PersonListPanel#completeCommand(...)` restores selection and expansion for any contact still visible and
+refreshes the cards. The diagram note summarizes the automatic update without implying a direct method call
+from `SortedList` to `PersonListPanel`.
+
+Sorting stays active when `find` or `filter` replaces the predicate; successful `add` and `edit` clear filtering
+but retain the comparator. `list` sets `PREDICATE_SHOW_ALL_PERSONS` and clears the comparator with
+`setPersonListComparator(null)`, restoring all remaining contacts in insertion order and collapsing details.
+The filter and comparator are session state: neither is saved, and restarting restores insertion order.
+
+The diagram shows creation of the command parser, command, and result, with synchronous calls and dashed returns.
+Existing model and list objects are created before this scenario. Routine read-only checks in `LogicManager`,
+invalid-input paths, validation helpers, object lifetime endings, and JavaFX notification and rendering internals
+are omitted to keep the diagram focused on parsing and applying the sort.
+
+### Parent-student links
+
+`link PARENT_INDEX STUDENT_INDEX` records that a parent contact is the parent of a student contact.
+Expanded contact cards then list the contact's linked students or parents.
+
+The class diagram below shows how a link is represented and persisted. Fields and classes unrelated to links,
+such as `Email`, `Address`, `Tag`, `UserPrefs`, and the storage managers, are omitted.
+
+![Classes that represent and persist parent-student links](images/ParentStudentRelationshipClassDiagram.png)
+
+**Representation.** `AddressBook` keeps a list of `ParentStudentLink` objects beside its `UniquePersonList`.
+Each link identifies its parent and its student by `Name` and `Phone`, compared in the same normalized way as the
+duplicate-contact rules (`Name#isSameName` and `Phone#isSamePhone`). `ParentStudentLink#isParent` and `#isStudent`
+also check the contact's `Role`, because a parent and a student may share a name and phone. Within one role, name
+and phone identify at most one contact, so each link resolves to exactly one parent and one student.
+A parent can have 0..* linked students and a student can have 0..* linked parents.
+Cards and `link` messages show each linked contact as `Name (phone)`, because two contacts may share a name.
+
+**Normal path.** `LinkCommandParser` parses two displayed-list indices. `LinkCommand#execute` looks up both
+contacts in `Model#getFilteredPersonList()`, checks that the first is a parent and the second a student, creates the
+link with `ParentStudentLink#between`, and rejects a duplicate using `Model#hasLink`. It then calls
+`Model#addLink` and returns a result that expands the parent's card. `LogicManager` saves the address book because
+the command changes data. `PersonListPanel` asks `Logic#getLinkedPersons` for each card's linked contacts.
+
+**Keeping links consistent.** `AddressBook` updates links whenever contacts change, so every command that changes
+contacts keeps links valid without extra code:
+
+* `removePerson` removes every link that involves the deleted contact. `DeleteCommand` reports how many it removed.
+* `setPerson` calls `ParentStudentLink#withContactReplaced`, which rewrites the side of a link that matched the
+  edited contact. Editing a name or phone therefore keeps the link.
+* `resetData` copies links, so `clear` and the save-failure rollback restore links together with contacts.
+
+**Storage.** `JsonSerializableAddressBook` saves links in a `links` list of `JsonAdaptedLink` objects, each holding the
+two names and phones as strings. When loading, it rejects a link with invalid fields, a link whose parent or student
+is not in the `persons` list, and a duplicate link, so a corrupted file is reported instead of loading broken links.
+A file without a `links` list loads with no links, so data files from earlier versions remain valid.
+
+**Design considerations.**
+
+* **Alternative 1 (current choice):** store links in `AddressBook`, identified by name and phone.
+  * Pros: `Person` and its equality are unchanged, deleting and editing update links in one place, and the data file
+    stays readable and editable by hand.
+  * Cons: a link must be rewritten when a linked contact's name or phone changes.
+* **Alternative 2:** store a list of linked students inside each parent `Person`.
+  * Pros: a card can read links straight from its contact.
+  * Cons: every `Person` copy (for example in `edit`) must carry the links, and deleting a student must update every
+    parent object.
+* **Alternative 3:** give each `Person` a generated ID and link by ID.
+  * Pros: links survive any edit without rewriting.
+  * Cons: IDs must be generated, saved, and validated, which adds risk to every existing command and data file.
 
 ### \[Proposed\] Undo/redo feature
 
@@ -269,7 +498,7 @@ information while preparing lessons or communicating with parents.
 **Value proposition**: TutorContacts keeps student and parent contact information, together with essential tutoring
 details, in one place. Typed commands let the tutor record contacts and retrieve the information needed for lesson
 preparation or parent communication. The initial MVP focuses on creating, viewing, deleting, and retaining contact
-records. Relationship links and other contact-organization features are possible future extensions.
+records. Version 1.4 adds parent-student links so the tutor can see which parents belong to which students.
 
 ### User stories
 
@@ -277,7 +506,7 @@ Priority describes the importance of a user need, not whether the feature has al
 
 Priorities:
 * High (must-have for the agreed MVP) - `* * *`;
-* Medium (nice-to-have for future versions) - `* *`.
+* Medium (post-MVP enhancement) - `* *`.
 
 | Priority | As a… | I can… | So that I can… |
 | --- | --- | --- | --- |
@@ -304,9 +533,10 @@ Priorities:
 
 ### Use cases
 
-(For all use cases below, the **System** is `TutorContacts` and the **Actor** is the `user`, unless specified
-otherwise. `INDEX` is the one-based position in the displayed contact list. These use cases follow the
-[V2 TutorContacts MVP specification](https://docs.google.com/document/d/13atDT_z6unnRSmTLVOimhPvUcavvWek9Xy9jy5YNyFY/edit?tab=t.pgg9f79ckkj4).
+(For all use cases below, the **System** is `TutorContacts` and the **Actor** is the tutor, unless specified
+otherwise. `INDEX` is the one-based position in the displayed contact list. The original MVP use cases follow the
+[V2 TutorContacts MVP specification](https://docs.google.com/document/d/13atDT_z6unnRSmTLVOimhPvUcavvWek9Xy9jy5YNyFY/edit?tab=t.pgg9f79ckkj4);
+the edit use case describes the subsequent v1.4 extension.
 Failed commands leave the displayed and saved contact data unchanged. Some specified behavior is not yet implemented
 in the current AB3 codebase.)
 
@@ -432,11 +662,44 @@ in the current AB3 codebase.)
 
     Use case ends.
 
+**Use case: Edit a student or parent contact**
+
+**MSS**
+
+1. The tutor enters `edit INDEX` with at least one field to change. For a student, this may include subject and
+   academic level; either role may have a note.
+2. TutorContacts resolves `INDEX` in the currently displayed list, validates the supplied fields against the
+   contact's role, and checks that the edited contact does not duplicate another record.
+3. TutorContacts replaces the contact while retaining its role and omitted fields, then shows the complete list.
+4. TutorContacts saves the updated data and reports `Edited person: ...`.
+
+   Use case ends.
+
+**Extensions**
+
+* 1a. The index is invalid, no field is supplied, or a prefix or value is invalid.
+  * 1a1. TutorContacts reports the relevant error. No contact data is changed.
+
+    Use case resumes at step 1.
+* 2a. The tutor supplies `s/` or `l/` for a parent contact.
+  * 2a1. TutorContacts reports `Subject and level are only valid for student contacts.` No contact data is changed.
+
+    Use case resumes at step 1.
+* 2b. The replacement contact would duplicate another contact under the existing role, name, phone, and email rule.
+  * 2b1. TutorContacts reports `This person already exists in the address book.` No contact data is changed.
+
+    Use case resumes at step 1.
+* 4a. TutorContacts cannot save the data file.
+  * 4a1. TutorContacts restores the previous contact data and displayed filter, then reports a storage error. The
+    existing data file remains unchanged.
+
+    Use case ends.
+
 **Use case: Save data and exit safely**
 
 **MSS**
 
-1. User adds or deletes a contact.
+1. User adds, edits, or deletes a contact.
 2. TutorContacts saves the contacts and their role-specific fields to `data/tutorcontacts.json` before confirming the
    command.
 3. User enters `exit`.
@@ -449,7 +712,7 @@ in the current AB3 codebase.)
 **Extensions**
 
 * 2a. TutorContacts cannot save the data file.
-  * 2a1. TutorContacts reports the `add` or `delete` save-failure message. The displayed and saved data remain
+  * 2a1. TutorContacts reports the relevant save-failure message. The displayed and saved data remain
     unchanged.
 
     Use case ends.
@@ -506,8 +769,8 @@ in the current AB3 codebase.)
 
 ### Glossary
 
-* **Academic level**: A student's stage of study, such as `Primary 6`, `Secondary 3`, or `JC 2`. Recorded only for
-  student contacts.
+* **Academic level**: A student's stage of study: `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`,
+  or `JC 1`–`JC 2`. Recorded only for student contacts, using canonical capitalization.
 * **Compact card**: The summary of a contact shown in the contact list, displaying its index, role, name, and phone.
 * **Data file**: The file `data/tutorcontacts.json`, in the same folder as the JAR file, in which TutorContacts saves
   all contacts.
@@ -526,12 +789,35 @@ in the current AB3 codebase.)
 * **Private tutor**: An independent tutor who works alone, teaching students privately rather than through a school
   or tuition agency.
 * **Role**: The type of a contact, either `student` or `parent`, which determines the fields the contact has.
-* **Student contact**: A contact with the `student` role, which must also have a subject and an academic level.
+* **Student contact**: A contact with the `student` role. Newly added student contacts require a subject and an
+  academic level; legacy records may lack either field.
 * **Subject**: The subject that the tutor teaches a student, such as `A-Math`. Recorded only for student contacts.
 
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Appendix: Instructions for manual testing**
+
+### Help command guide
+
+Use a disposable data file containing at least two contacts. Before testing, run `view 1` and note the
+selected contact, expanded details, and the data file's contents and last-modified time.
+
+1. Enter `help`. Expect one window titled **TutorContacts — Command guide**, containing the command reference
+   and the TutorContacts User Guide URL. Enter `help` again in the main window: the same Help window should
+   receive focus, without opening a second window.
+2. Close Help, then choose **Help → Help** in the main window. Close it again and press **F1** in the main
+   window. Each action should reopen the guide. With Help already open, repeat both actions and check that
+   no additional Help window appears.
+3. Scroll to the end of the command list and back. Expect the `exit` entry to be reachable, while the User
+   Guide URL and **Copy User Guide URL** button stay visible outside the scrolling list.
+4. Resize Help to its minimum size (450 × 360), then enlarge it. Expect long command formats and the URL
+   to wrap without clipping, and the reference to remain scrollable. Repeat at 1920 × 1080 with 100% and
+   125% scaling, and at 1280 × 720 with 150% scaling on available supported systems.
+5. Select **Copy User Guide URL** and paste into a browser's address bar. Expect exactly
+   `https://ay2627s1-cs2103t-t17-1.github.io/tp/UserGuide.html`. With Internet access, navigate to it and
+   verify that it opens the TutorContacts User Guide, not the inherited AB3 guide.
+6. Close Help. Expect the contact list, selected contact, and expanded details to be unchanged. Check that
+   the data file's contents and last-modified time still match the values recorded before opening Help.
 
 ### Command parsing and validation
 
@@ -549,6 +835,10 @@ and is retained in stored data. `ExitCommandParser` rejects arguments before an 
 data after rejected input, presentation requests, and JSON round trips. `ParserUtilTest` and field tests cover
 limits and invalid values. `ExitCommandParserTest` checks the parameterless exit grammar.
 
+`EditCommandParserTest` covers the new edit prefixes, empty-note clearing, and invalid values. `EditCommandTest`
+checks student and parent edits, legacy students, and rejection before mutation. `LogicManagerTest` checks that
+edited fields survive a storage round trip and that a failed save restores the previous data and displayed filter.
+
 With a disposable data file, manually verify:
 
 1. Add a student with subject, level, a formatted phone, and a note. Run `view 1` and check every stored field.
@@ -560,6 +850,21 @@ With a disposable data file, manually verify:
 5. Run `list`, `view INDEX`, and `delete INDEX`. Check feedback, insertion order, visible indexes, and selection.
 6. Restart and verify all added fields are restored. Check read-only commands do not rewrite the JSON file.
 7. Run `exit 3`: the window must remain open. Run `exit`: it should close successfully.
+
+### Editing subject, level, and note
+
+Use a disposable data file for these checks:
+
+1. Add a student with `s/Math l/Secondary 3 o/Original note` and a parent with a note. Run
+   `edit 1 s/Physics l/JC 1 o/Prefers examples`, then `view 1`. Check the three updated values and unchanged role,
+   name, phone, email, and address. Restart and check the same values are restored from JSON.
+2. Run `edit 1 s/A-Math`. Check the student's existing level and note remain unchanged. Run `edit 1 o/`, then
+   `view 1`; the note should be absent. Update and clear the parent's note in the same way.
+3. Try `edit 2 s/Math`, `edit 2 l/JC 1`, empty `s/` and `l/` on the student, a repeated `o/`, and a duplicate
+   identity edit. Check the applicable error and that neither the displayed contact nor JSON changes.
+4. With a legacy student record lacking subject or level, edit an unrelated field. Check the edit succeeds without
+   inventing the missing field. Repeat a valid edit with a failing storage save and check the contact, displayed
+   filter, and saved JSON remain as they were before the command.
 
 ### Contact-card UI
 
@@ -603,8 +908,8 @@ Manual checks for the UI contribution:
    Delete that selected contact: selection should clear. Repeat within filtered search results.
 6. Check resizing and scrolling at 1920x1080 with 100%/125% scaling and 1280x720 with 150% scaling.
    Keyboard command entry must remain usable after selection changes.
-7. After the persistence rollback work is integrated, repeat add/delete with a failing save and check both
-   the list data and selection remain unchanged. UI tests simulate model restoration; they do not verify storage rollback.
+7. Repeat add, edit, and delete with a failing save and check both the list data and selection remain unchanged.
+   UI tests simulate model restoration; they do not verify storage rollback.
 
 ### Main-window appearance and command entry
 
@@ -639,6 +944,34 @@ Given below are instructions to test the app manually.
 testers are expected to do more *exploratory* testing.
 
 </div>
+
+### Linking a parent to a student
+
+1. Prerequisites: close TutorContacts, then move `data/tutorcontacts.json` (next to the JAR file) elsewhere so that
+   the app starts with an empty list. Start TutorContacts and enter these commands in order. The two students share
+   a name, so the steps also check that linked contacts can be told apart.
+   1. `add r/student n/Alex Tan p/91234567 e/alex@example.com a/1 Road s/Mathematics l/Secondary 3`
+   1. `add r/student n/Alex Tan p/98765432 e/alex.lim@example.com a/2 Road s/English l/Primary 6`
+   1. `add r/parent n/Mary Tan p/93334444 e/mary@example.com a/1 Road`
+   1. `list`
+
+   Expected: index 1 is Alex Tan (91234567), index 2 is Alex Tan (98765432), and index 3 is Mary Tan.
+1. Test case: `link 3 1`<br>
+   Expected: `Linked parent Mary Tan (93334444) to student Alex Tan (91234567).` Mary Tan's card expands and shows
+   `Linked students: Alex Tan (91234567)`.
+1. Test case: `link 3 2`<br>
+   Expected: Mary Tan's card shows `Linked students: Alex Tan (91234567), Alex Tan (98765432)`.
+1. Test case: `link 3 1`, then `link 1 2`, then `link 3 3`<br>
+   Expected: in turn, `Mary Tan (93334444) is already linked to Alex Tan (91234567).`,
+   `The contact at index 1 is not a parent.`, and `A contact cannot be linked to itself.` No data changes.
+1. Test case: `edit 1 p/80000000`, then `view 1`<br>
+   Expected: the first Alex Tan shows `Linked parents: Mary Tan (93334444)`. `view 3` shows
+   `Linked students: Alex Tan (80000000), Alex Tan (98765432)`.
+1. Test case: close and reopen TutorContacts, then `view 3`<br>
+   Expected: Mary Tan still shows both linked students.
+1. Test case: `delete 1`<br>
+   Expected: `Deleted contact: Alex Tan. Removed 1 link(s).` `view 2` shows only `Alex Tan (98765432)`.
+1. Clean-up: close TutorContacts and move your original `data/tutorcontacts.json` back.
 
 ### Launch and shutdown
 

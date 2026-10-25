@@ -1,6 +1,8 @@
 package seedu.address.ui;
 
 import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -48,6 +50,8 @@ public class PersonCard extends UiPart<Region> {
     @FXML
     private Label note;
     @FXML
+    private Label links;
+    @FXML
     private FlowPane tags;
 
     /**
@@ -68,6 +72,18 @@ public class PersonCard extends UiPart<Region> {
      * @param isExpanded Whether to show the contact's complete details.
      */
     public PersonCard(Person person, int displayedIndex, boolean isExpanded) {
+        this(person, displayedIndex, isExpanded, List.of());
+    }
+
+    /**
+     * Creates a compact or expanded card that also lists the contact's linked students or parents.
+     *
+     * @param person Contact to display.
+     * @param displayedIndex One-based index in the current list.
+     * @param isExpanded Whether to show the contact's complete details.
+     * @param linkedPersons Students linked to a parent, or parents linked to a student.
+     */
+    public PersonCard(Person person, int displayedIndex, boolean isExpanded, List<Person> linkedPersons) {
         super(FXML);
         this.person = person;
         id.setText(displayedIndex + ".");
@@ -81,6 +97,7 @@ public class PersonCard extends UiPart<Region> {
         subject.setText("Subject: " + person.getSubject().map(Object::toString).orElse("Not recorded"));
         level.setText("Academic level: " + person.getLevel().map(Object::toString).orElse("Not recorded"));
         note.setText("Note: " + person.getNote().map(Object::toString).orElse("None"));
+        links.setText((isStudent ? "Linked parents: " : "Linked students: ") + formatLinkedPersons(linkedPersons));
         subject.setVisible(isStudent);
         subject.setManaged(isStudent);
         level.setVisible(isStudent);
@@ -92,5 +109,17 @@ public class PersonCard extends UiPart<Region> {
                 .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
         tags.setVisible(!person.getTags().isEmpty());
         tags.setManaged(!person.getTags().isEmpty());
+    }
+
+    /**
+     * Returns each linked contact as {@code Name (phone)}, so that contacts with the same name can be told apart.
+     */
+    private static String formatLinkedPersons(List<Person> persons) {
+        if (persons.isEmpty()) {
+            return "None";
+        }
+        return persons.stream()
+                .map(person -> person.getName().fullName + " (" + person.getPhone().value + ")")
+                .collect(Collectors.joining(", "));
     }
 }

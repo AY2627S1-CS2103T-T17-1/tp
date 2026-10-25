@@ -1,9 +1,12 @@
 package seedu.address.model;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.Predicate;
 
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
+import seedu.address.model.person.ParentStudentLink;
 import seedu.address.model.person.Person;
 
 /**
@@ -60,7 +63,27 @@ public interface Model {
      */
     void setPerson(Person target, Person editedPerson);
 
-    /** Returns an unmodifiable view of the filtered person list */
+    /**
+     * Returns true if {@code link} already exists in the address book.
+     */
+    boolean hasLink(ParentStudentLink link);
+
+    /**
+     * Adds the given link.
+     * {@code link} must not already exist, and both of its contacts must exist in the address book.
+     */
+    void addLink(ParentStudentLink link);
+
+    /**
+     * Returns the contacts linked to {@code person}: the students of a parent, or the parents of a student.
+     */
+    List<Person> getLinkedPersons(Person person);
+
+    /**
+     * Returns the observable, unmodifiable displayed list after filtering and ordering.
+     *
+     * @return The live view used for displayed contact indices.
+     */
     ObservableList<Person> getFilteredPersonList();
 
     /**
@@ -71,8 +94,24 @@ public interface Model {
     Predicate<Person> getFilteredPersonPredicate();
 
     /**
-     * Updates the filter of the filtered person list to filter by the given {@code predicate}.
-     * @throws NullPointerException if {@code predicate} is null.
+     * Updates the displayed list's filter without changing its ordering.
+     *
+     * @param predicate Criteria that displayed contacts must satisfy.
+     * @throws NullPointerException If {@code predicate} is {@code null}.
      */
     void updateFilteredPersonList(Predicate<Person> predicate);
+
+    /**
+     * Returns the active display comparator.
+     *
+     * @return The active comparator, or {@code null} when contacts follow insertion order.
+     */
+    Comparator<? super Person> getPersonListComparator();
+
+    /**
+     * Changes the displayed order without changing the filter or stored contacts.
+     *
+     * @param comparator Ordering to apply, or {@code null} to restore insertion order.
+     */
+    void setPersonListComparator(Comparator<? super Person> comparator);
 }

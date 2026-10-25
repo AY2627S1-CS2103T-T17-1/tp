@@ -3,13 +3,17 @@ package seedu.address.model;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
+import seedu.address.model.person.ParentStudentLink;
 import seedu.address.model.person.Person;
 
 /**
@@ -23,6 +27,11 @@ public class ModelManager implements Model {
     private final FilteredList<Person> filteredPersons;
 
     /**
+     * Maintains the live display order without reordering the stored contacts.
+     */
+    private final SortedList<Person> displayedPersons;
+
+    /**
      * Initializes a ModelManager with the given addressBook and userPrefs.
      */
     public ModelManager(ReadOnlyAddressBook addressBook, ReadOnlyUserPrefs userPrefs) {
@@ -33,6 +42,7 @@ public class ModelManager implements Model {
         this.addressBook = new AddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
         filteredPersons = new FilteredList<>(this.addressBook.getPersonList());
+        displayedPersons = new SortedList<>(filteredPersons);
     }
 
     public ModelManager() {
@@ -77,7 +87,11 @@ public class ModelManager implements Model {
 
     @Override
     public void deletePerson(Person target) {
+        int linkCount = addressBook.getLinkedPersons(target).size();
         addressBook.removePerson(target);
+        if (linkCount > 0) {
+            logger.info("Removed " + linkCount + " link(s) of deleted contact " + target.getName());
+        }
     }
 
     @Override
@@ -93,15 +107,35 @@ public class ModelManager implements Model {
         addressBook.setPerson(target, editedPerson);
     }
 
+    @Override
+    public boolean hasLink(ParentStudentLink link) {
+        requireNonNull(link);
+        return addressBook.hasLink(link);
+    }
+
+    @Override
+    public void addLink(ParentStudentLink link) {
+        requireNonNull(link);
+        addressBook.addLink(link);
+        logger.info("Linked parent " + link.getParentName() + " to student " + link.getStudentName());
+    }
+
+    @Override
+    public List<Person> getLinkedPersons(Person person) {
+        requireNonNull(person);
+        return addressBook.getLinkedPersons(person);
+    }
+
     //=========== Filtered Person List Accessors =============================================================
 
     /**
-     * Returns an unmodifiable view of the list of {@code Person} backed by the internal list of
-     * {@code addressBook}
+     * Returns the same observable display view after filtering and ordering.
+     *
+     * @return The live, unmodifiable list used for displayed contact indices.
      */
     @Override
     public ObservableList<Person> getFilteredPersonList() {
-        return filteredPersons;
+        return displayedPersons;
     }
 
     @Override
@@ -117,6 +151,16 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public Comparator<? super Person> getPersonListComparator() {
+        return displayedPersons.getComparator();
+    }
+
+    @Override
+    public void setPersonListComparator(Comparator<? super Person> comparator) {
+        displayedPersons.setComparator(comparator);
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (other == this) {
             return true;
@@ -129,7 +173,7 @@ public class ModelManager implements Model {
 
         return addressBook.equals(otherModelManager.addressBook)
                 && userPrefs.equals(otherModelManager.userPrefs)
-                && filteredPersons.equals(otherModelManager.filteredPersons);
+                && displayedPersons.equals(otherModelManager.displayedPersons);
     }
 
 }

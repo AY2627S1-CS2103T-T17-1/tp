@@ -146,4 +146,23 @@ public class AddCommandParserTest {
         assertParseSuccess(parser, BASE.replace("a/1 Road", "a/Block \\x/12 and \\n/3")
                 + " s/Biology/Chemistry l/Secondary 3", new AddCommand(expected));
     }
+
+    /**
+     * Checks that add rejects out-of-range academic years through shared level validation.
+     */
+    @Test
+    public void parse_unsupportedAcademicLevel_throwsParseException() {
+        assertParseFailure(parser, BASE + " s/Mathematics l/JC 5", Level.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, BASE + " s/Mathematics l/Secondary 6", Level.MESSAGE_CONSTRAINTS);
+    }
+
+    /**
+     * Checks that add stores a canonical level when the input uses lowercase letters.
+     */
+    @Test
+    public void parse_lowercaseLevel_storesCanonicalLevel() {
+        Person expected = new PersonBuilder().withName("Alex Tan").withPhone("9123 4567")
+                .withEmail("alex@example.com").withAddress("1 Road").withLevel("JC 2").build();
+        assertParseSuccess(parser, BASE + " s/Mathematics l/jc 2", new AddCommand(expected));
+    }
 }

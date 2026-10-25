@@ -1,5 +1,8 @@
 package seedu.address.ui;
 
+import java.util.List;
+import java.util.function.Function;
+
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ListCell;
@@ -16,6 +19,11 @@ public class PersonListPanel extends UiPart<Region> {
     private final ContactListState state = new ContactListState();
 
     /**
+     * Looks up the contacts linked to a contact so that expanded cards can list them.
+     */
+    private final Function<Person, List<Person>> linkedPersonsLookup;
+
+    /**
      * Ignores transient JavaFX selection changes while commands mutate or restore the list.
      */
     private boolean isExecutingCommand;
@@ -25,10 +33,21 @@ public class PersonListPanel extends UiPart<Region> {
     private ListView<Person> personListView;
 
     /**
-     * Creates a {@code PersonListPanel} with the given {@code ObservableList}.
+     * Creates a {@code PersonListPanel} with the given {@code ObservableList} and no linked contacts.
      */
     public PersonListPanel(ObservableList<Person> personList) {
+        this(personList, person -> List.of());
+    }
+
+    /**
+     * Creates a {@code PersonListPanel} whose expanded cards list the contacts returned by {@code linkedPersonsLookup}.
+     *
+     * @param personList Contacts to display.
+     * @param linkedPersonsLookup Returns the contacts linked to a given contact.
+     */
+    public PersonListPanel(ObservableList<Person> personList, Function<Person, List<Person>> linkedPersonsLookup) {
         super(FXML);
+        this.linkedPersonsLookup = linkedPersonsLookup;
         personListView.setItems(personList);
         personListView.setCellFactory(listView -> new PersonListViewCell());
         personListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
@@ -95,7 +114,8 @@ public class PersonListPanel extends UiPart<Region> {
                 setGraphic(null);
                 setText(null);
             } else {
-                PersonCard card = new PersonCard(person, getIndex() + 1, state.isExpanded(person));
+                PersonCard card = new PersonCard(person, getIndex() + 1, state.isExpanded(person),
+                        linkedPersonsLookup.apply(person));
                 card.getRoot().prefWidthProperty().bind(widthProperty().subtract(20));
                 setGraphic(card.getRoot());
             }
