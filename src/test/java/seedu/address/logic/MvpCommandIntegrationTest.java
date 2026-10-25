@@ -69,7 +69,7 @@ public class MvpCommandIntegrationTest {
         assertEquals("Showing 2 contacts.", logic.execute("LIST").getFeedbackToUser());
         CommandResult viewResult = logic.execute("view 1");
         assertEquals("Showing contact: Alex Tan.", viewResult.getFeedbackToUser());
-        assertEquals(CommandResult.ContactListAction.EXPAND, viewResult.getContactListAction());
+        assertEquals(CommandResult.ContactListAction.SELECT, viewResult.getContactListAction());
         assertTrue(logic.execute("ExIt").isExit());
         assertEquals(savedData, Files.readString(storage.getAddressBookFilePath()));
 

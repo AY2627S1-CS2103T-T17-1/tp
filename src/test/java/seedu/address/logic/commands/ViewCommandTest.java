@@ -35,7 +35,7 @@ public class ViewCommandTest {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
 
         assertCommandSuccess(new ViewCommand(INDEX_FIRST_PERSON), model,
-                CommandResult.expandContact(expectedMessage, contactToView), expectedModel);
+                CommandResult.selectContact(expectedMessage, contactToView), expectedModel);
     }
 
     @Test
@@ -45,7 +45,7 @@ public class ViewCommandTest {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
 
         assertCommandSuccess(new ViewCommand(lastIndex), model,
-                CommandResult.expandContact("Showing contact: " + contactToView.getName().fullName + ".",
+                CommandResult.selectContact("Showing contact: " + contactToView.getName().fullName + ".",
                         contactToView), expectedModel);
     }
 
@@ -69,7 +69,7 @@ public class ViewCommandTest {
         showPersonAtIndex(expectedModel, INDEX_SECOND_PERSON);
 
         assertCommandSuccess(new ViewCommand(INDEX_FIRST_PERSON), model,
-                CommandResult.expandContact(expectedMessage, contactToView), expectedModel);
+                CommandResult.selectContact(expectedMessage, contactToView), expectedModel);
     }
 
     @Test

@@ -38,7 +38,7 @@
         <StackPane VBox.vgrow="NEVER" fx:id="resultDisplayPlaceholder"
                    minHeight="64" prefHeight="80" maxHeight="80" />
 
-        <VBox fx:id="personList" minWidth="340" prefWidth="340" minHeight="0" VBox.vgrow="ALWAYS">
+        <VBox fx:id="personList" minWidth="0" minHeight="0" VBox.vgrow="ALWAYS">
           <StackPane fx:id="personListPanelPlaceholder" minHeight="0" VBox.vgrow="ALWAYS"/>
         </VBox>
 

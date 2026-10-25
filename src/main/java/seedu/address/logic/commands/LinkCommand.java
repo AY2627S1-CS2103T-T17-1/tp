@@ -49,7 +49,7 @@ public class LinkCommand extends Command {
     }
 
     /**
-     * Links the two displayed contacts and expands the parent so the user can see the new link.
+     * Links the two displayed contacts and selects the parent so the user can see the new link in its details.
      * Contact data is left unchanged if any check fails.
      */
     @Override
@@ -75,7 +75,7 @@ public class LinkCommand extends Command {
         }
 
         model.addLink(link);
-        return CommandResult.expandContact(String.format(MESSAGE_LINK_SUCCESS, describe(parent), describe(student)),
+        return CommandResult.selectContact(String.format(MESSAGE_LINK_SUCCESS, describe(parent), describe(student)),
                 parent);
     }
 

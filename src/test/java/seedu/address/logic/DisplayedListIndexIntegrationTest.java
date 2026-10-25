@@ -68,9 +68,9 @@ public class DisplayedListIndexIntegrationTest {
         // These contacts occupy full-list positions 3, 5, and 6, but displayed positions 1, 2, and 3.
         logic.execute("find Kurz Elle Kunz");
         assertState(searchResults, allContacts);
-        assertEquals(CommandResult.expandContact("Showing contact: Carl Kurz.", CARL), logic.execute("view 1"));
+        assertEquals(CommandResult.selectContact("Showing contact: Carl Kurz.", CARL), logic.execute("view 1"));
         assertState(searchResults, allContacts);
-        assertEquals(CommandResult.expandContact("Showing contact: Fiona Kunz.", FIONA), logic.execute("view 3"));
+        assertEquals(CommandResult.selectContact("Showing contact: Fiona Kunz.", FIONA), logic.execute("view 3"));
         assertState(searchResults, allContacts);
 
         assertEquals("Deleted contact: Carl Kurz.", logic.execute("delete 1").getFeedbackToUser());
@@ -78,9 +78,9 @@ public class DisplayedListIndexIntegrationTest {
         List<Person> remainingResults = List.of(ELLE, FIONA);
         assertState(remainingResults, afterFirstDelete);
 
-        assertEquals(CommandResult.expandContact("Showing contact: Elle Meyer.", ELLE), logic.execute("view 1"));
+        assertEquals(CommandResult.selectContact("Showing contact: Elle Meyer.", ELLE), logic.execute("view 1"));
         assertState(remainingResults, afterFirstDelete);
-        assertEquals(CommandResult.expandContact("Showing contact: Fiona Kunz.", FIONA), logic.execute("view 2"));
+        assertEquals(CommandResult.selectContact("Showing contact: Fiona Kunz.", FIONA), logic.execute("view 2"));
         assertState(remainingResults, afterFirstDelete);
 
         // Displayed index 3 was valid before deletion and still identifies Daniel in the full list.
@@ -90,10 +90,10 @@ public class DisplayedListIndexIntegrationTest {
         assertEquals("Deleted contact: Elle Meyer.", logic.execute("delete 1").getFeedbackToUser());
         List<Person> afterSecondDelete = List.of(ALICE, BENSON, DANIEL, FIONA, GEORGE);
         assertState(List.of(FIONA), afterSecondDelete);
-        assertEquals(CommandResult.expandContact("Showing contact: Fiona Kunz.", FIONA), logic.execute("view 1"));
+        assertEquals(CommandResult.selectContact("Showing contact: Fiona Kunz.", FIONA), logic.execute("view 1"));
         assertState(List.of(FIONA), afterSecondDelete);
 
-        assertEquals(CommandResult.collapseContacts("Showing 5 contacts."), logic.execute("list"));
+        assertEquals(new CommandResult("Showing 5 contacts."), logic.execute("list"));
         assertState(afterSecondDelete, afterSecondDelete);
     }
 
@@ -113,9 +113,9 @@ public class DisplayedListIndexIntegrationTest {
         assertInvalidIndex("view 1", 1, List.of(), allContacts);
         assertInvalidIndex("delete 1", 1, List.of(), allContacts);
 
-        assertEquals(CommandResult.collapseContacts("Showing 7 contacts."), logic.execute("list"));
+        assertEquals(new CommandResult("Showing 7 contacts."), logic.execute("list"));
         assertState(allContacts, allContacts);
-        assertEquals(CommandResult.expandContact("Showing contact: Alice Pauline.", ALICE), logic.execute("view 1"));
+        assertEquals(CommandResult.selectContact("Showing contact: Alice Pauline.", ALICE), logic.execute("view 1"));
         assertState(allContacts, allContacts);
     }
 

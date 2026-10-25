@@ -99,6 +99,16 @@
     -fx-padding: 8 20 16 20;
 }
 
+.main-window:compact-height #resultDisplayPlaceholder {
+    -fx-min-height: 48;
+    -fx-pref-height: 48;
+    -fx-max-height: 48;
+}
+
+.main-window:compact-height #personList {
+    -fx-padding: 4 20 8 20;
+}
+
 .main-window .main-status-bar {
     -fx-background-color: #1d242d;
     -fx-padding: 8 20;
