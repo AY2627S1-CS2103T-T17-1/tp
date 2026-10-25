@@ -24,7 +24,7 @@ help you find and manage this information faster than traditional GUI applicatio
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar tutorcontacts.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. On the first launch, the contact list is empty.<br>
-   ![TutorContacts main window with a student contact expanded in place](images/mainWindow.png)
+   ![TutorContacts main window with a compact list and selected-contact detail pane](images/mainWindow.png)
 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
@@ -138,7 +138,7 @@ Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NO
 * Either role may supply `o/NOTE`. An omitted or whitespace-only note is treated as absent.
 * `t/` and other unsupported prefixes are rejected. Adding tags or multiple subjects is not supported.
 * On success, TutorContacts reports `Added student: NAME.` or `Added parent: NAME.`
-* The newly added contact is selected and scrolled into view as a compact card.
+* The newly added contact is selected and scrolled into view; its complete information appears in the detail pane.
 
 Field rules apply to normalized values. Leading and trailing whitespace is trimmed; consecutive spaces in
 names, subjects, and levels are collapsed. Capitalization is retained except for roles and academic levels,
@@ -175,7 +175,8 @@ Examples:
 Displays all contacts in insertion order, numbered from 1. This command clears filtering and sorting
 to restore the complete insertion-order list.
 
-Compact cards show only the index, role, name, and phone. `list` collapses any expanded card.
+Compact cards show index, role, name, and phone, plus academic level and subject for students.
+`list` retains the selected contact and its details while restoring the complete insertion-order list.
 
 Format: `list`
 
@@ -188,7 +189,7 @@ Format: `list`
 
 Example: `list`
 
-![Result of the list command showing four compact contact cards](images/listContactsResult.png)
+![Compact contact list beside the detail pane](images/mainWindow.png)
 
 ### Sorting contacts by academic level: `sort`
 
@@ -197,7 +198,7 @@ Format: `sort level`
 * Students come first: `Primary 1`–`Primary 6`, then `Secondary 1`–`Secondary 5`, then `JC 1`–`JC 2`.
   Names break level ties, ignoring case. Legacy students without levels follow other students;
   parents come last, ordered by name. Equal sort keys have no additional guaranteed order.
-* Sorts the current results, retaining the filter and any visible selected or expanded contact.
+* Sorts the current results, retaining the filter and any visible selected contact and its details.
   Sorting remains active as results change; `list` clears filtering and sorting.
 * `view`, `edit`, and `delete` use the displayed indices. Sorting does not save data or change stored order.
 * `SORT LEVEL` and surrounding whitespace are accepted. Success: `Contacts sorted by academic level.`,
@@ -216,19 +217,23 @@ Format: `view INDEX`
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
 * On success, the message is `Showing contact: NAME.`
 * This command does not change contact details or save the data file.
-* The selected card is highlighted and expanded in place; other cards remain compact.
-* Expanded cards also show email, address, and note, plus subject and academic level for students.
+* The selected card is highlighted, and its complete information appears in the separate detail pane.
+  All contact cards remain compact. Clicking a card or selecting it with the list's arrow keys also shows its details.
+* The detail pane shows email, address, note, linked contacts, and subject and academic level for students.
   An absent note is shown as `None`. Older student records without subject or level show `Not recorded` for those fields.
-  Existing tags, if any, appear only in the expanded card.
-* Use `view` on another contact to move the expansion, or `list` to collapse it.
+  Existing tags, if any, appear in the detail pane.
+* Use `view` on another contact to change the detail pane. `list` keeps the selected contact and its details.
+* On startup, the pane prompts you to select a contact. An empty displayed list shows guidance to use `list` or add a contact.
+* The list and detail pane start at a resizable 40/60 split. Below 800 logical pixels of workspace width,
+  they stack vertically. Each region scrolls independently. No selection or divider position is saved across restarts.
 
 Examples:
 * `list` followed by `view 2` shows the second displayed contact.
 * `find Betsy` followed by `view 1` shows the first search result.
 
-![Result of view 1 showing an expanded student contact card](images/viewContactResult.png)
+![Selected student shown beside the compact contact list](images/mainWindow.png)
 
-Invalid input leaves contact data, the displayed list, and the current selection and expansion unchanged:
+Invalid input leaves contact data, the displayed list, and the current selection and displayed details unchanged:
 
 | Input problem | Error message |
 | --- | --- |
@@ -247,8 +252,8 @@ Format: `link PARENT_INDEX STUDENT_INDEX`
 * Supply exactly two **positive integers**. The first must be a parent and the second must be a student.
 * A parent can be linked to several students, and a student can be linked to several parents.
 * On success, the message is `Linked parent PARENT_NAME (PHONE) to student STUDENT_NAME (PHONE).`
-  The parent's card is highlighted and expanded.
-* Expanded cards list linked contacts with their phone numbers, so contacts with the same name can be told apart.
+  The parent's card is highlighted and its details appear in the detail pane.
+* The detail pane lists linked contacts with their phone numbers, so contacts with the same name can be told apart.
   For example, a parent shows `Linked students: Alex Tan (91234567)` and a student shows `Linked parents: …`.
   A contact without links shows `None`.
 * Links are saved with your contacts. Deleting a linked contact removes its links, and editing a linked contact's
@@ -293,9 +298,9 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
   matching normalized phone or case-insensitive email, is a duplicate. Invalid input, a duplicate, or a failed save
   leaves the displayed and saved contact data unchanged. Successful edits are saved automatically.
 * After a successful edit, TutorContacts reports `Edited person: ...` and displays the complete contact list again.
-  A search filter is cleared, so contact indices may change. Check the contact's current index, or search for the
-  contact again, before using `view INDEX` to inspect its subject, level, or note. The success message itself lists
-  only the general contact fields.
+  A search filter is cleared, so contact indices may change. Editing the selected contact keeps its updated details
+  visible at its new index. Editing another contact retains the current selection and refreshes linked-contact details.
+  The success message itself lists only the general contact fields.
 * Editing a linked contact's name or phone keeps its links to other contacts.
 
 Examples (assuming contact 1 is a student and contact 2 is a parent):
@@ -350,8 +355,8 @@ Command words and prefixes are case-insensitive, and prefixes can appear in any 
 * Results default to ascending full-name order, ignoring case. Equal names retain insertion order.
   An already active display ordering is preserved.
 * `view INDEX`, `edit INDEX`, and `delete INDEX` use the numbered results currently displayed.
-  `list` clears both filtering and ordering, shows all remaining contacts in insertion order, and collapses details.
-* Selection and expansion stay with the selected contact if it remains visible; otherwise they clear.
+  `list` clears both filtering and ordering, shows all remaining contacts in insertion order, and retains the selected contact's details.
+* Selection and details stay with the selected contact if it remains visible; otherwise they clear.
 * Filtering does not change stored contacts or rewrite the data file. Filters and display ordering are not retained
   when the application restarts. Startup uses insertion order.
 * Existing `add` and `edit` commands clear the filter after success and preserve active display ordering.
@@ -367,7 +372,7 @@ Examples:
 Successful filtering reports `Showing N matching contacts.`, including `Showing 1 matching contacts.` for one match.
 Zero matches (including an empty address book) reports `No matching contacts.` and displays an empty list.
 
-Invalid input leaves contacts, the displayed list, ordering, selection, expansion, and saved data unchanged.
+Invalid input leaves contacts, the displayed list, ordering, selection, details, and saved data unchanged.
 
 | Input problem | Error message |
 | --- | --- |
@@ -397,8 +402,8 @@ Format: `delete INDEX`
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
 * On success, the message is `Deleted contact: NAME.` The remaining contacts keep their order and are renumbered.
 * Deleting a linked contact also removes its links. The message then ends with `Removed COUNT link(s).`
-* Deleting the selected contact clears the selection and expansion. Deleting another contact keeps the selected
-  contact highlighted, with its new index and any expanded details.
+* Deleting the selected contact clears the selection and detail pane. Deleting another contact keeps the selected
+  contact highlighted, with its new index and current details.
 
 Examples:
 * `list` followed by `delete 2` deletes the second displayed contact.
