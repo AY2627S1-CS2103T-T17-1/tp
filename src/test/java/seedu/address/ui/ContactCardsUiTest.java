@@ -640,26 +640,39 @@ public class ContactCardsUiTest {
         });
     }
 
+    /**
+     * Checks narrow-window feedback and path access after JavaFX has completed its layout pulses.
+     *
+     * @throws Exception If JavaFX execution or layout synchronization fails.
+     */
     @Test
     void window_narrowLayout_keepsLongFeedbackAndStoragePathAccessible() throws Exception {
-        runOnFxThread(() -> {
+        Path dataPath = temporaryFolder.resolve("a-long-directory-name/".repeat(10) + "contacts.json");
+        String warning = MainApp.DATA_FILE_WARNING + "\n" + "Long error details. ".repeat(100);
+        MainWindow window = callOnFxThread(() -> {
             Model model = new ModelManager();
             model.addPerson(ALICE);
-            Path dataPath = temporaryFolder.resolve("a-long-directory-name/".repeat(10) + "contacts.json");
             StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
                     new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
             Stage stage = new Stage();
-            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
-            window.fillInnerParts();
+            MainWindow mainWindow = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            mainWindow.fillInnerParts();
             stage.setWidth(450);
             stage.setHeight(420);
-            try {
+            return mainWindow;
+        });
+        Stage stage = callOnFxThread(window::getPrimaryStage);
+        Scene scene = callOnFxThread(stage::getScene);
+        try {
+            runOnFxThread(() -> {
                 window.show();
-                Region root = (Region) stage.getScene().getRoot();
-                String warning = MainApp.DATA_FILE_WARNING + "\n" + "Long error details. ".repeat(100);
                 window.showStartupWarning(warning);
-                layout(root);
+            });
+            // Yield the JavaFX thread so the window, compact-height styles, and text skin can finish layout.
+            waitForLayout(scene);
 
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
                 TextArea feedback = (TextArea) root.lookup("#resultDisplay");
                 assertEquals(warning, feedback.getText());
                 assertTrue(feedback.isWrapText());
@@ -670,6 +683,12 @@ public class ContactCardsUiTest {
                 assertNotNull(scrollbar);
                 assertTrue(scrollbar.isVisible());
                 feedback.setScrollTop(Double.MAX_VALUE);
+            });
+            waitForLayout(scene);
+
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
                 assertTrue(feedback.getScrollTop() > 0);
 
                 Label pathLabel = label(root, "saveLocationStatus");
@@ -685,11 +704,12 @@ public class ContactCardsUiTest {
                 assertFalse(Files.exists(dataPath));
                 feedback.deselect();
                 feedback.setScrollTop(0);
-                saveSnapshot(root, "main-window-narrow-feedback");
-            } finally {
-                stage.close();
-            }
-        });
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> saveSnapshot((Region) scene.getRoot(), "main-window-narrow-feedback"));
+        } finally {
+            runOnFxThread(stage::close);
+        }
     }
 
     @Test
