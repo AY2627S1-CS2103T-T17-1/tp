@@ -21,7 +21,7 @@ public class SortCommandParserTest {
      */
     @Test
     public void parse_levelVariants_returnsSortCommand() throws ParseException {
-        for (String valid : List.of("level", " LEVEL ", "  LeVeL  ")) {
+        for (String valid : List.of("level", " LEVEL ", "  LeVeL  ", "\u2003LEVEL\u3000", "\tlevel\u2002")) {
             assertInstanceOf(SortCommand.class, parser.parse(valid));
         }
         assertInstanceOf(SortCommand.class, new AddressBookParser().parseCommand(" SORT   LEVEL "));
@@ -32,7 +32,8 @@ public class SortCommandParserTest {
      */
     @Test
     public void parse_invalidCriteria_throwsParseException() {
-        for (String invalid : List.of("", " ", "name", "subject", "level desc", "level level", "l/level")) {
+        for (String invalid : List.of("", " ", "name", "subject", "level desc", "level level", "l/level",
+                "\u2003level extra\u3000", "\u00a0level", "le\u2003vel")) {
             assertThrows(ParseException.class, SortCommand.MESSAGE_INVALID_ARGUMENTS, () -> parser.parse(invalid));
         }
         assertThrows(NullPointerException.class, () -> parser.parse(null));

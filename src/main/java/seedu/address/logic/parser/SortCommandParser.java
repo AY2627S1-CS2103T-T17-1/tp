@@ -10,7 +10,8 @@ import seedu.address.logic.parser.exceptions.ParseException;
  */
 public class SortCommandParser implements Parser<SortCommand> {
     /**
-     * Parses the level criterion, ignoring case and surrounding whitespace.
+     * Parses the level criterion, ignoring case and surrounding Java whitespace.
+     * Uses the whitespace definition of {@link Character#isWhitespace(int)}.
      *
      * @param args Arguments following the sort command word.
      * @return A command that sorts contacts by academic level.
@@ -20,7 +21,7 @@ public class SortCommandParser implements Parser<SortCommand> {
     @Override
     public SortCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        if (!args.trim().equalsIgnoreCase("level")) {
+        if (!args.strip().equalsIgnoreCase("level")) {
             throw new ParseException(SortCommand.MESSAGE_INVALID_ARGUMENTS);
         }
         return new SortCommand();
