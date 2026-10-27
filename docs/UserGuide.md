@@ -35,7 +35,7 @@ help you find and manage this information faster than traditional GUI applicatio
 
    * `view 1` : Shows the 1st contact in the current list.
 
-   * `delete 3` : Deletes the 3rd contact shown in the current list.
+   * `delete 1` : Deletes the contact added above (currently the 1st contact in the list).
 
    * `clear` : Deletes all contacts.
 
