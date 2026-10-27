@@ -6,7 +6,6 @@ import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.ViewCommand;
 
 /**
@@ -38,28 +37,9 @@ public class ViewCommandParserTest {
 
     @Test
     public void parse_invalidIndex_throwsParseException() {
-        String expectedMessage = "Index must be a positive integer shown in the current list.";
-
-        assertParseFailure(parser, "0", expectedMessage);
-        assertParseFailure(parser, "0000", expectedMessage);
-        assertParseFailure(parser, "-1", expectedMessage);
-        assertParseFailure(parser, "+1", expectedMessage);
-        assertParseFailure(parser, "1.5", expectedMessage);
-        assertParseFailure(parser, "1a", expectedMessage);
-        assertParseFailure(parser, "abc", expectedMessage);
-    }
-
-    @Test
-    public void parse_maximumInteger_returnsViewCommand() {
-        assertParseSuccess(parser, "2147483647",
-                new ViewCommand(Index.fromOneBased(Integer.MAX_VALUE)));
-    }
-
-    @Test
-    public void parse_integerOverflow_throwsParseException() {
-        assertParseFailure(parser, "2147483648",
-                "No contact exists at index 2147483648 in the current list.");
-        assertParseFailure(parser, "99999999999999999999",
-                "No contact exists at index 99999999999999999999 in the current list.");
+        // The full index rules are tested in ParserUtilTest; these cases check that view applies them.
+        assertParseFailure(parser, "0", "Index must be a positive integer shown in the current list.");
+        assertParseFailure(parser, "abc", "Index must be a positive integer shown in the current list.");
+        assertParseFailure(parser, "2147483648", "No contact exists at index 2147483648 in the current list.");
     }
 }

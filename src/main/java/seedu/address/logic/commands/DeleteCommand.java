@@ -6,6 +6,7 @@ import java.util.List;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.ToStringBuilder;
+import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
@@ -22,10 +23,8 @@ public class DeleteCommand extends Command {
     public static final String MESSAGE_LINKS_REMOVED = " Removed %1$d link(s).";
     public static final String MESSAGE_INVALID_FORMAT =
             "Invalid command format. Expected: " + MESSAGE_USAGE;
-    public static final String MESSAGE_INVALID_INDEX =
-            "Index must be a positive integer shown in the current list.";
-    public static final String MESSAGE_INDEX_OUT_OF_RANGE =
-            "No contact exists at index %1$s in the current list.";
+    public static final String MESSAGE_INVALID_INDEX = Messages.MESSAGE_INVALID_DISPLAYED_INDEX;
+    public static final String MESSAGE_INDEX_OUT_OF_RANGE = Messages.MESSAGE_DISPLAYED_INDEX_OUT_OF_RANGE;
 
     private final Index targetIndex;
 
