@@ -89,6 +89,8 @@ public class UnlinkCommandTest {
         assertTrue(unlinkFirstSecond.equals(unlinkFirstSecond));
         assertTrue(unlinkFirstSecond.equals(new UnlinkCommand(INDEX_FIRST_PERSON, INDEX_SECOND_PERSON)));
         assertFalse(unlinkFirstSecond.equals(new UnlinkCommand(INDEX_SECOND_PERSON, INDEX_FIRST_PERSON)));
+        // Same parent index but a different student index
+        assertFalse(unlinkFirstSecond.equals(new UnlinkCommand(INDEX_FIRST_PERSON, INDEX_FIRST_PERSON)));
         assertFalse(unlinkFirstSecond.equals(new LinkCommand(INDEX_FIRST_PERSON, INDEX_SECOND_PERSON)));
         assertFalse(unlinkFirstSecond.equals(null));
         assertFalse(unlinkFirstSecond.equals(1));
