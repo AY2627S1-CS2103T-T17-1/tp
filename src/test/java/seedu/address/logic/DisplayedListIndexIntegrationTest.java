@@ -73,7 +73,7 @@ public class DisplayedListIndexIntegrationTest {
         assertEquals(CommandResult.expandContact("Showing contact: Fiona Kunz.", FIONA), logic.execute("view 3"));
         assertState(searchResults, allContacts);
 
-        assertEquals("Deleted contact: Carl Kurz.", logic.execute("delete 1").getFeedbackToUser());
+        assertEquals("Deleted contact: student Carl Kurz (95352563).", logic.execute("delete 1").getFeedbackToUser());
         List<Person> afterFirstDelete = List.of(ALICE, BENSON, DANIEL, ELLE, FIONA, GEORGE);
         List<Person> remainingResults = List.of(ELLE, FIONA);
         assertState(remainingResults, afterFirstDelete);
@@ -87,7 +87,7 @@ public class DisplayedListIndexIntegrationTest {
         assertInvalidIndex("view 3", 3, remainingResults, afterFirstDelete);
         assertInvalidIndex("delete 3", 3, remainingResults, afterFirstDelete);
 
-        assertEquals("Deleted contact: Elle Meyer.", logic.execute("delete 1").getFeedbackToUser());
+        assertEquals("Deleted contact: student Elle Meyer (9482224).", logic.execute("delete 1").getFeedbackToUser());
         List<Person> afterSecondDelete = List.of(ALICE, BENSON, DANIEL, FIONA, GEORGE);
         assertState(List.of(FIONA), afterSecondDelete);
         assertEquals(CommandResult.expandContact("Showing contact: Fiona Kunz.", FIONA), logic.execute("view 1"));

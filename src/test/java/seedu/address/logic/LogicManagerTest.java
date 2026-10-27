@@ -117,7 +117,7 @@ public class LogicManagerTest {
         JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataPath);
         addressBookStorage.saveAddressBook(model.getAddressBook());
 
-        assertCommandSuccess("delete 1", "Deleted contact: Amy Bee.", new ModelManager());
+        assertCommandSuccess("delete 1", "Deleted contact: student Amy Bee (11111111).", new ModelManager());
         assertEquals(model.getAddressBook(), addressBookStorage.readAddressBook().orElseThrow());
     }
 

@@ -638,7 +638,7 @@ in the current AB3 codebase.)
 3. User enters `delete INDEX` for a contact in that displayed list.
 4. TutorContacts removes the contact card, refreshes and renumbers the list, and clears the selection if the deleted
    contact was selected.
-5. TutorContacts saves the updated data file and reports `Deleted contact: NAME.`
+5. TutorContacts saves the updated data file and reports `Deleted contact: ROLE NAME (PHONE).`
 
    Use case ends.
 
@@ -943,7 +943,8 @@ testers are expected to do more *exploratory* testing.
 1. Test case: close and reopen TutorContacts, then `view 3`<br>
    Expected: Mary Tan still shows both linked students.
 1. Test case: `delete 1`<br>
-   Expected: `Deleted contact: Alex Tan. Removed 1 link(s).` `view 2` shows only `Alex Tan (98765432)`.
+   Expected: `Deleted contact: student Alex Tan (80000000). Removed 1 link(s).` `view 2` shows only
+   `Alex Tan (98765432)`.
 1. Clean-up: close TutorContacts and move your original `data/tutorcontacts.json` back.
 
 ### Launch and shutdown
