@@ -260,7 +260,7 @@ Invalid input leaves contact data, links, and the displayed list unchanged:
 | Missing or extra arguments | `Invalid command format. Expected: link PARENT_INDEX STUDENT_INDEX` |
 | An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
 | An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
-| The same index twice | `A contact cannot be linked to itself.` |
+| The same existing index twice | `A contact cannot be linked to itself.` |
 | The first contact is not a parent | `The contact at index INDEX is not a parent.` |
 | The second contact is not a student | `The contact at index INDEX is not a student.` |
 | The two contacts are already linked | `PARENT_NAME (PHONE) is already linked to STUDENT_NAME (PHONE).` |

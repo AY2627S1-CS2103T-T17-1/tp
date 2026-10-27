@@ -57,11 +57,11 @@ public class LinkCommand extends Command {
         requireNonNull(model);
         List<Person> displayedContacts = model.getFilteredPersonList();
 
+        Person parent = getDisplayedContact(displayedContacts, parentIndex);
+        Person student = getDisplayedContact(displayedContacts, studentIndex);
         if (parentIndex.equals(studentIndex)) {
             throw new CommandException(MESSAGE_SAME_INDEX);
         }
-        Person parent = getDisplayedContact(displayedContacts, parentIndex);
-        Person student = getDisplayedContact(displayedContacts, studentIndex);
         if (parent.getRole() != Role.PARENT) {
             throw new CommandException(String.format(MESSAGE_NOT_PARENT, parentIndex.getOneBased()));
         }
