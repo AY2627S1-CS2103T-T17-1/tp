@@ -451,6 +451,12 @@ Certain edits can also cause TutorContacts to behave unexpectedly (for example, 
 range). Edit the data file only if you are confident that you can update it correctly.
 </div>
 
+Window settings are stored separately in `preferences.json` next to the JAR file. If that file is invalid or unreadable,
+TutorContacts uses default window settings and displays
+`Warning: TutorContacts could not load preferences.json. Default window settings are in use; the existing file was not changed.`
+The file is not overwritten at startup or exit. Repair or rename it before restarting if you want window settings to be
+saved again. Contact data is unaffected. If both files cannot be loaded, both warnings appear.
+
 --------------------------------------------------------------------------------------------------------------------
 
 ## FAQ
