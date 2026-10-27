@@ -22,6 +22,7 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.ParentStudentLink;
 import seedu.address.model.person.Person;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Contains integration tests (interaction with the Model) and unit tests for
@@ -111,6 +112,39 @@ public class DeleteCommandTest {
 
         assertCommandSuccess(new DeleteCommand(lastIndex), model,
                 "Deleted contact: parent George Best (9482442).", expectedModel);
+    }
+
+    @Test
+    public void execute_sameNameAndPhoneAcrossRoles_identifiesDeletedRole() {
+        Person student = new PersonBuilder(ALICE)
+                .withName("Alex Tan").withPhone("91234567").withEmail("alex.student@example.com").build();
+        Person parent = new PersonBuilder(GEORGE)
+                .withName("Alex Tan").withPhone("91234567").withEmail("alex.parent@example.com").build();
+        model = new ModelManager();
+        model.addPerson(student);
+        model.addPerson(parent);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.deletePerson(parent);
+
+        assertCommandSuccess(new DeleteCommand(INDEX_SECOND_PERSON), model,
+                "Deleted contact: parent Alex Tan (91234567).", expectedModel);
+    }
+
+    @Test
+    public void execute_sameNameDifferentPhones_identifiesDeletedPhone() {
+        Person firstStudent = new PersonBuilder(ALICE)
+                .withName("Alex Tan").withPhone("93333333").withEmail("alex.first@example.com").build();
+        Person secondStudent = new PersonBuilder(ALICE)
+                .withName("Alex Tan").withPhone("92222222").withEmail("alex.second@example.com").build();
+        model = new ModelManager();
+        model.addPerson(firstStudent);
+        model.addPerson(secondStudent);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.deletePerson(firstStudent);
+
+        assertCommandSuccess(new DeleteCommand(INDEX_FIRST_PERSON), model,
+                "Deleted contact: student Alex Tan (93333333).", expectedModel);
+        assertEquals(List.of(secondStudent), model.getFilteredPersonList());
     }
 
     @Test

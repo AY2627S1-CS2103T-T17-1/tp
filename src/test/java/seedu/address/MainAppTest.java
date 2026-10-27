@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +15,7 @@ import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
@@ -101,6 +103,102 @@ public class MainAppTest {
         assertEquals(new AddressBook(), model.getAddressBook());
         assertEquals(MainApp.DATA_FILE_WARNING, app.getStartupWarning());
         assertEquals(invalidData, Files.readString(dataPath));
+    }
+
+    @Test
+    public void initModelManager_nullTag_warnsAndPreservesFile() throws Exception {
+        Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
+        String invalidData = "{\"persons\":[{\"role\":\"student\",\"name\":\"Alex Tan\",\"phone\":\"91234567\","
+                + "\"email\":\"alex@example.com\",\"address\":\"1 Road\",\"tags\":[null]}]}";
+        Files.writeString(dataPath, invalidData);
+        MainApp app = new MainApp();
+
+        Model model = app.initModelManager(createStorage(dataPath), new UserPrefs());
+
+        assertEquals(new AddressBook(), model.getAddressBook());
+        assertEquals(MainApp.DATA_FILE_WARNING, app.getStartupWarning());
+        assertEquals(invalidData, Files.readString(dataPath));
+    }
+
+    @Test
+    public void initPrefs_missingFile_createsDefaultPreferencesWithoutWarning() throws Exception {
+        Path prefsPath = temporaryFolder.resolve("preferences.json");
+        MainApp app = new MainApp();
+
+        UserPrefs prefs = app.initPrefs(new JsonUserPrefsStorage(prefsPath));
+
+        assertEquals(new UserPrefs(), prefs);
+        assertNull(app.getStartupWarning());
+        assertEquals(prefs, new JsonUserPrefsStorage(prefsPath).readUserPrefs().orElseThrow());
+    }
+
+    @Test
+    public void initPrefs_saveFails_usesDefaultPreferences() {
+        Path prefsPath = temporaryFolder.resolve("preferences.json");
+        JsonUserPrefsStorage prefsStorage = new JsonUserPrefsStorage(prefsPath) {
+            @Override
+            public void saveUserPrefs(ReadOnlyUserPrefs userPrefs) throws IOException {
+                throw new IOException("Test save failure");
+            }
+        };
+        MainApp app = new MainApp();
+
+        assertEquals(new UserPrefs(), app.initPrefs(prefsStorage));
+        assertNull(app.getStartupWarning());
+        assertFalse(Files.exists(prefsPath));
+    }
+
+    @Test
+    public void initPrefs_invalidFile_warnsAndPreservesFileOnStartupAndExit() throws Exception {
+        Path prefsPath = temporaryFolder.resolve("preferences.json");
+        String invalidPrefs = "{invalid-json";
+        Files.writeString(prefsPath, invalidPrefs);
+        MainApp app = new MainApp();
+
+        UserPrefs prefs = app.initPrefs(new JsonUserPrefsStorage(prefsPath));
+
+        assertEquals(new UserPrefs(), prefs);
+        assertEquals(MainApp.PREFS_FILE_WARNING, app.getStartupWarning());
+        assertEquals(invalidPrefs, Files.readString(prefsPath));
+
+        app.model = new ModelManager(new AddressBook(), prefs);
+        app.storage = createStorage(temporaryFolder.resolve("tutorcontacts.json"));
+        app.stop();
+        assertEquals(invalidPrefs, Files.readString(prefsPath));
+    }
+
+    @Test
+    public void initPrefs_validFile_savesUpdatedSettingsOnExit() throws Exception {
+        Path prefsPath = temporaryFolder.resolve("preferences.json");
+        JsonUserPrefsStorage prefsStorage = new JsonUserPrefsStorage(prefsPath);
+        prefsStorage.saveUserPrefs(new UserPrefs());
+        MainApp app = new MainApp();
+
+        UserPrefs prefs = app.initPrefs(prefsStorage);
+        app.model = new ModelManager(new AddressBook(), prefs);
+        app.storage = createStorage(temporaryFolder.resolve("tutorcontacts.json"));
+        GuiSettings updatedSettings = new GuiSettings(1000, 600, 20, 30);
+        app.model.setGuiSettings(updatedSettings);
+        app.stop();
+
+        assertNull(app.getStartupWarning());
+        assertEquals(updatedSettings, prefsStorage.readUserPrefs().orElseThrow().getGuiSettings());
+    }
+
+    @Test
+    public void initPrefsAndModelManager_bothFilesInvalid_displaysBothWarnings() throws Exception {
+        Path prefsPath = temporaryFolder.resolve("preferences.json");
+        Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
+        Files.writeString(prefsPath, "{invalid-json");
+        Files.writeString(dataPath, "{invalid-json");
+        MainApp app = new MainApp();
+
+        UserPrefs prefs = app.initPrefs(new JsonUserPrefsStorage(prefsPath));
+        app.initModelManager(createStorage(dataPath), prefs);
+
+        assertEquals(MainApp.DATA_FILE_WARNING + "\n" + MainApp.PREFS_FILE_WARNING, app.getStartupWarning());
+        assertEquals("{invalid-json", Files.readString(prefsPath));
+        assertEquals("{invalid-json", Files.readString(dataPath));
     }
 
     @Test
