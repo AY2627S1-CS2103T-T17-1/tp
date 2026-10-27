@@ -62,7 +62,8 @@ public class LinkCommandIntegrationTest {
         Model restored = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
         assertEquals(model.getAddressBook(), restored.getAddressBook());
 
-        assertEquals("Deleted contact: Alex Tan. Removed 2 link(s).", logic.execute("delete 2").getFeedbackToUser());
+        assertEquals("Deleted contact: parent Alex Tan (91234567). Removed 2 link(s).",
+                logic.execute("delete 2").getFeedbackToUser());
         assertEquals(List.of(), storage.readAddressBook().orElseThrow().getLinkList());
     }
 

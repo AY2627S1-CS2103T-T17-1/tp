@@ -38,7 +38,7 @@ public class DeleteCommandTest {
         expectedModel.deletePerson(ALICE);
 
         assertCommandSuccess(new DeleteCommand(INDEX_FIRST_PERSON), model,
-                "Deleted contact: Alice Pauline. Removed 1 link(s).", expectedModel);
+                "Deleted contact: student Alice Pauline (94351253). Removed 1 link(s).", expectedModel);
         assertEquals(List.of(), model.getLinkedPersons(GEORGE));
     }
 
@@ -47,7 +47,7 @@ public class DeleteCommandTest {
         Person personToDelete = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         DeleteCommand deleteCommand = new DeleteCommand(INDEX_FIRST_PERSON);
 
-        String expectedMessage = "Deleted contact: " + personToDelete.getName().fullName + ".";
+        String expectedMessage = "Deleted contact: student Alice Pauline (94351253).";
 
         ModelManager expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.deletePerson(personToDelete);
@@ -71,7 +71,7 @@ public class DeleteCommandTest {
         Person personToDelete = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         DeleteCommand deleteCommand = new DeleteCommand(INDEX_FIRST_PERSON);
 
-        String expectedMessage = "Deleted contact: " + personToDelete.getName().fullName + ".";
+        String expectedMessage = "Deleted contact: student Benson Meier (98765432).";
 
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.deletePerson(personToDelete);
@@ -110,7 +110,7 @@ public class DeleteCommandTest {
         expectedModel.deletePerson(contactToDelete);
 
         assertCommandSuccess(new DeleteCommand(lastIndex), model,
-                "Deleted contact: " + contactToDelete.getName().fullName + ".", expectedModel);
+                "Deleted contact: parent George Best (9482442).", expectedModel);
     }
 
     @Test

@@ -390,7 +390,8 @@ Format: `delete INDEX`
 
 * Deletes the contact at the specified `INDEX` in the currently displayed list, including search results.
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
-* On success, the message is `Deleted contact: NAME.` The remaining contacts keep their order and are renumbered.
+* On success, the message is `Deleted contact: ROLE NAME (PHONE).` The role and phone distinguish contacts that
+  share a name. The remaining contacts keep their order and are renumbered.
 * Deleting a linked contact also removes its links. The message then ends with `Removed COUNT link(s).`
 * Deleting the selected contact clears the selection and expansion. Deleting another contact keeps the selected
   contact highlighted, with its new index and any expanded details.
