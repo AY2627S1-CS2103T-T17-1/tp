@@ -79,6 +79,23 @@ public class LinkCommandIntegrationTest {
     }
 
     @Test
+    public void execute_unlinkThenRestart_keepsRemainingLinkAndBothContacts() throws Exception {
+        logic.execute("link 2 1");
+        logic.execute("link 2 3");
+
+        assertEquals("Unlinked parent Alex Tan (91234567) from student Alex Tan (91234567).",
+                logic.execute("unlink 2 1").getFeedbackToUser());
+        assertThrows(CommandException.class, "Alex Tan (91234567) is not linked to Alex Tan (91234567).", () ->
+                logic.execute("unlink 2 1"));
+
+        // The removal is saved, and both contacts remain after a restart.
+        Model restored = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
+        Person parent = restored.getFilteredPersonList().get(1);
+        assertEquals(List.of("Bea Tan"), linkedNames(restored, parent));
+        assertEquals(3, restored.getFilteredPersonList().size());
+    }
+
+    @Test
     public void execute_studentsWithSameName_linksTheChosenStudent() throws Exception {
         logic.execute("add r/student n/Alex Tan p/98765432 e/alex.other@example.com a/2 Road s/English l/Primary 6");
 

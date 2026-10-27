@@ -1,10 +1,12 @@
 package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -69,6 +71,27 @@ public class ParserUtil {
         }
 
         return Index.fromOneBased(numericIndex.intValueExact());
+    }
+
+    /**
+     * Parses {@code args} as exactly two displayed-list indices separated by whitespace, such as {@code " 2 1 "}.
+     *
+     * @param args Arguments following the command word.
+     * @param invalidFormatMessage Feedback to give if there are not exactly two arguments.
+     * @return The two indices, in the order given.
+     * @throws ParseException If there are not exactly two arguments, or either is not a valid displayed index.
+     */
+    public static List<Index> parseTwoDisplayedIndices(String args, String invalidFormatMessage)
+            throws ParseException {
+        requireAllNonNull(args, invalidFormatMessage);
+        String trimmedArgs = args.trim();
+        String[] arguments = trimmedArgs.split("\\s+");
+
+        if (trimmedArgs.isEmpty() || arguments.length != 2) {
+            throw new ParseException(invalidFormatMessage);
+        }
+
+        return List.of(parseDisplayedIndex(arguments[0]), parseDisplayedIndex(arguments[1]));
     }
 
     /**

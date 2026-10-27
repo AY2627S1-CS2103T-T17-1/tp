@@ -149,6 +149,11 @@ public class AddCommandTest {
         }
 
         @Override
+        public void removeLink(ParentStudentLink link) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public List<Person> getLinkedPersons(Person person) {
             throw new AssertionError("This method should not be called.");
         }

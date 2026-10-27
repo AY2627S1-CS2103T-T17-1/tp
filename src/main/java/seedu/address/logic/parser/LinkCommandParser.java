@@ -1,6 +1,6 @@
 package seedu.address.logic.parser;
 
-import static java.util.Objects.requireNonNull;
+import java.util.List;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.LinkCommand;
@@ -20,16 +20,7 @@ public class LinkCommandParser implements Parser<LinkCommand> {
      */
     @Override
     public LinkCommand parse(String args) throws ParseException {
-        requireNonNull(args);
-        String trimmedArgs = args.trim();
-        String[] arguments = trimmedArgs.split("\\s+");
-
-        if (trimmedArgs.isEmpty() || arguments.length != 2) {
-            throw new ParseException(LinkCommand.MESSAGE_INVALID_FORMAT);
-        }
-
-        Index parentIndex = ParserUtil.parseDisplayedIndex(arguments[0]);
-        Index studentIndex = ParserUtil.parseDisplayedIndex(arguments[1]);
-        return new LinkCommand(parentIndex, studentIndex);
+        List<Index> indices = ParserUtil.parseTwoDisplayedIndices(args, LinkCommand.MESSAGE_INVALID_FORMAT);
+        return new LinkCommand(indices.get(0), indices.get(1));
     }
 }

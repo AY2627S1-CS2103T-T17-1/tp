@@ -75,6 +75,12 @@ public interface Model {
     void addLink(ParentStudentLink link);
 
     /**
+     * Removes the given link. Both of its contacts are kept.
+     * {@code link} must exist in the address book.
+     */
+    void removeLink(ParentStudentLink link);
+
+    /**
      * Returns the contacts linked to {@code person}: the students of a parent, or the parents of a student.
      */
     List<Person> getLinkedPersons(Person person);

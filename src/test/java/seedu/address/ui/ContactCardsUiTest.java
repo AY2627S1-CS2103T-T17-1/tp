@@ -167,8 +167,8 @@ public class ContactCardsUiTest {
             for (Node syntax : root.lookupAll(".command-syntax")) {
                 commands.add(((Label) syntax).getText().split(" ")[0]);
             }
-            assertEquals(Set.of("add", "list", "sort", "view", "link", "edit", "find", "filter", "delete", "clear",
-                    "help", "exit"), commands);
+            assertEquals(Set.of("add", "list", "sort", "view", "link", "unlink", "edit", "find", "filter", "delete",
+                    "clear", "help", "exit"), commands);
 
             Clipboard clipboard = Clipboard.getSystemClipboard();
             Map<DataFormat, Object> previousContent = new HashMap<>();

@@ -121,6 +121,13 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public void removeLink(ParentStudentLink link) {
+        requireNonNull(link);
+        addressBook.removeLink(link);
+        logger.info("Unlinked parent " + link.getParentName() + " from student " + link.getStudentName());
+    }
+
+    @Override
     public List<Person> getLinkedPersons(Person person) {
         requireNonNull(person);
         return addressBook.getLinkedPersons(person);
