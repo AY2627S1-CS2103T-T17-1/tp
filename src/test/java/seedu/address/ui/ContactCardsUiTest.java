@@ -3,6 +3,7 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalPersons.ALICE;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,6 +61,7 @@ import javafx.stage.Window;
 import seedu.address.MainApp;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
@@ -154,6 +157,64 @@ public class ContactCardsUiTest {
             } finally {
                 stage.close();
             }
+        });
+    }
+
+    /**
+     * Checks normal error feedback and unchanged selection, expansion, ordering, and JSON for issue #119.
+     *
+     * @throws Exception If JavaFX execution or reading and writing the saved fixture fails.
+     */
+    @Test
+    void window_mixedUnicodeWhitespace_reportsErrorAndPreservesState() throws Exception {
+        callOnFxThread(() -> {
+            Person zoe = new PersonBuilder().withName("Zoe Tan").build();
+            Person amy = new PersonBuilder().withName("Amy Tan").build();
+            Person parent = new PersonBuilder().withName("Alpha Parent").withRole("parent").build();
+            List<Person> contacts = List.of(zoe, parent, amy);
+            Model model = new ModelManager();
+            contacts.forEach(model::addPerson);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataPath);
+            addressBookStorage.saveAddressBook(model.getAddressBook());
+            String saved = Files.readString(dataPath);
+            StorageManager storage = new StorageManager(addressBookStorage,
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(1000, 620);
+            try {
+                enter(root, "filter s/Mathematics");
+                enter(root, "view 2");
+                Comparator<? super Person> comparator = model.getPersonListComparator();
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+
+                String input = "filter n/Amy \u2003 Tan";
+                enter(root, input);
+
+                TextField commandField = (TextField) root.lookup("#commandTextField");
+                assertEquals(input, commandField.getText());
+                assertTrue(commandField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                assertEquals(FilterCommand.MESSAGE_INVALID_NAME_KEYWORD, feedback.getText());
+                assertEquals(List.of(amy, zoe), list(root).getItems());
+                assertSame(comparator, model.getPersonListComparator());
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertEquals(contacts, model.getAddressBook().getPersonList());
+                assertEquals(saved, Files.readString(dataPath));
+
+                enter(root, "list");
+                assertEquals(contacts, list(root).getItems());
+                assertEquals("", commandField.getText());
+                assertFalse(commandField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+            } finally {
+                stage.close();
+            }
+            return null;
         });
     }
 

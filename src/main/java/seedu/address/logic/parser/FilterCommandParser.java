@@ -40,6 +40,10 @@ public class FilterCommandParser implements Parser<FilterCommand> {
             throw new ParseException(FilterCommand.MESSAGE_EMPTY_NAME);
         }
         List<String> keywords = nameValue.map(value -> List.of(value.split("\\s+"))).orElse(List.of());
+        // Regex whitespace does not include every Unicode character that String.isBlank() recognizes.
+        if (!keywords.stream().allMatch(ContactMatchesCriteriaPredicate::isValidNameKeyword)) {
+            throw new ParseException(FilterCommand.MESSAGE_INVALID_NAME_KEYWORD);
+        }
         Optional<Subject> subject = subjectValue.isPresent()
                 ? Optional.of(ParserUtil.parseSubject(subjectValue.get())) : Optional.empty();
         Optional<Level> level = levelValue.isPresent()

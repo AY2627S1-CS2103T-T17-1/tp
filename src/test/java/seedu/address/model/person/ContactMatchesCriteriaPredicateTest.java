@@ -106,7 +106,7 @@ public class ContactMatchesCriteriaPredicateTest {
     @Test
     public void constructor_invalidCriteria_rejectsInput() {
         assertThrows(IllegalArgumentException.class, () -> names());
-        for (String keyword : List.of("", " ", "Alice Bob", "Alice\nBob\nTan")) {
+        for (String keyword : List.of("", " ", "\u2003", "\u2002", "\u3000", "Alice Bob", "Alice\nBob\nTan")) {
             assertThrows(IllegalArgumentException.class, () -> names(keyword));
         }
         assertThrows(NullPointerException.class, () ->
