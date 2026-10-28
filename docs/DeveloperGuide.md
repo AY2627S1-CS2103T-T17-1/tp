@@ -836,6 +836,14 @@ and is retained in stored data. `ExitCommandParser` rejects arguments before an 
 labels do not need to be reconsidered. This avoids recursive matcher backtracking for long domains while retaining
 the existing email grammar and shared command/JSON validation. No email-length limit is introduced.
 
+`Address` retains `String.trim()` normalization and the 1–150 code-point limit. Its regex requires at least one character
+in Unicode category `L`, `N`, `P`, or `S`, and still excludes controls (`Cc`) and line/paragraph separators (`Zl`, `Zp`).
+Formatting and combining marks are preserved alongside qualifying content. Values containing only spaces, formatting,
+or marks are rejected through both command parsing and JSON loading. This is a category-based policy: the letter
+U+3164 and symbol U+2800 satisfy it even when their rendering appears blank. Do not describe the rule as detecting
+every visually invisible value. A newly invalid stored address triggers the existing startup warning and write
+protection; users repair the preserved file before restarting. No address or contact is silently substituted or dropped.
+
 `AddressBookParser` strips outer command padding with `String.strip()`. `ListCommandParser` uses `isBlank()`, and
 `SortCommandParser` strips its criterion before comparing it with `level`. These methods use Java whitespace,
 including U+2003 EM SPACE; U+00A0 NON-BREAKING SPACE and U+200B ZERO WIDTH SPACE are not Java whitespace. Prefix
@@ -1021,6 +1029,32 @@ testers are expected to do more *exploratory* testing.
        Expected: The most recent window size and location are retained.
 
 1. _{ more test cases …​ }_
+
+### Address content validation
+
+Use a disposable folder containing the rebuilt JAR and launch with Java 25. Add a fictional parent with
+`add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road`, then enter `view 1`.
+
+1. In PowerShell, copy an edit containing exactly ZERO WIDTH SPACE as its address:
+
+   ```powershell
+   Set-Clipboard -Value ('edit 1 a/' + [char]0x200B)
+   ```
+
+   Paste and execute it in TutorContacts.<br>
+   Expected: The address-constraint message replaces the prior feedback, error styling appears, and the input remains.
+   The selected, expanded contact and saved JSON remain unchanged. Repeat with an add command whose address is U+200B.
+
+1. Edit the address to `Café 1 Road` (the accent may be a separate combining character), then exit and restart.<br>
+   Expected: The edit succeeds and the address text reloads without losing its combining mark.
+
+1. Close the app and back up its disposable data file. Replace the address value with the JSON string `"\u200B"`.
+   Restart and try to add a contact.<br>
+   Expected: An empty list, the invalid-data warning, and a rejected add. The original file remains unchanged.
+   Repair the address while the app is closed and restart; saved contacts should load again.
+
+`AddressTest`, `ParserUtilTest`, `InputValidationIntegrationTest`, `MainAppTest`, and the desktop address test in
+`ContactCardsUiTest` cover this policy, preserved command/view state, JSON round trips, and invalid-file recovery.
 
 ### Deleting a person
 

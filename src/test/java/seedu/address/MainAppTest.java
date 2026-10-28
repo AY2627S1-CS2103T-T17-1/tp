@@ -1,5 +1,6 @@
 package seedu.address;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -89,6 +90,29 @@ public class MainAppTest {
         assertEquals(new AddressBook(), model.getAddressBook());
         assertEquals(MainApp.DATA_FILE_WARNING, app.getStartupWarning());
         assertEquals(invalidData, Files.readString(dataPath));
+    }
+
+    /**
+     * Checks that newly invalid saved addresses trigger recovery without partially loading or rewriting contacts.
+     */
+    @Test
+    public void initModelManager_addressWithoutContent_warnsAndPreservesEntireFile() throws Exception {
+        Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
+        for (String address : new String[]{"\\u200B", "\\u200D\\uFEFF", "\\u00A0\\u0301"}) {
+            String invalidData = "{\"persons\":[{\"role\":\"parent\",\"name\":\"Alpha Parent\",\"phone\":\"91000001\","
+                    + "\"email\":\"alpha@example.com\",\"address\":\"1 Road\"},"
+                    + "{\"role\":\"parent\",\"name\":\"Other Parent\",\"phone\":\"91000002\","
+                    + "\"email\":\"other@example.com\",\"address\":\"" + address + "\"}]}";
+            Files.writeString(dataPath, invalidData);
+            byte[] originalData = Files.readAllBytes(dataPath);
+            MainApp app = new MainApp();
+
+            Model model = app.initModelManager(createStorage(dataPath), new UserPrefs());
+
+            assertEquals(new AddressBook(), model.getAddressBook());
+            assertEquals(MainApp.DATA_FILE_WARNING, app.getStartupWarning());
+            assertArrayEquals(originalData, Files.readAllBytes(dataPath));
+        }
     }
 
     @Test
