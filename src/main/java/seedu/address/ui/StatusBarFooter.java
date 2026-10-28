@@ -26,8 +26,8 @@ public class StatusBarFooter extends UiPart<Region> {
     public StatusBarFooter(Path saveLocation) {
         super(FXML);
         saveLocationStatus.setText(Paths.get(".").resolve(saveLocation).toString());
-        // Keep the complete path available when the footer label is shortened by the window width.
-        Tooltip fullPath = new Tooltip(saveLocationStatus.getText());
+        // Resolve relative paths so users can locate the file even when the footer label is shortened.
+        Tooltip fullPath = new Tooltip(saveLocation.toAbsolutePath().normalize().toString());
         fullPath.setWrapText(true);
         fullPath.setMaxWidth(480);
         saveLocationStatus.setTooltip(fullPath);

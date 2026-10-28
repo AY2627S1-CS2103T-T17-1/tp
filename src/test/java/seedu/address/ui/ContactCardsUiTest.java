@@ -641,6 +641,23 @@ public class ContactCardsUiTest {
     }
 
     /**
+     * Checks that a relative storage path has an absolute tooltip while retaining the relative footer label.
+     *
+     * @throws Exception If JavaFX execution fails.
+     */
+    @Test
+    void footer_relativePath_showsResolvedAbsoluteTooltip() throws Exception {
+        runOnFxThread(() -> {
+            Path dataPath = Path.of("data", "..", "data", "tutorcontacts.json");
+            StatusBarFooter footer = new StatusBarFooter(dataPath);
+            Label pathLabel = label(footer.getRoot(), "saveLocationStatus");
+            assertEquals(Path.of(".").resolve(dataPath).toString(), pathLabel.getText());
+            Path expectedPath = Path.of("").toAbsolutePath().resolve("data").resolve("tutorcontacts.json");
+            assertEquals(expectedPath.toString(), pathLabel.getTooltip().getText());
+        });
+    }
+
+    /**
      * Checks narrow-window feedback and path access after JavaFX has completed its layout pulses.
      *
      * @throws Exception If JavaFX execution or layout synchronization fails.
@@ -694,7 +711,7 @@ public class ContactCardsUiTest {
                 Label pathLabel = label(root, "saveLocationStatus");
                 assertEquals(dataPath.toString(), pathLabel.getText());
                 assertNotNull(pathLabel.getTooltip());
-                assertEquals(dataPath.toString(), pathLabel.getTooltip().getText());
+                assertEquals(dataPath.toAbsolutePath().normalize().toString(), pathLabel.getTooltip().getText());
                 assertTrue(pathLabel.getTooltip().isWrapText());
                 assertVisibleWithinWindow(root, pathLabel);
                 assertVisibleWithinWindow(root, root.lookup(".status-guidance"));

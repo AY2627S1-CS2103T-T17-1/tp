@@ -952,7 +952,8 @@ Use disposable contact data for these checks:
 3. Trigger a long usage error, for example with `add`. Check that feedback wraps, scrolls, and can be
    selected and copied in full. Also check the startup warning using an invalid disposable data file.
 4. Resize down to the existing 450 x 420 minimum. Command entry, feedback, and list scrolling must remain
-   usable. The footer guidance may wrap; hovering over a shortened storage path must show the full path.
+   usable. The footer guidance may wrap; hovering over a shortened storage path must show its resolved absolute path.
+   Relative paths containing `.` or `..` must resolve to the same data file without changing the footer label or storage.
 5. Check 1920 x 1080 at 100%/125% scaling and 1280 x 720 at 150% scaling on available supported systems.
    Confirm menu access, native window controls, and saved window preferences still work.
 6. Check `help`, Help menu, and F1. After the other v1.4 features merge, repeat filter/sort/view/edit/delete
