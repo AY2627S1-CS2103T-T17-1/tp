@@ -92,6 +92,14 @@ public class EditPersonDescriptorBuilder {
     }
 
     /**
+     * Records an empty subject prefix in the edit descriptor.
+     */
+    public EditPersonDescriptorBuilder withEmptySubject() {
+        descriptor.setEmptySubject();
+        return this;
+    }
+
+    /**
      * Sets the student academic level to include in the edit descriptor.
      *
      * @param level Academic level to assign to the student contact.
@@ -99,6 +107,14 @@ public class EditPersonDescriptorBuilder {
      */
     public EditPersonDescriptorBuilder withLevel(String level) {
         descriptor.setLevel(new Level(level));
+        return this;
+    }
+
+    /**
+     * Records an empty level prefix in the edit descriptor.
+     */
+    public EditPersonDescriptorBuilder withEmptyLevel() {
+        descriptor.setEmptyLevel();
         return this;
     }
 

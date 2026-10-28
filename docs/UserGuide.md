@@ -225,7 +225,8 @@ Format: `view INDEX`
 * The selected card is highlighted and expanded in place; other cards remain compact.
 * Expanded cards also show email, address, and note, plus subject and academic level for students.
   An absent note is shown as `None`. Older student records without subject or level show `Not recorded` for those fields.
-  Existing tags, if any, appear only in the expanded card.
+  Existing tags, if any, appear only in the expanded card. Long tag names wrap within the card, and a contact with
+  many tags uses a scrollable tag area so the contact does not take over the list.
 * Use `view` on another contact to move the expansion, or `list` to collapse it.
 
 Examples:
@@ -295,6 +296,11 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
   [Prefixes and literal text](#prefixes-and-literal-text).
 * `t/TAG` replaces all existing tags, rather than adding to them. An empty `t/` clears all tags; repeated `t/`
   prefixes can supply multiple replacement tags.
+  * A tag contains one or more ASCII letters (`A`-`Z`, `a`-`z`) or digits (`0`-`9`) and no other characters.
+  * Tags are case-sensitive. Repeating the exact same tag keeps one copy, while `priority` and `Priority` are
+    different tags.
+  * TutorContacts does not impose a tag-length or tag-count limit. Long tag names wrap, and large tag collections
+    remain within the expanded card's scrollable tag area.
 * Edits still follow the existing duplicate-contact rule: the same role and normalized name, together with a
   matching normalized phone or case-insensitive email, is a duplicate. Invalid input, a duplicate, or a failed save
   leaves the displayed and saved contact data unchanged. Successful edits are saved automatically.

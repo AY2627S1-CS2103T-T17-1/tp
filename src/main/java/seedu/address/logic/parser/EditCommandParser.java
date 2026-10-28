@@ -64,10 +64,20 @@ public class EditCommandParser implements Parser<EditCommand> {
             editPersonDescriptor.setAddress(ParserUtil.parseAddress(argMultimap.getValue(PREFIX_ADDRESS).get()));
         }
         if (argMultimap.getValue(PREFIX_SUBJECT).isPresent()) {
-            editPersonDescriptor.setSubject(ParserUtil.parseSubject(argMultimap.getValue(PREFIX_SUBJECT).get()));
+            String subject = argMultimap.getValue(PREFIX_SUBJECT).get();
+            if (subject.isBlank()) {
+                editPersonDescriptor.setEmptySubject();
+            } else {
+                editPersonDescriptor.setSubject(ParserUtil.parseSubject(subject));
+            }
         }
         if (argMultimap.getValue(PREFIX_LEVEL).isPresent()) {
-            editPersonDescriptor.setLevel(ParserUtil.parseLevel(argMultimap.getValue(PREFIX_LEVEL).get()));
+            String level = argMultimap.getValue(PREFIX_LEVEL).get();
+            if (level.isBlank()) {
+                editPersonDescriptor.setEmptyLevel();
+            } else {
+                editPersonDescriptor.setLevel(ParserUtil.parseLevel(level));
+            }
         }
         if (argMultimap.getValue(PREFIX_NOTE).isPresent()) {
             editPersonDescriptor.setNote(ParserUtil.parseNote(argMultimap.getValue(PREFIX_NOTE).get()));

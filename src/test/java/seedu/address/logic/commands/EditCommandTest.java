@@ -26,7 +26,9 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.person.Level;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.Subject;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 import seedu.address.testutil.PersonBuilder;
 
@@ -255,6 +257,31 @@ public class EditCommandTest {
         assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, subject), model, AddCommand.MESSAGE_PARENT_FIELDS);
         assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, levelAndNote), model,
                 AddCommand.MESSAGE_PARENT_FIELDS);
+    }
+
+    /**
+     * Checks that empty student-only fields are validated according to the selected contact's role.
+     */
+    @Test
+    public void execute_emptyStudentFields_reportsRoleAwareErrors() {
+        model = new ModelManager();
+        Person parent = new PersonBuilder().withRole("parent").build();
+        model.addPerson(parent);
+
+        EditPersonDescriptor emptySubject = new EditPersonDescriptorBuilder().withEmptySubject().build();
+        EditPersonDescriptor emptyLevel = new EditPersonDescriptorBuilder().withEmptyLevel().build();
+
+        assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, emptySubject), model,
+                AddCommand.MESSAGE_PARENT_FIELDS);
+        assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, emptyLevel), model,
+                AddCommand.MESSAGE_PARENT_FIELDS);
+
+        model = new ModelManager();
+        model.addPerson(new PersonBuilder().build());
+        assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, emptySubject), model,
+                Subject.MESSAGE_CONSTRAINTS);
+        assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, emptyLevel), model,
+                Level.MESSAGE_CONSTRAINTS);
     }
 
     /**

@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.AfterAll;
@@ -53,6 +54,7 @@ import javafx.scene.input.DataFormat;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -703,6 +705,7 @@ public class ContactCardsUiTest {
                 TextArea feedback = (TextArea) stage.getScene().getRoot().lookup("#resultDisplay");
                 assertNotNull(feedback);
                 assertEquals(MainApp.DATA_FILE_WARNING, feedback.getText());
+                assertTrue(feedback.isWrapText());
             } finally {
                 stage.close();
             }
@@ -727,6 +730,39 @@ public class ContactCardsUiTest {
             assertTrue(label(card, "name").getHeight() > 20, "Long name must wrap to multiple lines");
             assertTrue(label(card, "note").getHeight() > 20, "Long note must wrap to multiple lines");
             assertTrue(card.getBoundsInParent().getMaxX() <= list(panel.getRoot()).getWidth());
+        });
+    }
+
+    @Test
+    void cards_longAndManyTags_stayWithinScrollableTagArea() throws Exception {
+        runOnFxThread(() -> {
+            String longTag = "A".repeat(1000);
+            String[] tagNames = IntStream.range(0, 200)
+                    .mapToObj(index -> "T" + index)
+                    .toArray(String[]::new);
+            tagNames[0] = longTag;
+            Person contact = new PersonBuilder(ALICE).withTags(tagNames).build();
+            PersonListPanel panel = new PersonListPanel(FXCollections.observableArrayList(contact, GEORGE));
+            Scene scene = new Scene(panel.getRoot(), 460, 300);
+            scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+            panel.completeCommand(CommandResult.expandContact("view", contact));
+            panel.getRoot().resize(460, 300);
+            layout(panel.getRoot());
+
+            Node card = selectedCard(panel.getRoot());
+            ScrollPane tagScroller = (ScrollPane) card.lookup("#tagScroller");
+            assertNotNull(tagScroller);
+            FlowPane tags = (FlowPane) tagScroller.getContent();
+            Label longTagLabel = (Label) tags.getChildren().stream()
+                    .filter(node -> ((Label) node).getText().equals(longTag))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertEquals(200, tags.getChildren().size());
+            assertTrue(longTagLabel.isWrapText());
+            assertTrue(longTagLabel.getWidth() <= 320);
+            assertTrue(tagScroller.getHeight() <= 96);
+            assertEquals(ScrollPane.ScrollBarPolicy.AS_NEEDED, tagScroller.getVbarPolicy());
         });
     }
 
