@@ -55,7 +55,7 @@ All Java code in this project, including tests and future changes, must follow t
 
 ## Java code quality
 
-All Java production and test code must follow the project-specific `seedu-java-code-quality` skill at `.codex/skills/seedu-java-code-quality/SKILL.md`. Read and apply it when editing Java or reviewing Java changes, alongside the existing coding and JavaDoc standards. Review logging, exceptions, assertions, defensive coding, SLAP, duplication (especially in tests), and the course code-quality guidelines. Use manual review as well as Checkstyle, and apply the same expectations across the codebase. Keep cleanup within the requested scope; do not add techniques merely to satisfy a checklist. Have a teammate review this shared guidance and skill before merging.
+All Java production and test code must follow the project-specific `seedu-java-code-quality` skill at `.codex/skills/seedu-java-code-quality/SKILL.md`. Read and apply it when editing Java or reviewing Java changes, alongside the existing coding and JavaDoc standards. Review logging, exceptions, assertions, defensive coding, SLAP, duplication (especially in tests), and the course code-quality guidelines. Use manual review as well as Checkstyle, and apply the same expectations across the codebase. Keep cleanup within the requested scope; do not add techniques merely to satisfy a checklist.
 
 ## Java version:
 
