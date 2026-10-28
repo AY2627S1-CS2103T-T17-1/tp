@@ -86,10 +86,20 @@ public class LogsCenter {
         baseLogger.addHandler(consoleHandler);
 
         // add a FileHandler to log to a file
+        addFileHandler(baseLogger, AppPaths.getHomeDirectory().resolve(LOG_FILE));
+    }
+
+    /**
+     * Adds file logging, or reports an I/O failure through the logger's existing handlers and leaves them available.
+     *
+     * @param targetLogger Logger whose existing handlers provide the fallback output.
+     * @param logFile Absolute application log path.
+     */
+    static void addFileHandler(Logger targetLogger, Path logFile) {
         try {
-            baseLogger.addHandler(createFileHandler(AppPaths.getHomeDirectory().resolve(LOG_FILE)));
+            targetLogger.addHandler(createFileHandler(logFile));
         } catch (IOException e) {
-            baseLogger.warning("Could not open the application log file. Using console logging only: " + e);
+            targetLogger.warning("Could not open the application log file. Using console logging only: " + e);
         }
     }
 

@@ -34,12 +34,23 @@ public class AppPaths {
      * @throws IllegalStateException If the application code location is unavailable or invalid.
      */
     private static Path findHomeDirectory() {
-        CodeSource source = AppPaths.class.getProtectionDomain().getCodeSource();
+        return findHomeDirectory(AppPaths.class.getProtectionDomain().getCodeSource(), Path.of(""));
+    }
+
+    /**
+     * Resolves a discovered code source, reporting missing or malformed locations without choosing a fallback folder.
+     *
+     * @param source Discovered code source, which may be null if discovery is unavailable.
+     * @param developmentDirectory Working directory to use for unpackaged development launches.
+     * @return The normalized application home directory.
+     * @throws IllegalStateException If the code location is missing, malformed, nonlocal, or unavailable.
+     */
+    static Path findHomeDirectory(CodeSource source, Path developmentDirectory) {
         if (source == null || source.getLocation() == null) {
             throw new IllegalStateException("Cannot determine the application code location.");
         }
         try {
-            return resolveHomeDirectory(source.getLocation().toURI(), Path.of(""));
+            return resolveHomeDirectory(source.getLocation().toURI(), developmentDirectory);
         } catch (URISyntaxException e) {
             throw new IllegalStateException("Cannot determine the application home directory.", e);
         }

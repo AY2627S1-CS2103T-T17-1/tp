@@ -5,8 +5,11 @@ import static seedu.address.testutil.Assert.assertThrows;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.CodeSource;
+import java.security.cert.Certificate;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,6 +20,56 @@ import org.junit.jupiter.api.io.TempDir;
 public class AppPathsTest {
     @TempDir
     public Path temporaryFolder;
+
+    /**
+     * Checks that a missing code source is reported instead of using the working directory.
+     */
+    @Test
+    public void findHomeDirectory_missingSource_throwsIllegalStateException() {
+        assertThrows(IllegalStateException.class, "Cannot determine the application code location.", () ->
+                AppPaths.findHomeDirectory(null, temporaryFolder));
+    }
+
+    /**
+     * Checks that a discovered source with no location is reported instead of selecting another folder.
+     */
+    @Test
+    public void findHomeDirectory_missingSourceLocation_throwsIllegalStateException() {
+        CodeSource source = new CodeSource(null, (Certificate[]) null);
+
+        assertThrows(IllegalStateException.class, "Cannot determine the application code location.", () ->
+                AppPaths.findHomeDirectory(source, temporaryFolder));
+    }
+
+    /**
+     * Checks that a URL which cannot be converted to a URI produces the documented startup error.
+     *
+     * @throws IOException If the malformed-URI URL fixture cannot be constructed.
+     */
+    @Test
+    public void findHomeDirectory_malformedSourceLocation_throwsIllegalStateException() throws IOException {
+        // A URI factory would escape the space, so use the URL constructor only for this negative fixture.
+        @SuppressWarnings("deprecation")
+        URL location = new URL("file:/invalid path/tutorcontacts.jar");
+        CodeSource source = new CodeSource(location, (Certificate[]) null);
+
+        assertThrows(IllegalStateException.class, "Cannot determine the application home directory.", () ->
+                AppPaths.findHomeDirectory(source, temporaryFolder));
+    }
+
+    /**
+     * Checks that code-source discovery uses the JAR directory even when the working directory differs.
+     *
+     * @throws IOException If the disposable JAR fixture cannot be created.
+     */
+    @Test
+    public void findHomeDirectory_packagedSource_usesJarParent() throws IOException {
+        Path directory = Files.createDirectory(temporaryFolder.resolve("jar-home"));
+        Path jar = Files.createFile(directory.resolve("tutorcontacts.jar"));
+        CodeSource source = new CodeSource(jar.toUri().toURL(), (Certificate[]) null);
+
+        assertEquals(directory, AppPaths.findHomeDirectory(source, temporaryFolder));
+    }
 
     /**
      * Checks that changing the working directory does not change a packaged application's home.
