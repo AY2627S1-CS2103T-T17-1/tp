@@ -75,7 +75,7 @@ public class MvpCommandIntegrationTest {
 
         Model restored = new ModelManager(storage.readAddressBook().orElseThrow(), new UserPrefs());
         assertEquals(model.getAddressBook(), restored.getAddressBook());
-        assertEquals("Deleted contact: Alex Tan.", logic.execute("delete 2").getFeedbackToUser());
+        assertEquals("Deleted contact: parent Alex Tan (91234567).", logic.execute("delete 2").getFeedbackToUser());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
         logic.execute("delete 1");
         assertEquals("No contacts to display.", logic.execute("list").getFeedbackToUser());

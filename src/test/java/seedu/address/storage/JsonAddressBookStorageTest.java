@@ -96,6 +96,18 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_nullTag_throwsDataLoadingExceptionWithoutChangingFile() throws Exception {
+        Path dataPath = testFolder.resolve("tutorcontacts.json");
+        String invalidData = "{\"persons\":[{\"role\":\"student\",\"name\":\"Alex Tan\",\"phone\":\"91234567\","
+                + "\"email\":\"alex@example.com\",\"address\":\"1 Road\",\"tags\":[null]}]}";
+        Files.writeString(dataPath, invalidData);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(dataPath);
+
+        assertThrows(DataLoadingException.class, storage::readAddressBook);
+        assertEquals(invalidData, Files.readString(dataPath));
+    }
+
+    @Test
     public void readAndSaveAddressBook_allInOrder_success() throws Exception {
         Path filePath = testFolder.resolve("TempAddressBook.json");
         AddressBook original = getTypicalAddressBook();

@@ -30,6 +30,7 @@ class JsonAdaptedPerson {
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Person's %s field is missing!";
     public static final String INVALID_PARENT_FIELDS_MESSAGE =
             "Parent contacts must not have a subject or level.";
+    public static final String MESSAGE_NULL_TAG = "A contact's tags list contains a null tag.";
 
     private final String role;
     private final String name;
@@ -89,6 +90,9 @@ class JsonAdaptedPerson {
     public Person toModelType() throws IllegalValueException {
         final List<Tag> personTags = new ArrayList<>();
         for (JsonAdaptedTag tag : tags) {
+            if (tag == null) {
+                throw new IllegalValueException(MESSAGE_NULL_TAG);
+            }
             personTags.add(tag.toModelType());
         }
 

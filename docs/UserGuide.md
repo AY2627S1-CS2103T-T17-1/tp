@@ -35,7 +35,7 @@ help you find and manage this information faster than traditional GUI applicatio
 
    * `view 1` : Shows the 1st contact in the current list.
 
-   * `delete 3` : Deletes the 3rd contact shown in the current list.
+   * `delete 1` : Deletes the contact added above (currently the 1st contact in the list).
 
    * `clear` : Deletes all contacts.
 
@@ -260,7 +260,7 @@ Invalid input leaves contact data, links, and the displayed list unchanged:
 | Missing or extra arguments | `Invalid command format. Expected: link PARENT_INDEX STUDENT_INDEX` |
 | An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
 | An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
-| The same index twice | `A contact cannot be linked to itself.` |
+| The same existing index twice | `A contact cannot be linked to itself.` |
 | The first contact is not a parent | `The contact at index INDEX is not a parent.` |
 | The second contact is not a student | `The contact at index INDEX is not a student.` |
 | The two contacts are already linked | `PARENT_NAME (PHONE) is already linked to STUDENT_NAME (PHONE).` |
@@ -390,7 +390,8 @@ Format: `delete INDEX`
 
 * Deletes the contact at the specified `INDEX` in the currently displayed list, including search results.
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
-* On success, the message is `Deleted contact: NAME.` The remaining contacts keep their order and are renumbered.
+* On success, the message is `Deleted contact: ROLE NAME (PHONE).` The role and phone distinguish contacts that
+  share a name. The remaining contacts keep their order and are renumbered.
 * Deleting a linked contact also removes its links. The message then ends with `Removed COUNT link(s).`
 * Deleting the selected contact clears the selection and expansion. Deleting another contact keeps the selected
   contact highlighted, with its new index and any expanded details.
@@ -452,6 +453,12 @@ Back up the file before editing it.<br>
 Certain edits can also cause TutorContacts to behave unexpectedly (for example, if a value is outside the acceptable
 range). Edit the data file only if you are confident that you can update it correctly.
 </div>
+
+Window settings are stored separately in `preferences.json` next to the JAR file. If that file is invalid or unreadable,
+TutorContacts uses default window settings and displays
+`Warning: TutorContacts could not load preferences.json. Default window settings are in use; the existing file was not changed.`
+The file is not overwritten at startup or exit. Repair or rename it before restarting if you want window settings to be
+saved again. Contact data is unaffected. If both files cannot be loaded, both warnings appear.
 
 --------------------------------------------------------------------------------------------------------------------
 

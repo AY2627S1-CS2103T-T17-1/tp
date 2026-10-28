@@ -6,6 +6,7 @@ import java.util.List;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.ToStringBuilder;
+import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
@@ -18,14 +19,12 @@ public class DeleteCommand extends Command {
     public static final String COMMAND_WORD = "delete";
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + " INDEX";
-    public static final String MESSAGE_DELETE_CONTACT_SUCCESS = "Deleted contact: %1$s.";
+    public static final String MESSAGE_DELETE_CONTACT_SUCCESS = "Deleted contact: %1$s %2$s (%3$s).";
     public static final String MESSAGE_LINKS_REMOVED = " Removed %1$d link(s).";
     public static final String MESSAGE_INVALID_FORMAT =
             "Invalid command format. Expected: " + MESSAGE_USAGE;
-    public static final String MESSAGE_INVALID_INDEX =
-            "Index must be a positive integer shown in the current list.";
-    public static final String MESSAGE_INDEX_OUT_OF_RANGE =
-            "No contact exists at index %1$s in the current list.";
+    public static final String MESSAGE_INVALID_INDEX = Messages.MESSAGE_INVALID_DISPLAYED_INDEX;
+    public static final String MESSAGE_INDEX_OUT_OF_RANGE = Messages.MESSAGE_DISPLAYED_INDEX_OUT_OF_RANGE;
 
     private final Index targetIndex;
 
@@ -51,7 +50,8 @@ public class DeleteCommand extends Command {
         int removedLinkCount = model.getLinkedPersons(contactToDelete).size();
         model.deletePerson(contactToDelete);
 
-        String message = String.format(MESSAGE_DELETE_CONTACT_SUCCESS, contactToDelete.getName().fullName);
+        String message = String.format(MESSAGE_DELETE_CONTACT_SUCCESS, contactToDelete.getRole(),
+                contactToDelete.getName().fullName, contactToDelete.getPhone().value);
         if (removedLinkCount > 0) {
             message += String.format(MESSAGE_LINKS_REMOVED, removedLinkCount);
         }

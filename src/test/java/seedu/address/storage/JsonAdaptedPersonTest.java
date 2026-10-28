@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.storage.JsonAdaptedPerson.INVALID_PARENT_FIELDS_MESSAGE;
+import static seedu.address.storage.JsonAdaptedPerson.MESSAGE_NULL_TAG;
 import static seedu.address.storage.JsonAdaptedPerson.MISSING_FIELD_MESSAGE_FORMAT;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.BENSON;
@@ -136,6 +137,16 @@ public class JsonAdaptedPersonTest {
                 createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
                         VALID_SUBJECT, VALID_LEVEL, VALID_NOTE, invalidTags);
         assertThrows(IllegalValueException.class, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_nullTag_throwsIllegalValueException() {
+        List<JsonAdaptedTag> invalidTags = new ArrayList<>(VALID_TAGS);
+        invalidTags.add(null);
+        JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
+                VALID_SUBJECT, VALID_LEVEL, VALID_NOTE, invalidTags);
+
+        assertThrows(IllegalValueException.class, MESSAGE_NULL_TAG, person::toModelType);
     }
 
     @Test
