@@ -735,8 +735,8 @@ public class ContactCardsUiTest {
 
     @Test
     void cards_longAndManyTags_stayWithinScrollableTagArea() throws Exception {
-        runOnFxThread(() -> {
-            String longTag = "A".repeat(1000);
+        String longTag = "A".repeat(1000);
+        Stage stage = callOnFxThread(() -> {
             String[] tagNames = IntStream.range(0, 200)
                     .mapToObj(index -> "T" + index)
                     .toArray(String[]::new);
@@ -745,25 +745,63 @@ public class ContactCardsUiTest {
             PersonListPanel panel = new PersonListPanel(FXCollections.observableArrayList(contact, GEORGE));
             Scene scene = new Scene(panel.getRoot(), 460, 300);
             scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+            Stage testStage = new Stage();
+            testStage.setScene(scene);
+            testStage.show();
             panel.completeCommand(CommandResult.expandContact("view", contact));
-            panel.getRoot().resize(460, 300);
-            layout(panel.getRoot());
-
-            Node card = selectedCard(panel.getRoot());
-            ScrollPane tagScroller = (ScrollPane) card.lookup("#tagScroller");
-            assertNotNull(tagScroller);
-            FlowPane tags = (FlowPane) tagScroller.getContent();
-            Label longTagLabel = (Label) tags.getChildren().stream()
-                    .filter(node -> ((Label) node).getText().equals(longTag))
-                    .findFirst()
-                    .orElseThrow();
-
-            assertEquals(200, tags.getChildren().size());
-            assertTrue(longTagLabel.isWrapText());
-            assertTrue(longTagLabel.getWidth() <= 320);
-            assertTrue(tagScroller.getHeight() <= 96);
-            assertEquals(ScrollPane.ScrollBarPolicy.AS_NEEDED, tagScroller.getVbarPolicy());
+            return testStage;
         });
+        Scene scene = callOnFxThread(stage::getScene);
+        try {
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                layout(root);
+                Node card = selectedCard(root);
+                ScrollPane tagScroller = (ScrollPane) card.lookup("#tagScroller");
+                assertNotNull(tagScroller);
+                FlowPane tags = (FlowPane) tagScroller.getContent();
+                Label longTagLabel = (Label) tags.getChildren().stream()
+                        .filter(node -> ((Label) node).getText().equals(longTag))
+                        .findFirst()
+                        .orElseThrow();
+                Node viewport = tagScroller.lookup(".viewport");
+                assertNotNull(viewport);
+
+                assertEquals(200, tags.getChildren().size());
+                assertTrue(longTagLabel.isWrapText());
+                assertTrue(longTagLabel.getWidth() <= 320);
+                assertTrue(longTagLabel.getHeight() > 30,
+                        "The complete long tag must wrap instead of being ellipsized on one line");
+                assertTrue(tagScroller.getHeight() <= 96);
+                assertEquals(ScrollPane.ScrollBarPolicy.AS_NEEDED, tagScroller.getVbarPolicy());
+                Bounds tagAreaBounds = tags.localToScene(tags.getBoundsInLocal());
+                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                assertTrue(tagAreaBounds.getWidth() <= viewportBounds.getWidth() + 1,
+                        "Tag area width " + tagAreaBounds.getWidth() + " must fit viewport width "
+                                + viewportBounds.getWidth() + "; min=" + tags.minWidth(-1)
+                                + ", pref=" + tags.prefWidth(-1) + ", max=" + tags.maxWidth(-1));
+                saveSnapshot(root, "long-and-many-tags");
+                tagScroller.setVvalue(1);
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                Node card = selectedCard(root);
+                ScrollPane tagScroller = (ScrollPane) card.lookup("#tagScroller");
+                FlowPane tags = (FlowPane) tagScroller.getContent();
+                Node finalTagLabel = tags.getChildren().get(tags.getChildren().size() - 1);
+                Node viewport = tagScroller.lookup(".viewport");
+                Bounds finalTagBounds = finalTagLabel.localToScene(finalTagLabel.getBoundsInLocal());
+                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                assertTrue(finalTagBounds.getMinX() >= viewportBounds.getMinX() - 1);
+                assertTrue(finalTagBounds.getMaxX() <= viewportBounds.getMaxX() + 1);
+                assertTrue(finalTagBounds.getMinY() >= viewportBounds.getMinY() - 1);
+                assertTrue(finalTagBounds.getMaxY() <= viewportBounds.getMaxY() + 1);
+            });
+        } finally {
+            runOnFxThread(stage::close);
+        }
     }
 
     /**

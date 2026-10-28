@@ -122,6 +122,8 @@ public class PersonCard extends UiPart<Region> {
     private static Label createTagLabel(String tagName) {
         Label label = new Label(tagName);
         label.setWrapText(true);
+        label.setMinWidth(0);
+        label.setMinHeight(Region.USE_PREF_SIZE);
         label.setMaxWidth(MAX_TAG_LABEL_WIDTH);
         return label;
     }

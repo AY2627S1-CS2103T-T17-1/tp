@@ -307,7 +307,7 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
 * After a successful edit, TutorContacts reports `Edited person: ...` and displays the complete contact list again.
   A search filter is cleared, so contact indices may change. Check the contact's current index, or search for the
   contact again, before using `view INDEX` to inspect its subject, level, or note. The success message itself lists
-  only the general contact fields.
+  the general contact fields and tags; it does not list subject, level, or note.
 * Editing a linked contact's name or phone keeps its links to other contacts.
 
 Examples (assuming contact 1 is a student and contact 2 is a parent):
