@@ -39,6 +39,29 @@ public class EmailTest {
         assertEquals("Alex@Example.com", new Email("  Alex@Example.com  ").value);
     }
 
+    /**
+     * Checks that repeated domain labels are accepted without exhausting the regex matcher stack.
+     */
+    @Test
+    public void isValidEmail_manyDomainLabels_preservesAcceptedGrammar() {
+        for (int labelCount : new int[] {2500, 10000}) {
+            String email = "a@" + "a.".repeat(labelCount) + "com";
+            assertTrue(Email.isValidEmail(email), "Valid domain with " + labelCount + " repeated labels");
+            assertEquals(email, new Email(" " + email + " ").value);
+        }
+    }
+
+    /**
+     * Checks that a long valid domain prefix cannot hide an invalid final label or separator.
+     */
+    @Test
+    public void isValidEmail_manyDomainLabels_rejectsMalformedSuffixes() {
+        String email = "a@" + "a.".repeat(2500) + "com";
+        for (String suffix : new String[] {".", ".-", "._", "..com", "-", "@example.com"}) {
+            assertFalse(Email.isValidEmail(email + suffix), "Invalid suffix: " + suffix);
+        }
+    }
+
     @Test
     public void isSameEmail() {
         Email email = new Email("Alice@example.com");

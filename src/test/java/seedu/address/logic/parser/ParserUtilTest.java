@@ -11,6 +11,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.commons.core.index.Index;
+import seedu.address.logic.Messages;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
@@ -71,6 +73,20 @@ public class ParserUtilTest {
         });
     }
 
+    /**
+     * Checks that Unicode-only whitespace omits a note and nonblank notes share model normalization.
+     *
+     * @throws ParseException If a supported note unexpectedly fails validation.
+     */
+    @Test
+    public void parseNote_unicodeWhitespace_omitsBlankAndNormalizesContent() throws ParseException {
+        assertTrue(ParserUtil.parseNote("\u2003").isEmpty());
+        assertTrue(ParserUtil.parseNote(" \t\u2002\u3000 ").isEmpty());
+        assertEquals("After\u20036 pm", ParserUtil.parseNote("\u2003After\u20036 pm\u3000")
+                .orElseThrow().value);
+        assertEquals("\u00a0", ParserUtil.parseNote("\u00a0").orElseThrow().value);
+    }
+
     @Test
     public void parseIndex_invalidInput_throwsParseException() {
         assertThrows(ParseException.class, () -> ParserUtil.parseIndex("10 a"));
@@ -89,6 +105,35 @@ public class ParserUtilTest {
 
         // Leading and trailing whitespaces
         assertEquals(INDEX_FIRST_PERSON, ParserUtil.parseIndex("  1  "));
+    }
+
+    @Test
+    public void parseDisplayedIndex_validInput_returnsIndex() throws Exception {
+        assertEquals(INDEX_FIRST_PERSON, ParserUtil.parseDisplayedIndex("1"));
+        assertEquals(INDEX_FIRST_PERSON, ParserUtil.parseDisplayedIndex("0001"));
+        assertEquals(Index.fromOneBased(Integer.MAX_VALUE), ParserUtil.parseDisplayedIndex("2147483647"));
+    }
+
+    @Test
+    public void parseDisplayedIndex_notPositiveInteger_throwsParseException() {
+        for (String invalidIndex : List.of("0", "0000", "-1", "+1", "1.5", "1a", "abc", "", " 1")) {
+            assertThrows(ParseException.class, Messages.MESSAGE_INVALID_DISPLAYED_INDEX, () ->
+                    ParserUtil.parseDisplayedIndex(invalidIndex));
+        }
+    }
+
+    @Test
+    public void parseDisplayedIndex_tooLargeForInt_throwsParseException() {
+        assertThrows(ParseException.class, "No contact exists at index 2147483648 in the current list.", () ->
+                ParserUtil.parseDisplayedIndex("2147483648"));
+        assertThrows(ParseException.class,
+                "No contact exists at index 99999999999999999999 in the current list.", () ->
+                ParserUtil.parseDisplayedIndex("99999999999999999999"));
+    }
+
+    @Test
+    public void parseDisplayedIndex_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseDisplayedIndex(null));
     }
 
     @Test

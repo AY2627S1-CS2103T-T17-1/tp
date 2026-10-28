@@ -297,7 +297,8 @@ Bob Lee (Physics, JC 2). Give the contacts distinct valid contact details.
 
 `sort level` orders the currently displayed contacts without changing their details or stored order.
 `AddressBookParser` creates a `SortCommandParser`, which accepts only `level`, ignoring case and surrounding
-whitespace. Missing, unsupported, or extra arguments produce `Invalid command format. Expected: sort level`
+Java whitespace, as defined by `Character.isWhitespace`. Missing, unsupported, or extra arguments produce
+`Invalid command format. Expected: sort level`
 before any model state changes. Successful execution returns `Contacts sorted by academic level.`, even for
 an empty list.
 
@@ -639,7 +640,7 @@ in the current AB3 codebase.)
 3. User enters `delete INDEX` for a contact in that displayed list.
 4. TutorContacts removes the contact card, refreshes and renumbers the list, and clears the selection if the deleted
    contact was selected.
-5. TutorContacts saves the updated data file and reports `Deleted contact: NAME.`
+5. TutorContacts saves the updated data file and reports `Deleted contact: ROLE NAME (PHONE).`
 
    Use case ends.
 
@@ -833,6 +834,20 @@ Field constructors normalize values and share validation with `ParserUtil` and J
 compared case-insensitively for duplicate identity; capitalization remains significant for full object equality
 and is retained in stored data. `ExitCommandParser` rejects arguments before an exit result can reach the UI.
 
+`Email` uses possessive repetition for the dot-separated domain labels. A label cannot contain a dot, so consumed
+labels do not need to be reconsidered. This avoids recursive matcher backtracking for long domains while retaining
+the existing email grammar and shared command/JSON validation. No email-length limit is introduced.
+
+`AddressBookParser` strips outer command padding with `String.strip()`. `ListCommandParser` uses `isBlank()`, and
+`SortCommandParser` strips its criterion before comparing it with `level`. These methods use Java whitespace,
+including U+2003 EM SPACE; U+00A0 NON-BREAKING SPACE and U+200B ZERO WIDTH SPACE are not Java whitespace. Prefix
+recognition and separators inside commands retain their existing syntax.
+
+`ParserUtil.parseNote` treats empty or Java-whitespace-only input as absent. `Note` strips surrounding Java
+whitespace before validating length and content, while preserving internal spacing. `JsonAdaptedPerson` also maps
+missing, empty, or Java-whitespace-only stored notes to absence, keeping files saved by earlier versions loadable.
+Loading does not rewrite contact data; the next successful data-changing command saves the normalized values.
+
 `MvpCommandIntegrationTest` exercises all five commands, exact feedback, normalized duplicates, preserved
 data after rejected input, presentation requests, and JSON round trips. `ParserUtilTest` and field tests cover
 limits and invalid values. `ExitCommandParserTest` checks the parameterless exit grammar.
@@ -840,6 +855,11 @@ limits and invalid values. `ExitCommandParserTest` checks the parameterless exit
 `EditCommandParserTest` covers the new edit prefixes, empty-note clearing, and invalid values. `EditCommandTest`
 checks student and parent edits, legacy students, and rejection before mutation. `LogicManagerTest` checks that
 edited fields survive a storage round trip and that a failed save restores the previous data and displayed filter.
+
+`InputValidationIntegrationTest` checks long-email add/edit/duplicate handling, Unicode note omission and clearing,
+list/sort composition, unchanged state after rejection, and loading legacy blank notes without losing contacts or
+links. `ContactCardsUiTest` checks the corresponding command-box feedback, selection, displayed details, and JSON behavior
+when `RUN_UI_TESTS=true`.
 
 With a disposable data file, manually verify:
 
@@ -852,6 +872,44 @@ With a disposable data file, manually verify:
 5. Run `list`, `view INDEX`, and `delete INDEX`. Check feedback, insertion order, visible indexes, and selection.
 6. Restart and verify all added fields are restored. Check read-only commands do not rewrite the JSON file.
 7. Run `exit 3`: the window must remain open. Run `exit`: it should close successfully.
+
+### Email and whitespace validation
+
+Use a disposable writable folder and Java 25 for these command-box checks:
+
+1. Add a parent with a note:
+
+   ```text
+   add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road o/Original note
+   ```
+
+2. On Windows, generate a long email command in PowerShell, paste it into TutorContacts, and execute it:
+
+   ```powershell
+   $emailProbe = 'a@' + ('a.' * 2500) + 'com'
+   Set-Clipboard -Value ('add r/parent n/Email Parent p/91000002 e/' + $emailProbe + ' a/2 Test Road')
+   ```
+
+   Expect `Added parent: Email Parent.`, a cleared command box, and two saved contacts. Then copy and execute
+   `('edit 1 e/' + $emailProbe + '.')` using `Set-Clipboard -Value`. Expect the email constraint message, error
+   styling, and unchanged contacts, selection, displayed details, and JSON. The invalid suffix must not cause a stack error.
+
+3. Copy and execute each generated command independently:
+
+   ```powershell
+   Set-Clipboard -Value ('edit 1 o/' + [char]0x2003 + ' a/1 Test Road')
+   Set-Clipboard -Value ('sort ' + [char]0x2003 + 'LEVEL' + [char]0x2003)
+   Set-Clipboard -Value ('list ' + [char]0x2003)
+   ```
+
+   After the edit, run `view 1` and expect `None` in the detail pane's Notes section.
+   Expect the normal sort/list success messages, with no
+   additional JSON writes for those read-only commands. Repeat with a nonblank note padded with U+2003 and check
+   that only its surrounding whitespace is removed. Verify that `sort level extra` still fails normally.
+
+4. Close the app before manually editing its disposable JSON. Set the parent's note to `"\u2003"` and restart.
+   Expect both contacts to load and the parent's note to be absent. Reading the file must not rewrite it. Make a
+   valid contact change, restart again, and check that the normalized data and unrelated contact details persist.
 
 ### Editing subject, level, and note
 
@@ -994,7 +1052,8 @@ testers are expected to do more *exploratory* testing.
 1. Test case: close and reopen TutorContacts, then `view 3`<br>
    Expected: Mary Tan still shows both linked students.
 1. Test case: `delete 1`<br>
-   Expected: `Deleted contact: Alex Tan. Removed 1 link(s).` `view 2` shows only `Alex Tan (98765432)`.
+   Expected: `Deleted contact: student Alex Tan (80000000). Removed 1 link(s).` `view 2` shows only
+   `Alex Tan (98765432)`.
 1. Clean-up: close TutorContacts and move your original `data/tutorcontacts.json` back.
 
 ### Launch and shutdown

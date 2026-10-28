@@ -34,6 +34,8 @@ public class MainApp extends Application {
     public static final String VERSION = "V1.3";
     public static final String DATA_FILE_WARNING = "Warning: TutorContacts could not load data/tutorcontacts.json. "
             + "The existing file was not changed.";
+    public static final String PREFS_FILE_WARNING = "Warning: TutorContacts could not load preferences.json. "
+            + "Default window settings are in use; the existing file was not changed.";
 
     private static final Logger logger = LogsCenter.getLogger(MainApp.class);
     private static final Path USER_PREFS_FILE_PATH = Paths.get("preferences.json");
@@ -44,6 +46,8 @@ public class MainApp extends Application {
     protected Storage storage;
     protected Model model;
     private boolean dataFileLoadFailed;
+    // Keep an unreadable preferences file intact at startup and shutdown.
+    private boolean prefsFileLoadFailed;
 
     @Override
     public void init() throws Exception {
@@ -93,24 +97,33 @@ public class MainApp extends Application {
     }
 
     /**
-     * Returns the startup warning if an existing data file could not be loaded, or {@code null} otherwise.
+     * Returns warnings for files that could not be loaded, or {@code null} if both files loaded successfully.
      *
      * @return The warning to display after startup, or {@code null} if loading succeeded.
      */
     String getStartupWarning() {
-        return dataFileLoadFailed ? DATA_FILE_WARNING : null;
+        if (dataFileLoadFailed && prefsFileLoadFailed) {
+            return DATA_FILE_WARNING + "\n" + PREFS_FILE_WARNING;
+        }
+        if (dataFileLoadFailed) {
+            return DATA_FILE_WARNING;
+        }
+        return prefsFileLoadFailed ? PREFS_FILE_WARNING : null;
     }
 
     /**
      * Returns a {@code UserPrefs} using the file at {@code storage}'s user prefs file path,
-     * or a new {@code UserPrefs} with default configuration if errors occur when
-     * reading from the file.
+     * or default settings if the file is missing or cannot be read. An unreadable file is left unchanged.
+     *
+     * @param storage Storage used to read and save window preferences.
+     * @return The stored preferences or default settings when they cannot be loaded.
      */
     protected UserPrefs initPrefs(JsonUserPrefsStorage storage) {
         Path prefsFilePath = storage.getUserPrefsFilePath();
         logger.info("Using preference file : " + prefsFilePath);
 
         UserPrefs initializedPrefs;
+        prefsFileLoadFailed = false;
         try {
             Optional<UserPrefs> prefsOptional = storage.readUserPrefs();
             if (prefsOptional.isEmpty()) {
@@ -118,16 +131,19 @@ public class MainApp extends Application {
             }
             initializedPrefs = prefsOptional.orElse(new UserPrefs());
         } catch (DataLoadingException e) {
+            prefsFileLoadFailed = true;
             logger.warning("Preference file at " + prefsFilePath + " could not be loaded."
-                    + " Using default preferences.");
+                    + " Using default preferences without changing the file.");
             initializedPrefs = new UserPrefs();
         }
 
-        //Update prefs file in case it was missing to begin with or there are new/unused fields
-        try {
-            storage.saveUserPrefs(initializedPrefs);
-        } catch (IOException e) {
-            logger.warning("Failed to save preference file : " + StringUtil.getDetails(e));
+        // Create a missing file or update valid preferences, but never replace a file that failed to load.
+        if (!prefsFileLoadFailed) {
+            try {
+                storage.saveUserPrefs(initializedPrefs);
+            } catch (IOException e) {
+                logger.warning("Failed to save preference file : " + StringUtil.getDetails(e));
+            }
         }
 
         return initializedPrefs;
@@ -143,6 +159,9 @@ public class MainApp extends Application {
     @Override
     public void stop() {
         logger.info("============================ [ Stopping TutorContacts ] =============================");
+        if (prefsFileLoadFailed) {
+            return;
+        }
         try {
             storage.saveUserPrefs(model.getUserPrefs());
         } catch (IOException e) {

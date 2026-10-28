@@ -192,7 +192,8 @@ public class FilterCommandIntegrationTest {
         logic.execute("filter s/Mathematics");
         assertEquals(AMY, logic.execute("view 1").getContact().orElseThrow());
         assertEquals(ZOE, logic.execute("view 3").getContact().orElseThrow());
-        assertEquals("Deleted contact: Amy Tan.", logic.execute("delete 1").getFeedbackToUser());
+        assertEquals("Deleted contact: student Amy Tan (" + AMY.getPhone().value + ").",
+                logic.execute("delete 1").getFeedbackToUser());
         assertEquals(List.of(AMY_LOWER, ZOE), logic.getFilteredPersonList());
         assertEquals(AMY_LOWER, logic.execute("view 1").getContact().orElseThrow());
         assertThrows(CommandException.class, "No contact exists at index 3 in the current list.", () ->

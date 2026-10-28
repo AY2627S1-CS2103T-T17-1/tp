@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import java.util.Set;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
+import seedu.address.logic.Messages;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
@@ -38,6 +40,35 @@ public class ParserUtil {
             throw new ParseException(MESSAGE_INVALID_INDEX);
         }
         return Index.fromOneBased(Integer.parseInt(trimmedIndex));
+    }
+
+    /**
+     * Parses {@code indexValue} as a positive index in the displayed contact list.
+     * Only digits are accepted, so signs, decimals, and spaces are rejected, while leading zeros are allowed.
+     * The value is parsed without integer overflow, so an index too large for an {@code int} is reported as absent
+     * from the list rather than as malformed.
+     *
+     * @param indexValue Decimal index supplied by the user, without surrounding whitespace.
+     * @return The corresponding one-based index.
+     * @throws ParseException If the value is not a positive integer, or exceeds the largest supported index.
+     */
+    public static Index parseDisplayedIndex(String indexValue) throws ParseException {
+        requireNonNull(indexValue);
+        if (!indexValue.matches("[0-9]+")) {
+            throw new ParseException(Messages.MESSAGE_INVALID_DISPLAYED_INDEX);
+        }
+
+        BigInteger numericIndex = new BigInteger(indexValue);
+        if (numericIndex.signum() == 0) {
+            throw new ParseException(Messages.MESSAGE_INVALID_DISPLAYED_INDEX);
+        }
+
+        // An index too large for an int cannot exist in the displayed list.
+        if (numericIndex.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+            throw new ParseException(String.format(Messages.MESSAGE_DISPLAYED_INDEX_OUT_OF_RANGE, numericIndex));
+        }
+
+        return Index.fromOneBased(numericIndex.intValueExact());
     }
 
     /**
@@ -130,7 +161,8 @@ public class ParserUtil {
     }
 
     /**
-     * Parses an optional note, treating an empty or whitespace-only value as omitted.
+     * Parses an optional note, omitting an empty value or one containing only Java whitespace.
+     * Nonblank notes use the normalization defined by {@link Note}.
      *
      * @param note Note supplied by the user, or an empty string if omitted.
      * @return The validated note, if present.
@@ -138,7 +170,7 @@ public class ParserUtil {
      */
     public static Optional<Note> parseNote(String note) throws ParseException {
         requireNonNull(note);
-        if (note.trim().isEmpty()) {
+        if (note.isBlank()) {
             return Optional.empty();
         }
         if (!Note.isValidNote(note)) {

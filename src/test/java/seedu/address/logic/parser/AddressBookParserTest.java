@@ -24,6 +24,7 @@ import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.LinkCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
@@ -116,6 +117,23 @@ public class AddressBookParserTest {
         assertTrue(parser.parseCommand("LIST") instanceof ListCommand);
         assertTrue(parser.parseCommand("List") instanceof ListCommand);
         assertTrue(parser.parseCommand("  list   ") instanceof ListCommand);
+    }
+
+    /**
+     * Checks that outer Java whitespace is removed before command dispatch and argument validation.
+     *
+     * @throws ParseException If a supported padded command unexpectedly fails to parse.
+     */
+    @Test
+    public void parseCommand_unicodeOuterPadding_preservesCommandAndArguments() throws ParseException {
+        assertTrue(parser.parseCommand("\u2003LIST\u3000") instanceof ListCommand);
+        assertTrue(parser.parseCommand("\u2002sort \u2003LEVEL\u3000") instanceof SortCommand);
+        assertTrue(parser.parseCommand("\u2003ExIt\u3000") instanceof ExitCommand);
+        assertEquals(new FindCommand(new NameContainsKeywordsPredicate(List.of("Amy"))),
+                parser.parseCommand("\u2003find Amy\u3000"));
+        assertThrows(ParseException.class, ExitCommand.MESSAGE_INVALID_ARGUMENTS, () -> {
+            parser.parseCommand("\u2003exit 3\u3000");
+        });
     }
 
     @Test
