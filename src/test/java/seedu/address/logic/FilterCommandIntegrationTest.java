@@ -244,6 +244,32 @@ public class FilterCommandIntegrationTest {
     }
 
     /**
+     * Checks that the reported EM SPACE input preserves the active view and file and allows subsequent commands.
+     *
+     * @throws Exception If a valid command or reading the saved fixture unexpectedly fails.
+     */
+    @Test
+    public void execute_mixedUnicodeWhitespace_preservesStateAndAllowsRecovery() throws Exception {
+        logic.execute("filter s/Mathematics");
+        logic.execute("sort level");
+        List<Person> before = List.copyOf(logic.getFilteredPersonList());
+        Comparator<? super Person> comparator = model.getPersonListComparator();
+        String saved = Files.readString(storage.getAddressBookFilePath());
+
+        assertThrows(ParseException.class, FilterCommand.MESSAGE_INVALID_NAME_KEYWORD, () -> {
+            logic.execute("filter n/Amy \u2003 Tan");
+        });
+
+        assertEquals(before, logic.getFilteredPersonList());
+        assertSame(comparator, model.getPersonListComparator());
+        assertEquals(INSERTION_ORDER, model.getAddressBook().getPersonList());
+        assertEquals(saved, Files.readString(storage.getAddressBookFilePath()));
+        assertEquals(0, saveCount);
+        logic.execute("list");
+        assertEquals(INSERTION_ORDER, logic.getFilteredPersonList());
+    }
+
+    /**
      * Checks that a failed deletion restores contacts without losing the active filter or ordering.
      *
      * @throws Exception If the initial filter or reading the saved fixture unexpectedly fails.

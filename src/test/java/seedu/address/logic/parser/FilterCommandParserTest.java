@@ -132,6 +132,21 @@ public class FilterCommandParserTest {
         assertParseFailure(parser, "l/ s/", Subject.MESSAGE_CONSTRAINTS);
     }
 
+    /**
+     * Checks that isolated Unicode blank tokens report parse errors instead of escaping predicate validation.
+     */
+    @Test
+    public void parse_mixedUnicodeWhitespace_rejectsBlankKeywords() {
+        for (String whitespace : List.of("\u2003", "\u2002", "\u3000")) {
+            for (String name : List.of("Amy " + whitespace + " Tan", whitespace + " Amy", "Amy " + whitespace)) {
+                assertParseFailure(parser, "n/" + name, FilterCommand.MESSAGE_INVALID_NAME_KEYWORD);
+                assertParseFailure(parser, "n/" + name + " s/Mathematics l/Secondary 3",
+                        FilterCommand.MESSAGE_INVALID_NAME_KEYWORD);
+            }
+            assertParseFailure(parser, "n/ " + whitespace + " ", FilterCommand.MESSAGE_EMPTY_NAME);
+        }
+    }
+
     private FilterCommand command(List<String> keywords, String subject, String level) {
         return new FilterCommand(new ContactMatchesCriteriaPredicate(keywords,
                 Optional.ofNullable(subject).map(Subject::new), Optional.ofNullable(level).map(Level::new)));

@@ -3,7 +3,6 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.logic.Messages.MESSAGE_PERSONS_LISTED_OVERVIEW;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.TypicalPersons.CARL;
 import static seedu.address.testutil.TypicalPersons.ELLE;
@@ -26,6 +25,9 @@ public class FindCommandTest {
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
     private Model expectedModel = new ModelManager(getTypicalAddressBook(), new UserPrefs());
 
+    /**
+     * Checks command equality against the supplied name keywords.
+     */
     @Test
     public void equals() {
         NameContainsKeywordsPredicate firstPredicate =
@@ -53,9 +55,12 @@ public class FindCommandTest {
         assertFalse(findFirstCommand.equals(findSecondCommand));
     }
 
+    /**
+     * Checks feedback when no name keywords match.
+     */
     @Test
     public void execute_zeroKeywords_noPersonFound() {
-        String expectedMessage = String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 0);
+        String expectedMessage = "No matching contacts.";
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -63,9 +68,50 @@ public class FindCommandTest {
         assertEquals(List.of(), model.getFilteredPersonList());
     }
 
+    /**
+     * Checks feedback for a valid keyword that matches no stored contact.
+     */
+    @Test
+    public void execute_unmatchedKeyword_noContactsFound() {
+        NameContainsKeywordsPredicate predicate = preparePredicate("Zed");
+        expectedModel.updateFilteredPersonList(predicate);
+
+        assertCommandSuccess(new FindCommand(predicate), model, "No matching contacts.", expectedModel);
+        assertEquals(List.of(), model.getFilteredPersonList());
+    }
+
+    /**
+     * Checks feedback for a search in an empty address book.
+     */
+    @Test
+    public void execute_emptyAddressBook_noContactsFound() {
+        model = new ModelManager();
+        expectedModel = new ModelManager();
+        NameContainsKeywordsPredicate predicate = preparePredicate("Carl");
+        expectedModel.updateFilteredPersonList(predicate);
+
+        assertCommandSuccess(new FindCommand(predicate), model, "No matching contacts.", expectedModel);
+        assertEquals(List.of(), model.getFilteredPersonList());
+    }
+
+    /**
+     * Checks that one match uses the same contact-count wording as filtering.
+     */
+    @Test
+    public void execute_singleKeyword_oneContactFound() {
+        NameContainsKeywordsPredicate predicate = preparePredicate("Carl");
+        expectedModel.updateFilteredPersonList(predicate);
+
+        assertCommandSuccess(new FindCommand(predicate), model, "Showing 1 matching contacts.", expectedModel);
+        assertEquals(List.of(CARL), model.getFilteredPersonList());
+    }
+
+    /**
+     * Checks match-count feedback while retaining the OR search across keywords.
+     */
     @Test
     public void execute_multipleKeywords_multiplePersonsFound() {
-        String expectedMessage = String.format(MESSAGE_PERSONS_LISTED_OVERVIEW, 3);
+        String expectedMessage = "Showing 3 matching contacts.";
         NameContainsKeywordsPredicate predicate = preparePredicate("Kurz Elle Kunz");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -73,6 +119,9 @@ public class FindCommandTest {
         assertEquals(List.of(CARL, ELLE, FIONA), model.getFilteredPersonList());
     }
 
+    /**
+     * Checks that diagnostic output includes the name predicate.
+     */
     @Test
     public void toStringMethod() {
         NameContainsKeywordsPredicate predicate = new NameContainsKeywordsPredicate(List.of("keyword"));
