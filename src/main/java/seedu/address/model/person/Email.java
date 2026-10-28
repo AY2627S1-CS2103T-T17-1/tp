@@ -12,8 +12,10 @@ public class Email {
     public static final String MESSAGE_CONSTRAINTS =
             "Email must be in the form local-part@domain, for example alex@example.com.";
     private static final String DOMAIN_LABEL_REGEX = "[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?";
+
+    // Labels cannot contain dots, so possessive repetition avoids recursive backtracking across label boundaries.
     public static final String VALIDATION_REGEX = "[^\\s\\p{Z}@\\p{Cc}]+@" + DOMAIN_LABEL_REGEX
-            + "(?:\\." + DOMAIN_LABEL_REGEX + ")+";
+            + "(?:\\." + DOMAIN_LABEL_REGEX + ")++";
 
     public final String value;
 

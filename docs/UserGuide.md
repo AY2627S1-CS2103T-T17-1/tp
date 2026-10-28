@@ -72,6 +72,10 @@ help you find and manage this information faster than traditional GUI applicatio
 
 * The `list` and `exit` commands accept no parameters. Additional arguments are rejected.
 
+* Leading and trailing whitespace around the whole command is ignored. This follows Java's whitespace definition,
+  including ordinary spaces, tabs, EN SPACE (U+2002), EM SPACE (U+2003), and IDEOGRAPHIC SPACE (U+3000).
+  Use ordinary spaces to separate the command word from its parameters and before parameter prefixes.
+
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </div>
 
@@ -135,7 +139,7 @@ Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NO
 * On success, TutorContacts reports `Added student: NAME.` or `Added parent: NAME.`
 * The newly added contact is selected and scrolled into view as a compact card.
 
-Field rules apply to normalized values. Leading and trailing whitespace is trimmed; consecutive spaces in
+Field rules apply to normalized values. Leading and trailing spaces and tabs are trimmed; consecutive spaces in
 names, subjects, and levels are collapsed. Capitalization is retained except for roles and academic levels,
 which are stored in their canonical forms.
 
@@ -149,6 +153,11 @@ which are stored in their canonical forms.
 | Subject | 1–40 characters; letters, digits, spaces, and `& + - ' / ( ) . ,`. |
 | Level | `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, or `JC 1`–`JC 2`. Input is case-insensitive and stored as, for example, `Secondary 3` or `JC 2`. |
 | Note | 1–200 printable characters on one line, or empty to omit it. |
+
+Notes also trim surrounding Java whitespace, including EN SPACE (U+2002), EM SPACE (U+2003), and IDEOGRAPHIC SPACE
+(U+3000), before checking the 200-character limit. Internal spacing in a nonblank note is preserved. A note containing
+only Java whitespace is absent on add and cleared on edit. NON-BREAKING SPACE (U+00A0) and ZERO WIDTH SPACE (U+200B)
+are retained as note content; they do not clear a note.
 
 `JC 5`, `Secondary 6`, `Primary 7`, abbreviations such as `P6`, and custom labels such as `Adult` are
 rejected. The error is `Level must be Primary 1-6, Secondary 1-5, or JC 1-2 (for example, Secondary 3).`
@@ -177,7 +186,7 @@ Format: `list`
 * If contacts exist, the result message is `Showing N contacts.`, where `N` is the total number of contacts.
 * If no contacts exist, the result message is `No contacts to display.`
 * Command words are case-insensitive: `list`, `List`, and `LIST` are accepted.
-* Leading and trailing spaces are ignored.
+* Leading and trailing Java whitespace is ignored, including EM SPACE (U+2003). Whitespace alone is not an argument.
 * Additional arguments are rejected with `Invalid command format. Expected: list`.
 * This command does not change contact details.
 
@@ -195,7 +204,9 @@ Format: `sort level`
 * Sorts the current results, retaining the filter and any visible selected or expanded contact.
   Sorting remains active as results change; `list` clears filtering and sorting.
 * `view`, `edit`, and `delete` use the displayed indices. Sorting does not save data or change stored order.
-* `SORT LEVEL` and surrounding whitespace are accepted. Success: `Contacts sorted by academic level.`,
+* `SORT LEVEL` and surrounding Java whitespace are accepted, including EM SPACE (U+2003) around `level`.
+  A nonbreaking space (U+00A0) is not Java whitespace and is rejected as part of an unsupported criterion.
+  Success: `Contacts sorted by academic level.`,
   including for an empty list. Missing, unsupported, or extra arguments give
   `Invalid command format. Expected: sort level` and leave the display unchanged.
 
@@ -442,6 +453,10 @@ Links are saved in a `links` list. Each link names the parent and student by the
 `{ "parentName": "Bernice Yu", "parentPhone": "99272758", "studentName": "Alex Yeoh", "studentPhone": "87438807" }`.
 If you change a contact's name or phone in the file, update its links too: a link to a contact that does not exist
 makes the file invalid.
+
+A missing, empty, or Java-whitespace-only stored note is loaded as absent. Surrounding Java whitespace is removed
+from a nonblank note. Loading does not rewrite the contact file; the normalized values are saved with the next
+successful contact change.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
 If the data file is invalid or unreadable, TutorContacts starts with an empty list and displays

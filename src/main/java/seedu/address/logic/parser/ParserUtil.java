@@ -161,7 +161,8 @@ public class ParserUtil {
     }
 
     /**
-     * Parses an optional note, treating an empty or whitespace-only value as omitted.
+     * Parses an optional note, omitting an empty value or one containing only Java whitespace.
+     * Nonblank notes use the normalization defined by {@link Note}.
      *
      * @param note Note supplied by the user, or an empty string if omitted.
      * @return The validated note, if present.
@@ -169,7 +170,7 @@ public class ParserUtil {
      */
     public static Optional<Note> parseNote(String note) throws ParseException {
         requireNonNull(note);
-        if (note.trim().isEmpty()) {
+        if (note.isBlank()) {
             return Optional.empty();
         }
         if (!Note.isValidNote(note)) {

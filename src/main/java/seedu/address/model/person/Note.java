@@ -16,9 +16,9 @@ public class Note {
     public final String value;
 
     /**
-     * Constructs a {@code Note}.
+     * Constructs a {@code Note} after removing surrounding Java whitespace.
      *
-     * @param note A valid note.
+     * @param note A valid nonblank note, optionally padded with Java whitespace.
      */
     public Note(String note) {
         requireNonNull(note);
@@ -27,14 +27,20 @@ public class Note {
     }
 
     /**
-     * Returns true if the given value is a valid note.
+     * Returns true if the note is valid after removing surrounding Java whitespace.
      */
     public static boolean isValidNote(String test) {
         return test != null && normalize(test).matches(VALIDATION_REGEX);
     }
 
+    /**
+     * Returns note text without surrounding Java whitespace, preserving internal spacing.
+     *
+     * @param note Non-null note text.
+     * @return The normalized note.
+     */
     private static String normalize(String note) {
-        return note.trim();
+        return note.strip();
     }
 
     @Override

@@ -168,8 +168,14 @@ class JsonAdaptedPerson {
         return Optional.of(new Level(level));
     }
 
+    /**
+     * Returns the optional note, treating stored text containing only Java whitespace as absent for compatibility.
+     *
+     * @return The normalized note, or empty if the stored value is missing or blank.
+     * @throws IllegalValueException If a nonblank note violates its field constraints.
+     */
     private Optional<Note> toNote() throws IllegalValueException {
-        if (note == null) {
+        if (note == null || note.isBlank()) {
             return Optional.empty();
         }
         if (!Note.isValidNote(note)) {
