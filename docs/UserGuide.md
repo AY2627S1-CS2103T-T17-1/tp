@@ -329,6 +329,9 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * Contacts matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
 * A new `find` replaces the previous search/filter and retains the current display ordering.
 
+Successful searches report `Showing N matching contacts.`, including `Showing 1 matching contacts.` for one match.
+Zero matches (including an empty address book) report `No matching contacts.` and display an empty list.
+
 Examples:
 * `find John` returns `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`
