@@ -983,8 +983,35 @@ testers are expected to do more *exploratory* testing.
 
 ### Saving data
 
-1. Dealing with missing/corrupted data files
+Run these checks in a separate test folder without personal contact data. Put `tutorcontacts.jar` in that folder,
+open a terminal there, verify Java 25 with `java -version`, and launch with `java -jar tutorcontacts.jar`.
+Close the app before preparing each test file.
 
-   1. _{Explain how to simulate missing or corrupted data files and state the expected behavior.}_
+1. Missing data file: start without `data/tutorcontacts.json`.<br>
+   Expected: An empty contact list with no invalid-data warning. Enter
+   `add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road`.<br>
+   Expected: `Added parent: Alpha Parent.` and a new data file. Restart; the contact should reload.
 
-1. _{ more test cases …​ }_
+1. Invalid root: create `data/tutorcontacts.json` containing exactly `null`, then start the app.<br>
+   Expected: An empty contact list and
+   `Warning: TutorContacts could not load data/tutorcontacts.json. The existing file was not changed.`
+
+1. Trailing content: repeat the previous test with each of these complete file contents:
+   `{"persons":[]} unexpected trailing content`, `{"persons":[]} {}`, and `{"persons":[]} null`.<br>
+   Expected: The same warning and empty list for every case; the valid first object must not bypass recovery.
+
+1. Protection and recovery: during each invalid-file session, enter `list`, then the add command above.<br>
+   Expected: `list` shows `No contacts to display.`; add shows
+   `Contact was not added because TutorContacts could not save the data file.` No contact is added.
+   Exit and compare the complete file contents with the original; they must be unchanged.
+   Replace the file with `{"persons":[]}`, restart, and repeat add.<br>
+   Expected: No warning; add succeeds and the new contact survives another restart.
+
+1. Valid trailing whitespace: create a file containing `{"persons":[]}` followed only by spaces, tabs,
+   and line breaks, then start the app.<br>
+   Expected: An empty list without a warning; add succeeds normally.
+
+`JsonUtil` checks that deserialization consumes the complete document and rejects a null file root with
+`DataLoadingException`. These failures use `MainApp`'s existing recovery path, which displays the warning and
+disables data-changing commands until restart. `JsonUtilTest`, `JsonAddressBookStorageTest`, and `MainAppTest`
+cover document validation, unchanged invalid files, startup protection, and recovery after repair and restart.

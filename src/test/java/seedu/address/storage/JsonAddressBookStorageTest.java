@@ -79,6 +79,22 @@ public class JsonAddressBookStorageTest {
         assertEquals(invalidData, Files.readString(dataPath));
     }
 
+    /**
+     * Checks that invalid roots and extra JSON content cannot load or alter the saved address book.
+     */
+    @Test
+    public void readAddressBook_invalidDocument_throwsDataLoadingExceptionWithoutChangingFile()
+            throws IOException {
+        Path dataPath = testFolder.resolve("tutorcontacts.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(dataPath);
+        for (String json : new String[]{"null", "{} trailing text", "{} {}", "{} null"}) {
+            Files.writeString(dataPath, json);
+
+            assertThrows(DataLoadingException.class, storage::readAddressBook);
+            assertEquals(json, Files.readString(dataPath));
+        }
+    }
+
     @Test
     public void readAndSaveAddressBook_allInOrder_success() throws Exception {
         Path filePath = testFolder.resolve("TempAddressBook.json");

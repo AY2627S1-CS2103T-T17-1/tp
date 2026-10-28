@@ -436,6 +436,8 @@ Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
 to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
 the first successful data-changing command. Advanced users can edit the JSON file directly.
+The file must contain a single JSON object. A file containing only `null`, or an object followed by another JSON value
+or other text, is invalid. Spaces, tabs, and line breaks around the object are allowed.
 
 Links are saved in a `links` list. Each link names the parent and student by their name and phone, for example
 `{ "parentName": "Bernice Yu", "parentPhone": "99272758", "studentName": "Alex Yeoh", "studentPhone": "87438807" }`.
