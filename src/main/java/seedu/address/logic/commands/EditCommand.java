@@ -223,6 +223,8 @@ public class EditCommand extends Command {
 
         /**
          * Sets the student's subject to use for this edit.
+         *
+         * @param subject Subject to use when editing a student contact.
          */
         public void setSubject(Subject subject) {
             this.subject = subject;
@@ -230,6 +232,8 @@ public class EditCommand extends Command {
 
         /**
          * Returns the subject supplied for this edit, if any.
+         *
+         * @return The supplied subject, or empty if no subject edit was specified.
          */
         public Optional<Subject> getSubject() {
             return Optional.ofNullable(subject);
@@ -237,6 +241,8 @@ public class EditCommand extends Command {
 
         /**
          * Sets the student's academic level to use for this edit.
+         *
+         * @param level Academic level to use when editing a student contact.
          */
         public void setLevel(Level level) {
             this.level = level;
@@ -244,6 +250,8 @@ public class EditCommand extends Command {
 
         /**
          * Returns the academic level supplied for this edit, if any.
+         *
+         * @return The supplied level, or empty if no level edit was specified.
          */
         public Optional<Level> getLevel() {
             return Optional.ofNullable(level);
@@ -251,6 +259,8 @@ public class EditCommand extends Command {
 
         /**
          * Sets the note to replace the existing note, or an empty value to clear it.
+         *
+         * @param note Note to use for the edit, or empty to clear the existing note.
          */
         public void setNote(Optional<Note> note) {
             this.note = requireNonNull(note);
@@ -258,6 +268,8 @@ public class EditCommand extends Command {
 
         /**
          * Returns the specified note change, if any. An inner empty value means the note should be cleared.
+         *
+         * @return An outer empty value if no note edit was specified; an inner empty value if it should be cleared.
          */
         public Optional<Optional<Note>> getNote() {
             return Optional.ofNullable(note);

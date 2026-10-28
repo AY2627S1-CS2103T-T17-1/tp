@@ -32,7 +32,7 @@ import seedu.address.storage.StorageManager;
 public class MainAppTest {
 
     @TempDir
-    public Path temporaryFolder;
+    private Path temporaryFolder;
 
     @Test
     public void addressBookFilePath_usesTutorContactsJson() throws ReflectiveOperationException {
@@ -232,6 +232,9 @@ public class MainAppTest {
 
     /**
      * Creates storage backed by a temporary contact file for startup tests.
+     *
+     * @param dataPath Location of the temporary contact file.
+     * @return Storage backed by the contact file and a temporary preferences file.
      */
     private StorageManager createStorage(Path dataPath) {
         JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataPath);
