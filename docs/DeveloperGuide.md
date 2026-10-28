@@ -1039,6 +1039,41 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases …​ }_
 
+### Application files and launch directories
+
+`AppPaths` determines the application home from its own code-source URI. Packaged launches use the JAR's parent
+directory; IDE and Gradle launches from compiled class directories use the working directory, normally the project root.
+`MainApp` resolves contact data and preferences beneath this shared home. `LogsCenter` uses it for rotating log files
+and escapes literal percent characters before passing the path to `FileHandler`.
+The resolver does not use logging because it is also needed during logger initialization. If a log file cannot be
+opened, console logging remains available. An unavailable application code location fails explicitly rather than
+selecting another storage folder.
+
+1. Create a disposable test directory with three subdirectories: `jar-home`, `run-a`, and `run-b`.
+   Copy the newly built `build/libs/tutorcontacts.jar` into `jar-home`.
+
+1. Open a terminal in `run-a`, verify Java 25 with `java -version`, and run
+   `java -jar ../jar-home/tutorcontacts.jar`.<br>
+   Expected: A fresh empty contact list. `preferences.json` and `addressbook.log.*` appear in `jar-home`.
+
+1. Enter `add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road`.
+   Resize the window and exit.<br>
+   Expected: `jar-home/data/tutorcontacts.json` contains Alpha Parent, and preferences are saved beside the JAR.
+
+1. Launch the same JAR from `run-b` using `java -jar ../jar-home/tutorcontacts.jar`.<br>
+   Expected: Alpha Parent and the saved window settings reload. Changes are saved to the same files.
+   Both `run-a` and `run-b` remain empty.
+
+1. Repeat using a JAR directory named `Tutor Contacts café %h # +`.<br>
+   Expected: Spaces, Unicode, and punctuation do not alter file placement. Logs also stay in that directory.
+
+1. Logging failure: in a fresh `jar-home`, create a directory named `addressbook.log.0` before launching.<br>
+   Expected: Console output explains the log-file failure; the app still opens, and contact saves work normally.
+
+`AppPathsTest`, `LogsCenterTest`, and `MainAppTest` cover directory resolution, encoded paths, literal logging
+patterns, unavailable locations, development behavior, and the default storage paths. Verify packaged behavior with
+the rebuilt JAR because development tests load classes from directories rather than the release JAR.
+
 ### Saving data
 
 1. Dealing with missing/corrupted data files

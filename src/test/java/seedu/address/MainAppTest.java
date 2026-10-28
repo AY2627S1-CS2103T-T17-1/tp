@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.commons.core.GuiSettings;
+import seedu.address.commons.util.AppPaths;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
@@ -34,12 +35,27 @@ public class MainAppTest {
     @TempDir
     public Path temporaryFolder;
 
+    /**
+     * Checks that contact storage is resolved beneath the shared application home directory.
+     */
     @Test
     public void addressBookFilePath_usesTutorContactsJson() throws ReflectiveOperationException {
         Field filePathField = MainApp.class.getDeclaredField("ADDRESS_BOOK_FILE_PATH");
         filePathField.setAccessible(true);
 
-        assertEquals(Paths.get("data", "tutorcontacts.json"), filePathField.get(null));
+        Path expectedPath = AppPaths.getHomeDirectory().resolve("data").resolve("tutorcontacts.json");
+        assertEquals(expectedPath, filePathField.get(null));
+    }
+
+    /**
+     * Checks that preferences use the same application home directory as contact data.
+     */
+    @Test
+    public void userPrefsFilePath_usesApplicationHome() throws ReflectiveOperationException {
+        Field filePathField = MainApp.class.getDeclaredField("USER_PREFS_FILE_PATH");
+        filePathField.setAccessible(true);
+
+        assertEquals(AppPaths.getHomeDirectory().resolve("preferences.json"), filePathField.get(null));
     }
 
     @Test

@@ -3,12 +3,15 @@ package seedu.address.commons.core;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+
+import seedu.address.commons.util.AppPaths;
 
 /**
  * Configures and manages loggers and handlers, including their logging level.
@@ -24,13 +27,11 @@ public class LogsCenter {
     private static final int MAX_FILE_COUNT = 5;
     private static final int MAX_FILE_SIZE_IN_BYTES = (int) (Math.pow(2, 20) * 5); // 5MB
     private static final String LOG_FILE = "addressbook.log";
-    private static final Logger logger; // logger for this class
     private static Logger baseLogger; // to be used as the parent of all other loggers created by this class.
 
     // This static block ensures essential loggers are created early
     static {
         setBaseLogger();
-        logger = LogsCenter.getLogger(LogsCenter.class);
     }
 
     /**
@@ -86,14 +87,25 @@ public class LogsCenter {
 
         // add a FileHandler to log to a file
         try {
-            FileHandler fileHandler = new FileHandler(LOG_FILE, MAX_FILE_SIZE_IN_BYTES, MAX_FILE_COUNT, true);
-            fileHandler.setFormatter(new SimpleFormatter());
-            fileHandler.setLevel(Level.ALL);
-            baseLogger.addHandler(fileHandler);
+            baseLogger.addHandler(createFileHandler(AppPaths.getHomeDirectory().resolve(LOG_FILE)));
         } catch (IOException e) {
-            logger.warning("Error adding file handler for logger.");
+            baseLogger.warning("Could not open the application log file. Using console logging only: " + e);
         }
     }
 
+    /**
+     * Creates a rotating log handler whose path is literal, including any percent characters in directory names.
+     *
+     * @param logFile Absolute path of the log file beneath the application home directory.
+     * @return The configured file handler.
+     * @throws IOException If the log file or its lock cannot be opened.
+     */
+    static FileHandler createFileHandler(Path logFile) throws IOException {
+        String pattern = logFile.toString().replace("%", "%%");
+        FileHandler handler = new FileHandler(pattern, MAX_FILE_SIZE_IN_BYTES, MAX_FILE_COUNT, true);
+        handler.setFormatter(new SimpleFormatter());
+        handler.setLevel(Level.ALL);
+        return handler;
+    }
 
 }
