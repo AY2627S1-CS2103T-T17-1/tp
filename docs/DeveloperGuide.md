@@ -255,7 +255,7 @@ call Storage.
 The following sequence shows the main Logic flow for a successful combined filter, including default ordering
 when no comparator is active. Parser construction, individual predicate evaluations, and routine command checks
 are omitted for clarity. JavaFX observes the resulting list changes. The existing `MainWindow`/`PersonListPanel`
-command handling retains visible selection and expansion or clears a hidden selection.
+command handling retains visible selection and displayed details or clears a hidden selection.
 
 ![Combined contact filtering and display ordering](images/FilterContactsSequenceDiagram.png)
 
@@ -284,16 +284,16 @@ the predicate intact. Subsequent `filter` calls preserve that comparator. `list`
 JUnit covers all seven nonempty criterion combinations, AND name matching, exact values, missing fields, duplicate
 and unknown prefixes, validation precedence, subject length and academic-level boundaries, no matches, name-order ties,
 comparator composition, displayed indices, insertion-order restoration, unchanged JSON, and save-failure rollback.
-`ContactListStateTest` covers selection and expansion after filtering and invalid input.
+`ContactListStateTest` covers selection and displayed details after filtering and invalid input.
 
 For a manual JavaFX check, use a disposable data folder with contacts inserted in this order:
 Zoe Tan (Mathematics, Secondary 3), Alice Tan (parent), Amy Tan (Mathematics, Secondary 3),
 Bob Lee (Physics, JC 2). Give the contacts distinct valid contact details.
 
 1. Run `filter s/Mathematics l/Secondary 3`: expect Amy then Zoe and `Showing 2 matching contacts.`
-2. Run `view 2`, then repeat that filter: Zoe stays selected and expanded at index 2.
-3. Run `filter n/Amy Tan`: expect only Amy; Zoe's selection and expansion clear.
-4. Run `view 1`, then `filter s/`: expect the subject error with Amy's selection, expansion, and list unchanged.
+2. Run `view 2`, then repeat that filter: Zoe stays selected with details at index 2.
+3. Run `filter n/Amy Tan`: expect only Amy; Zoe's selection and displayed details clear.
+4. Run `view 1`, then `filter s/`: expect the subject error with Amy's selection, details, and list unchanged.
 5. Run `filter n/Amy Lee`: expect `No matching contacts.`; `find Amy Lee` should return Amy and Bob.
 6. Run `filter s/Mathematics`, then `delete 1`: Amy is deleted and Zoe becomes index 1. `view 1` shows Zoe.
 7. Run `list`: expect Zoe, Alice, Bob in insertion order with compact cards.
@@ -329,13 +329,13 @@ levels with the same `Level` rules. Unsupported values such as `JC 5` and `Secon
 `getFilteredPersonList()` returns the same displayed view to the UI and to `view`, `edit`, and `delete`, so
 their indices follow the displayed order. `PersonListPanel` supplies this observable view to its `ListView`
 using `setItems(...)`; JavaFX observes subsequent list changes automatically. After command execution,
-`PersonListPanel#completeCommand(...)` restores selection and expansion for any contact still visible and
+`PersonListPanel#completeCommand(...)` restores selection and displayed details for any contact still visible and
 refreshes the cards. The diagram note summarizes the automatic update without implying a direct method call
 from `SortedList` to `PersonListPanel`.
 
 Sorting stays active when `find` or `filter` replaces the predicate; successful `add` and `edit` clear filtering
 but retain the comparator. `list` sets `PREDICATE_SHOW_ALL_PERSONS` and clears the comparator with
-`setPersonListComparator(null)`, restoring all remaining contacts in insertion order and collapsing details.
+`setPersonListComparator(null)`, restoring all remaining contacts in insertion order while retaining selected details.
 The filter and comparator are session state: neither is saved, and restarting restores insertion order.
 
 The diagram shows creation of the command parser, command, and result, with synchronous calls and dashed returns.
@@ -347,7 +347,7 @@ are omitted to keep the diagram focused on parsing and applying the sort.
 
 `link PARENT_INDEX STUDENT_INDEX` records that a parent contact is the parent of a student contact, and
 `unlink PARENT_INDEX STUDENT_INDEX` removes that link while keeping both contacts.
-Expanded contact cards then list the contact's linked students or parents.
+The selected-contact detail pane lists the contact's linked students or parents.
 
 The class diagram below shows how a link is represented and persisted. Fields and classes unrelated to links,
 such as `Email`, `Address`, `Tag`, `UserPrefs`, and the storage managers, are omitted.
@@ -360,20 +360,20 @@ duplicate-contact rules (`Name#isSameName` and `Phone#isSamePhone`). `ParentStud
 also check the contact's `Role`, because a parent and a student may share a name and phone. Within one role, name
 and phone identify at most one contact, so each link resolves to exactly one parent and one student.
 A parent can have 0..* linked students and a student can have 0..* linked parents.
-Cards and `link` messages show each linked contact as `Name (phone)`, because two contacts may share a name.
+The detail pane and `link` messages show each linked contact as `Name (phone)`, distinguishing shared names.
 
 **Normal path.** `LinkCommandParser` parses two displayed-list indices with `ParserUtil#parseTwoDisplayedIndices`.
 `LinkCommand` and `UnlinkCommand` both extend `ParentStudentCommand`, whose `getParentAndStudent` looks up both
 contacts in `Model#getFilteredPersonList()`, then rejects the same index twice, then checks that the first contact
 is a parent and the second a student. Looking up both contacts first means an index outside the list is reported even
 when both indices are equal. `LinkCommand#execute` creates the link with `ParentStudentLink#between`, rejects a
-duplicate using `Model#hasLink`, calls `Model#addLink`, and returns a result that expands the parent's card.
-`LogicManager` saves the address book because the command changes data. `PersonListPanel` asks
-`Logic#getLinkedPersons` for each card's linked contacts.
+duplicate using `Model#hasLink`, calls `Model#addLink`, and returns a result that selects the parent and displays its
+details. `LogicManager` saves the address book because the command changes data. `PersonListPanel` asks
+`Logic#getLinkedPersons` for the selected contact's linked contacts and shows them in `ContactDetailPanel`.
 
 **Removing a link.** `UnlinkCommand` runs the same checks, then requires the link to exist (`Model#hasLink`) and calls
 `Model#removeLink`, which asserts that the link exists and removes only that link. Both contacts and their other links
-are kept, and the parent's card is expanded to show its remaining links. Sharing the checks in
+are kept, and the parent is selected so its remaining links appear in the detail pane. Sharing the checks in
 `ParentStudentCommand`, and the index parsing in `ParserUtil`, keeps the two commands' validation and messages
 identical without duplicated code.
 
@@ -476,7 +476,7 @@ Failed commands leave the displayed and saved contact data unchanged.)
    and may supply a note for either role.
 2. TutorContacts validates the fields and checks for a duplicate contact.
 3. TutorContacts adds the contact to the end of the list and selects its compact card, which shows its index, role,
-   name, and phone.
+   name, phone, and student tuition summary. Its complete information appears in the detail pane.
 4. TutorContacts saves the updated data file and reports `Added student: NAME.` or `Added parent: NAME.`
 
    Use case ends.
@@ -508,7 +508,7 @@ Failed commands leave the displayed and saved contact data unchanged.)
 
 1. User enters `list` to see all contacts.
 2. TutorContacts shows every contact in insertion order, numbered from 1, with its role, name, and phone on a compact
-   card. Any expanded contact card is collapsed.
+   card. Student cards include level and subject. Any selected contact retains its details.
 3. TutorContacts reports `Showing N contacts.`
 4. User scans the list. No contact data is changed or saved.
 
@@ -532,8 +532,8 @@ Failed commands leave the displayed and saved contact data unchanged.)
 1. User enters `list` to display contacts.
 2. TutorContacts displays contacts with their current index numbers.
 3. User enters `view INDEX` for a contact in that displayed list.
-4. TutorContacts highlights and expands the indexed contact card in place. The other cards remain compact, and the
-   list remains visible.
+4. TutorContacts highlights the indexed compact card and displays its complete information in the detail pane.
+   The list remains visible.
 5. TutorContacts shows the contact's role, name, phone, email, address, note, and subject and level if it is a student.
    TutorContacts reports `Showing contact: NAME.` No contact data is changed or saved.
 
@@ -543,12 +543,12 @@ Failed commands leave the displayed and saved contact data unchanged.)
 
 * 3a. The index is non-numeric, zero, or negative.
   * 3a1. TutorContacts shows `Index must be a positive integer shown in the current list.` The displayed list and
-    expanded-card selection remain unchanged.
+    detail-pane selection remain unchanged.
 
     Use case resumes at step 3.
 * 3b. The index is larger than the currently displayed list.
   * 3b1. TutorContacts shows `No contact exists at index INDEX in the current list.` The displayed list and
-    expanded-card selection remain unchanged.
+    detail-pane selection remain unchanged.
 
     Use case resumes at step 3.
 * 3c. The index is missing, or the user supplies extra arguments.
@@ -614,7 +614,8 @@ Failed commands leave the displayed and saved contact data unchanged.)
 
     Use case resumes at step 1.
 * 2b. The replacement contact would duplicate another contact under the existing role, name, phone, and email rule.
-  * 2b1. TutorContacts reports `This person already exists in the address book.` No contact data is changed.
+  * 2b1. TutorContacts reports `This contact duplicates an existing ROLE: NAME (PHONE).`, naming the existing contact.
+    No contact data is changed.
 
     Use case resumes at step 1.
 * 4a. TutorContacts cannot save the data file.
@@ -629,7 +630,8 @@ Failed commands leave the displayed and saved contact data unchanged.)
 
 1. User displays contacts, for example with `list` or `find`.
 2. User enters `link PARENT_INDEX STUDENT_INDEX` for a parent and a student in that displayed list.
-3. TutorContacts records the link, expands the parent's card to show its linked students, saves the data file, and
+3. TutorContacts records the link, selects the parent so the detail pane shows its linked students, saves the data
+   file, and
    reports `Linked parent PARENT_NAME (PHONE) to student STUDENT_NAME (PHONE).`
 
    Use case ends.
@@ -668,7 +670,8 @@ Failed commands leave the displayed and saved contact data unchanged.)
 
 1. User displays contacts, for example with `list` or `find`.
 2. User enters `unlink PARENT_INDEX STUDENT_INDEX` for a linked parent and student in that displayed list.
-3. TutorContacts removes the link, keeps both contacts, expands the parent's card to show its remaining links,
+3. TutorContacts removes the link, keeps both contacts, selects the parent so the detail pane shows its remaining
+   links,
    saves the data file, and reports `Unlinked parent PARENT_NAME (PHONE) from student STUDENT_NAME (PHONE).`
 
    Use case ends.
@@ -695,8 +698,9 @@ Failed commands leave the displayed and saved contact data unchanged.)
 **MSS**
 
 1. User enters `filter` with at least one of `n/KEYWORDS`, `s/SUBJECT`, and `l/LEVEL`.
-2. TutorContacts shows only the contacts that match every supplied criterion, in name order, and reports
-   `Showing N matching contacts.`
+2. TutorContacts shows only the contacts that match every supplied criterion and reports
+   `Showing N matching contacts.` Results are in name order, unless a display ordering such as `sort level` is
+   already active, in which case that ordering is kept.
 
    Use case ends.
 
@@ -813,12 +817,13 @@ Failed commands leave the displayed and saved contact data unchanged.)
 
 * **Academic level**: A student's stage of study: `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`,
   or `JC 1`–`JC 2`. Recorded only for student contacts, using canonical capitalization.
-* **Compact card**: The summary of a contact shown in the contact list, displaying its index, role, name, and phone.
+* **Compact card**: The summary of a contact shown in the contact list, displaying index, role, name, phone,
+  and a student level/subject summary.
 * **Data file**: The file `data/tutorcontacts.json`, in the same folder as the JAR file, in which TutorContacts saves
   all contacts.
 * **Duplicate contact**: A contact with the same role and _normalized name_ as an existing contact, and whose phone
   or email also matches that contact's.
-* **Expanded card**: A contact card that shows all of the contact's details after a `view INDEX` command.
+* **Detail pane**: The scrollable region showing complete information for the selected contact.
 * **INDEX**: The one-based position of a contact in the currently displayed contact list.
 * **Mainstream OS**: Windows, Linux, Unix, or macOS.
 * **MVP**: Minimum viable product; the smallest version of TutorContacts that delivers its core value.
@@ -842,7 +847,7 @@ Failed commands leave the displayed and saved contact data unchanged.)
 ### Help command guide
 
 Use a disposable data file containing at least two contacts. Before testing, run `view 1` and note the
-selected contact, expanded details, and the data file's contents and last-modified time.
+selected contact, displayed details, and the data file's contents and last-modified time.
 
 1. Enter `help`. Expect one window titled **TutorContacts — Command guide**, containing the command reference
    and the TutorContacts User Guide URL. Enter `help` again in the main window: the same Help window should
@@ -858,7 +863,7 @@ selected contact, expanded details, and the data file's contents and last-modifi
 5. Select **Copy User Guide URL** and paste into a browser's address bar. Expect exactly
    `https://ay2627s1-cs2103t-t17-1.github.io/tp/UserGuide.html`. With Internet access, navigate to it and
    verify that it opens the TutorContacts User Guide, not the inherited AB3 guide.
-6. Close Help. Expect the contact list, selected contact, and expanded details to be unchanged. Check that
+6. Close Help. Expect the contact list, selected contact, and displayed details to be unchanged. Check that
    the data file's contents and last-modified time still match the values recorded before opening Help.
 
 ### Command parsing and validation
@@ -876,6 +881,14 @@ and is retained in stored data. `ExitCommandParser` rejects arguments before an 
 `Email` uses possessive repetition for the dot-separated domain labels. A label cannot contain a dot, so consumed
 labels do not need to be reconsidered. This avoids recursive matcher backtracking for long domains while retaining
 the existing email grammar and shared command/JSON validation. No email-length limit is introduced.
+
+`Address` retains `String.trim()` normalization and the 1–150 code-point limit. Its regex requires at least one character
+in Unicode category `L`, `N`, `P`, or `S`, and still excludes controls (`Cc`) and line/paragraph separators (`Zl`, `Zp`).
+Formatting and combining marks are preserved alongside qualifying content. Values containing only spaces, formatting,
+or marks are rejected through both command parsing and JSON loading. This is a category-based policy: the letter
+U+3164 and symbol U+2800 satisfy it even when their rendering appears blank. Do not describe the rule as detecting
+every visually invisible value. A newly invalid stored address triggers the existing startup warning and write
+protection; users repair the preserved file before restarting. No address or contact is silently substituted or dropped.
 
 `AddressBookParser` strips outer command padding with `String.strip()`. `ListCommandParser` uses `isBlank()`, and
 `SortCommandParser` strips its criterion before comparing it with `level`. These methods use Java whitespace,
@@ -897,7 +910,7 @@ edited fields survive a storage round trip and that a failed save restores the p
 
 `InputValidationIntegrationTest` checks long-email add/edit/duplicate handling, Unicode note omission and clearing,
 list/sort composition, unchanged state after rejection, and loading legacy blank notes without losing contacts or
-links. `ContactCardsUiTest` checks the corresponding command-box feedback, selection, expansion, and JSON behavior
+links. `ContactCardsUiTest` checks the corresponding command-box feedback, selection, displayed details, and JSON behavior
 when `RUN_UI_TESTS=true`.
 
 With a disposable data file, manually verify:
@@ -931,7 +944,7 @@ Use a disposable writable folder and Java 25 for these command-box checks:
 
    Expect `Added parent: Email Parent.`, a cleared command box, and two saved contacts. Then copy and execute
    `('edit 1 e/' + $emailProbe + '.')` using `Set-Clipboard -Value`. Expect the email constraint message, error
-   styling, and unchanged contacts, selection, expansion, and JSON. The invalid suffix must not cause a stack error.
+   styling, and unchanged contacts, selection, displayed details, and JSON. The invalid suffix must not cause a stack error.
 
 3. Copy and execute each generated command independently:
 
@@ -941,7 +954,8 @@ Use a disposable writable folder and Java 25 for these command-box checks:
    Set-Clipboard -Value ('list ' + [char]0x2003)
    ```
 
-   After the edit, run `view 1` and expect `Note: None`. Expect the normal sort/list success messages, with no
+   After the edit, run `view 1` and expect `None` in the detail pane's Notes section.
+   Expect the normal sort/list success messages, with no
    additional JSON writes for those read-only commands. Repeat with a nonblank note padded with U+2003 and check
    that only its surrounding whitespace is removed. Verify that `sort level extra` still fails normally.
 
@@ -969,8 +983,8 @@ Use a disposable data file for these checks:
 Prefix recognition checks (use disposable test data):
 
 1. Enter `ADD R/PARENT N/Prefix Parent P/81234567 E/prefix@example.com A/311, Clementi Ave 2, #02-25`.
-   Check that capitalization is retained and a parent contact is added, then run `view 1` to expand it.
-2. Enter `add n/Alex x/foo`. Expect `Unknown prefix: x/.` with the selected contact and expansion unchanged.
+   Check that capitalization is retained and a parent contact is added, then run `view 1` to show its details.
+2. Enter `add n/Alex x/foo`. Expect `Unknown prefix: x/.` with selection and displayed details unchanged.
 3. Enter `add n/Alex N/Bob`. Expect `Prefix n/ may be specified only once.` with no contact-data change.
 4. Enter `add r/parent n/Literal Parent p/91234567 e/literal@example.com a/21 Clementi Ave 3 o/Discuss \x/foo`.
    View the added contact and check its note is `Discuss x/foo`. Check the JSON stores that same literal text.
@@ -978,13 +992,29 @@ Prefix recognition checks (use disposable test data):
 The prefix and student/parent flow tests in `ContactCardsUiTest` check prefix recognition and literal text
 through real command-box execution and JSON storage when `RUN_UI_TESTS=true`.
 
-`CommandResult` carries a `ContactListAction` and an optional target contact. `add` requests selection,
-`view` requests selection and expansion, and `list` requests collapse. Other successful commands retain the
-selection only while that contact remains visible. `MainWindow` applies these requests after `Logic.execute`
-returns, including any required save. `PersonListPanel` ignores transient JavaFX selection changes during
-execution and reconciles the final list using `ContactListState`, which retains contacts rather than indices.
-Failed commands restore the prior presentation against the final model; restoring model data after a failed save
-is the logic layer's responsibility.
+`CommandResult` carries a `ContactListAction`, an optional target, and an optional previous contact.
+`add`, `view`, `link`, and `edit` request selection of their target contact. Successful edits select the updated
+contact after restoring the full list, including when another contact was selected. `list` retains selection and details.
+`MainWindow` applies presentation requests only after `Logic.execute` returns, including any required save.
+`PersonListPanel` suppresses transient JavaFX selection changes during execution and reconciles the final list
+using `ContactListState`. The state contains one selected contact; there is no independent expansion state.
+Failed commands restore presentation against the final model; the logic layer restores contacts and links after
+save failures.
+
+`ContactDetailPanel` owns role-specific fields, tags, missing-value labels, and relationship text.
+Tag labels wrap within the current detail width, and the tag container follows the viewport width so every
+tag remains reachable by vertical scrolling. The rendered-layout regression uses a 1,000-character tag and
+199 additional tags in both side-by-side and stacked workspaces, including scrolling to the final tag.
+The workspace refreshes it after every command, even when a link changes without a list-change event.
+Relationships come from `Logic#getLinkedPersons`, including relatives outside the current filter.
+
+`PersonListPanel.fxml` uses a native JavaFX `SplitPane` with a default 40/60 list/detail ratio.
+Below 800 logical pixels of workspace width it switches to a vertical layout. Changing orientation resets the
+divider to the default ratio; dragging it adjusts the current layout without saving a preference.
+`ContactWorkspace.css` scopes the prototype card and detail styles to this workspace. Both regions scroll;
+detail field pairs reflow into a single column when narrow. Startup does not automatically select a contact.
+At logical window heights below 500 pixels, the feedback area remains scrollable at a reduced height so the
+list and detail panes have more usable space. The default window preference behavior is unchanged.
 
 `ContactListStateTest` runs in the normal headless JUnit suite. `ContactCardsUiTest` additionally checks actual
 FXML fields and command-box integration on a desktop. With Java 25, run it using:
@@ -994,20 +1024,57 @@ FXML fields and command-box integration on a desktop. With Java 25, run it using
 
 The desktop tests are opt-in because CI does not provide a graphical display on every platform.
 They save rendered previews under `build/reports/ui` for visual inspection.
+The split-pane fixture is `src/test/data/UiSplitContacts.json`; it contains five fictional contacts and three links.
+The content-size tests create explicitly sized scenes and assert their final dimensions; native OS scaling is
+still a separate manual check.
 
 Manual checks for the UI contribution:
 
-1. Start with at least two contacts. Check that compact cards show only index, role, name, and phone.
-2. Run `view 2`, then `view 1`: only the latest target should be expanded. Check student subject/level,
+1. Start with at least two contacts. Check compact cards show index, role, name, phone, and student level/subject.
+2. Run `view 2`, then `view 1`: only the latest target should appear in the detail pane. Check student subject/level,
    parent omission of those fields, email, address, and note. Check long names and notes wrap without clipping.
-3. Run `view 0`, `view 99` (when out of range), and `view 1 extra`: selection and expansion must not change.
-4. Run `list`: all cards should be compact. Add a contact: its compact card should be selected and visible.
-5. View the second contact and delete the first: the same contact should stay expanded with index 1.
+3. Run `view 0`, `view 99` (when out of range), and `view 1 extra`: selection and displayed details must not change.
+4. Run `list`: selection and details remain. Add a contact: its compact card and details should become selected.
+5. View the second contact and delete the first: the same contact should retain its details with index 1.
    Delete that selected contact: selection should clear. Repeat within filtered search results.
 6. Check resizing and scrolling at 1920x1080 with 100%/125% scaling and 1280x720 with 150% scaling.
    Keyboard command entry must remain usable after selection changes.
-7. Repeat add, edit, and delete with a failing save and check both the list data and selection remain unchanged.
-   UI tests simulate model restoration; they do not verify storage rollback.
+7. Click another card and use arrow-key list selection: the pane follows selection without changing feedback.
+8. Edit the selected contact's name, phone, and email; its new identity stays selected. Edit a linked contact:
+   that edited contact becomes selected. View its relative again and check the refreshed relationship text.
+   Run `link`: the parent becomes selected even without a list change.
+9. Filter out the selection, then run `list`: selection must remain empty. Test zero results, clear, and restart.
+10. Drag the divider and resize across the 800-pixel workspace breakpoint; selection and command text remain.
+11. Repeat add, edit, link, clear, and delete with a failing save and check both the list data and selection remain unchanged.
+   UI tests also inject real save failures through LogicManager and verify restored contacts, relationships, and details.
+
+### Main-window appearance and command entry
+
+`MainWindow.css` is loaded after the inherited stylesheets. Its selectors target the main window's menu,
+command area, feedback, and footer. Contact styles belong to ContactWorkspace.css; Help keeps its separate styles.
+The layout follows the Figma palette and spacing while retaining native window controls and a portable
+system font. The workspace implements the prototype's separate detail pane; the last-command chip is omitted.
+The original intended-design image remains at `images/Ui.png`; the User Guide's
+`images/mainWindow.png` shows the implemented layout.
+
+Use disposable contact data for these checks:
+
+1. Click the command field and type `view 1`. Check the teal focus outline, unchanged command text,
+   and details in the separate pane. The `>` and `Enter ↵` cues must not intercept clicks or receive keyboard focus.
+2. Enter `view 0` or `unknown`. Expect the existing error message, retained input with error styling,
+   and unchanged selection. Edit the input: error styling clears. Run `list`: the input clears and selected details remain.
+3. Trigger a long usage error, for example with `add`. Check that feedback wraps, scrolls, and can be
+   selected and copied in full. Also check the startup warning using an invalid disposable data file.
+4. Resize down to the existing 450 x 420 minimum. Command entry, feedback, and list scrolling must remain
+   usable. The footer guidance may wrap; hovering over a shortened storage path must show its resolved absolute path.
+   Relative paths containing `.` or `..` must resolve to the same data file without changing the footer label or storage.
+5. Check 1920 x 1080 at 100%/125% scaling and 1280 x 720 at 150% scaling on available supported systems.
+   Confirm menu access, native window controls, and saved window preferences still work.
+6. Check `help`, Help menu, and F1. After the other v1.4 features merge, repeat filter/sort/view/edit/delete
+   workflows against the integrated application; all index and card-state behavior should be preserved.
+
+The desktop tests check long feedback, full-path tooltips, input-error recovery, and several logical content
+sizes. Those content-size tests do not simulate OS display scaling; record native scale/platform checks separately.
 
 Given below are instructions to test the app manually.
 
@@ -1028,10 +1095,10 @@ testers are expected to do more *exploratory* testing.
 
    Expected: index 1 is Alex Tan (91234567), index 2 is Alex Tan (98765432), and index 3 is Mary Tan.
 1. Test case: `link 3 1`<br>
-   Expected: `Linked parent Mary Tan (93334444) to student Alex Tan (91234567).` Mary Tan's card expands and shows
+   Expected: `Linked parent Mary Tan (93334444) to student Alex Tan (91234567).` Mary Tan's detail pane shows
    `Linked students: Alex Tan (91234567)`.
 1. Test case: `link 3 2`<br>
-   Expected: Mary Tan's card shows `Linked students: Alex Tan (91234567), Alex Tan (98765432)`.
+   Expected: Mary Tan's detail pane shows `Linked students: Alex Tan (91234567), Alex Tan (98765432)`.
 1. Test case: `link 3 1`, then `link 1 2`, then `link 3 3`<br>
    Expected: in turn, `Mary Tan (93334444) is already linked to Alex Tan (91234567).`,
    `The contact at index 1 is not a parent.`, and `A contact cannot be linked to itself.` No data changes.
@@ -1044,8 +1111,8 @@ testers are expected to do more *exploratory* testing.
    Expected: `Deleted contact: student Alex Tan (80000000). Removed 1 link(s).` `view 2` shows only
    `Alex Tan (98765432)`.
 1. Test case: `unlink 2 1`<br>
-   Expected: `Unlinked parent Mary Tan (93334444) from student Alex Tan (98765432).` Mary Tan's card shows
-   `Linked students: None`, and both contacts remain in the list.
+   Expected: `Unlinked parent Mary Tan (93334444) from student Alex Tan (98765432).` Mary Tan's detail pane
+   shows `Linked students: None`, and both contacts remain in the list.
 1. Test case: `unlink 2 1` again, then `unlink 2 2`<br>
    Expected: in turn, `Mary Tan (93334444) is not linked to Alex Tan (98765432).` and
    `A contact cannot be unlinked from itself.` No data changes.
@@ -1111,6 +1178,32 @@ testers are expected to do more *exploratory* testing.
 
    1. Relaunch from the same folder with `java -jar "tutorcontacts.jar"`.<br>
        Expected: The most recent window size and location are retained.
+
+### Address content validation
+
+Use a disposable folder containing the rebuilt JAR and launch with Java 25. Add a fictional parent with
+`add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road`, then enter `view 1`.
+
+1. In PowerShell, copy an edit containing exactly ZERO WIDTH SPACE as its address:
+
+   ```powershell
+   Set-Clipboard -Value ('edit 1 a/' + [char]0x200B)
+   ```
+
+   Paste and execute it in TutorContacts.<br>
+   Expected: The address-constraint message replaces the prior feedback, error styling appears, and the input remains.
+   The selected, expanded contact and saved JSON remain unchanged. Repeat with an add command whose address is U+200B.
+
+1. Edit the address to `Café 1 Road` (the accent may be a separate combining character), then exit and restart.<br>
+   Expected: The edit succeeds and the address text reloads without losing its combining mark.
+
+1. Close the app and back up its disposable data file. Replace the address value with the JSON string `"\u200B"`.
+   Restart and try to add a contact.<br>
+   Expected: An empty list, the invalid-data warning, and a rejected add. The original file remains unchanged.
+   Repair the address while the app is closed and restart; saved contacts should load again.
+
+`AddressTest`, `ParserUtilTest`, `InputValidationIntegrationTest`, `MainAppTest`, and the desktop address test in
+`ContactCardsUiTest` cover this policy, preserved command/view state, JSON round trips, and invalid-file recovery.
 
 ### Deleting a person
 
@@ -1227,8 +1320,8 @@ the data file stays editable by hand.
   save) must keep links valid, and loading must reject links to missing contacts or duplicates. Linking and unlinking
   share one validation path, so both report the same problems in the same order.
 * **Filtering and sorting the displayed list.** `filter`, `find`, and `sort` change what is displayed but not what is
-  stored. Every index-based command, the selected and expanded card, and the effect of `add`, `edit`, and `list` had to
-  stay consistent with the displayed order.
+  stored. Every index-based command, the selected contact shown in the detail pane, and the effect of `add`, `edit`,
+  and `list` had to stay consistent with the displayed order.
 * **Safe data handling.** Saves replace the data file atomically, a failed save rolls back the in-memory change, an
   invalid or unreadable file is reported without being overwritten, and application files stay beside the JAR.
   Validation handles Unicode whitespace, escaped prefix-shaped text, and very long input without crashing.

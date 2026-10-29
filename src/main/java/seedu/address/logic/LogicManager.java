@@ -1,7 +1,6 @@
 package seedu.address.logic;
 
 import java.io.IOException;
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
@@ -13,6 +12,7 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -25,14 +25,17 @@ import seedu.address.storage.Storage;
  * The main LogicManager of the app.
  */
 public class LogicManager implements Logic {
-    public static final String FILE_OPS_ERROR_FORMAT = "Could not save data due to the following error: %s";
-
-    public static final String FILE_OPS_PERMISSION_ERROR_FORMAT =
-            "Could not save data to file %s due to insufficient permissions to write to the file or the folder.";
     public static final String MESSAGE_ADD_SAVE_FAILURE =
             "Contact was not added because TutorContacts could not save the data file.";
     public static final String MESSAGE_DELETE_SAVE_FAILURE =
             "Contact was not deleted because TutorContacts could not save the data file.";
+    public static final String MESSAGE_EDIT_SAVE_FAILURE =
+            "Contact was not edited because TutorContacts could not save the data file.";
+    public static final String MESSAGE_SAVE_FAILURE =
+            "The change was not made because TutorContacts could not save the data file.";
+    public static final String MESSAGE_DATA_FILE_NOT_LOADED =
+            "Changes are disabled because TutorContacts could not load data/tutorcontacts.json. "
+                    + "Repair the file, then restart TutorContacts.";
 
     private final Logger logger = LogsCenter.getLogger(LogicManager.class);
 
@@ -67,9 +70,9 @@ public class LogicManager implements Logic {
         logger.info("----------------[USER COMMAND][" + commandText + "]");
 
         Command command = addressBookParser.parseCommand(commandText);
+        // Nothing is saved after a failed load, so the existing file is not overwritten; say why, not "could not save".
         if (command.isDataChanging() && !isDataFileWritable) {
-            IOException cause = new IOException("Data file could not be loaded.");
-            throw new CommandException(getSaveFailureMessage(command, cause), cause);
+            throw new CommandException(MESSAGE_DATA_FILE_NOT_LOADED);
         }
 
         if (!command.isDataChanging()) {
@@ -85,30 +88,33 @@ public class LogicManager implements Logic {
         } catch (IOException e) {
             model.setAddressBook(previousAddressBook);
             model.updateFilteredPersonList(previousFilter);
-            throw new CommandException(getSaveFailureMessage(command, e), e);
+            // The cause, which may name an internal temporary file, is logged rather than shown to the user.
+            logger.warning("Could not save the data file, so the command was rolled back: " + e);
+            throw new CommandException(getSaveFailureMessage(command), e);
         }
 
         return commandResult;
     }
 
     /**
-     * Returns the specified feedback for a failed add or delete save, or a storage error for other commands.
+     * Returns the feedback for a command whose changes could not be saved.
+     * The common contact commands say what was not done; other commands, such as {@code link} and {@code clear},
+     * share a general message. Storage details, which may name an internal temporary file, are left to the log.
      *
      * @param command Command whose data could not be saved.
-     * @param exception Cause of the save failure.
      * @return The feedback to show for the failed command.
      */
-    private static String getSaveFailureMessage(Command command, IOException exception) {
+    private static String getSaveFailureMessage(Command command) {
         if (command instanceof AddCommand) {
             return MESSAGE_ADD_SAVE_FAILURE;
         }
         if (command instanceof DeleteCommand) {
             return MESSAGE_DELETE_SAVE_FAILURE;
         }
-        if (exception instanceof AccessDeniedException) {
-            return String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, exception.getMessage());
+        if (command instanceof EditCommand) {
+            return MESSAGE_EDIT_SAVE_FAILURE;
         }
-        return String.format(FILE_OPS_ERROR_FORMAT, exception.getMessage());
+        return MESSAGE_SAVE_FAILURE;
     }
 
     @Override

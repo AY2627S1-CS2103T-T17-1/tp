@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<ScrollPane fx:id="detailScrollPane" fitToWidth="true" hbarPolicy="NEVER" minWidth="0" minHeight="0"
+            styleClass="contact-detail-panel" xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1">
+  <content>
+    <VBox minWidth="0" spacing="16" styleClass="detail-content">
+      <VBox fx:id="emptyDetails" spacing="12" minWidth="0">
+        <Label fx:id="emptyTitle" styleClass="detail-name" wrapText="true" minHeight="-Infinity" />
+        <Label fx:id="emptyHint" styleClass="contact-secondary" wrapText="true" minHeight="-Infinity" />
+      </VBox>
+      <VBox fx:id="details" spacing="16" minWidth="0" visible="false" managed="false">
+        <VBox spacing="4" minWidth="0">
+          <HBox alignment="CENTER_LEFT" spacing="12">
+            <Label fx:id="role" styleClass="contact-role" minHeight="-Infinity" />
+            <Label fx:id="contactIndex" styleClass="field-caption" alignment="CENTER_RIGHT"
+                   maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+          </HBox>
+          <Label fx:id="name" styleClass="detail-name" wrapText="true" minHeight="-Infinity" />
+        </VBox>
+        <Separator />
+        <FlowPane fx:id="contactFields" hgap="24" vgap="16" minWidth="0">
+          <VBox spacing="4" minWidth="0">
+            <Label text="Phone" styleClass="field-caption" />
+            <Label fx:id="phone" wrapText="true" minHeight="-Infinity" />
+          </VBox>
+          <VBox spacing="4" minWidth="0">
+            <Label text="Email" styleClass="field-caption" />
+            <Label fx:id="email" wrapText="true" minHeight="-Infinity" />
+          </VBox>
+        </FlowPane>
+        <VBox spacing="4" minWidth="0">
+          <Label text="Address" styleClass="field-caption" />
+          <Label fx:id="address" wrapText="true" minHeight="-Infinity" />
+        </VBox>
+        <FlowPane fx:id="tuitionFields" hgap="24" vgap="16" minWidth="0" styleClass="tuition-fields">
+          <VBox spacing="4" minWidth="0">
+            <Label text="Subject" styleClass="field-caption" />
+            <Label fx:id="subject" wrapText="true" minHeight="-Infinity" />
+          </VBox>
+          <VBox spacing="4" minWidth="0">
+            <Label text="Academic level" styleClass="field-caption" />
+            <Label fx:id="level" wrapText="true" minHeight="-Infinity" />
+          </VBox>
+        </FlowPane>
+        <VBox spacing="8" minWidth="0">
+          <Label text="Note" styleClass="field-caption" />
+          <Label fx:id="note" wrapText="true" minHeight="-Infinity" />
+        </VBox>
+        <Label fx:id="links" wrapText="true" minHeight="-Infinity" />
+        <FlowPane fx:id="tags" hgap="7" vgap="4" minWidth="0" />
+      </VBox>
+    </VBox>
+  </content>
+</ScrollPane>

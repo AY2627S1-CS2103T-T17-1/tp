@@ -57,6 +57,7 @@ public class EditCommandParserTest {
 
     private static final String MESSAGE_INVALID_FORMAT =
             String.format(MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE);
+    private static final String MESSAGE_INVALID_INDEX = "Index must be a positive integer shown in the current list.";
 
     private EditCommandParser parser = new EditCommandParser();
 
@@ -90,11 +91,14 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_invalidPreamble_failure() {
-        // negative index
-        assertParseFailure(parser, "-5" + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
+        // A single invalid index gets the same feedback as view, delete, and link
+        assertParseFailure(parser, "-5" + NAME_DESC_AMY, MESSAGE_INVALID_INDEX);
+        assertParseFailure(parser, "0" + NAME_DESC_AMY, MESSAGE_INVALID_INDEX);
+        assertParseFailure(parser, "abc" + NAME_DESC_AMY, MESSAGE_INVALID_INDEX);
 
-        // zero index
-        assertParseFailure(parser, "0" + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
+        // An index too large for an int cannot exist in the displayed list
+        assertParseFailure(parser, "2147483648" + NAME_DESC_AMY,
+                "No contact exists at index 2147483648 in the current list.");
 
         // invalid arguments being parsed as preamble
         assertParseFailure(parser, "1 some random string", MESSAGE_INVALID_FORMAT);
@@ -110,6 +114,8 @@ public class EditCommandParserTest {
         assertParseFailure(parser, "1" + INVALID_EMAIL_DESC, Email.MESSAGE_CONSTRAINTS); // invalid email
         assertParseFailure(parser, "1" + INVALID_ADDRESS_DESC, Address.MESSAGE_CONSTRAINTS); // invalid address
         assertParseFailure(parser, "1" + INVALID_TAG_DESC, Tag.MESSAGE_CONSTRAINTS); // invalid tag
+        assertParseFailure(parser, "1 t/Café", Tag.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 t/数学", Tag.MESSAGE_CONSTRAINTS);
 
         // invalid phone followed by valid email
         assertParseFailure(parser, "1" + INVALID_PHONE_DESC + EMAIL_DESC_AMY, Phone.MESSAGE_CONSTRAINTS);
@@ -271,11 +277,21 @@ public class EditCommandParserTest {
      */
     @Test
     public void parse_invalidRoleSpecificValues_failure() {
-        assertParseFailure(parser, "1 s/", Subject.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, "1 l/", Level.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, "1 s/Math*", Subject.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, "1 l/Secondary.3", Level.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, "1 o/" + "n".repeat(201), Note.MESSAGE_CONSTRAINTS);
+    }
+
+    /**
+     * Checks that empty student fields are retained for role-aware validation during command execution.
+     */
+    @Test
+    public void parse_emptyRoleSpecificValues_success() {
+        EditPersonDescriptor subject = new EditPersonDescriptorBuilder().withEmptySubject().build();
+        EditPersonDescriptor level = new EditPersonDescriptorBuilder().withEmptyLevel().build();
+
+        assertParseSuccess(parser, "1 s/", new EditCommand(INDEX_FIRST_PERSON, subject));
+        assertParseSuccess(parser, "1 l/", new EditCommand(INDEX_FIRST_PERSON, level));
     }
 
     /**

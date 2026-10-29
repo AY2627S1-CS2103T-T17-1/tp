@@ -1,9 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<StackPane styleClass="stack-pane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
-  <TextField fx:id="commandTextField" onAction="#handleCommandEntered" promptText="Enter command here..."/>
-</StackPane>
+<VBox styleClass="command-area" spacing="8" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1">
+  <HBox alignment="CENTER_LEFT" spacing="12">
+    <Label text="COMMAND" styleClass="command-caption" minHeight="-Infinity" minWidth="-Infinity" />
+    <Label text="Type help for command guidance" styleClass="command-guidance" wrapText="true"
+           minWidth="0" minHeight="-Infinity" maxWidth="Infinity" alignment="CENTER_RIGHT"
+           textAlignment="RIGHT" HBox.hgrow="ALWAYS" />
+  </HBox>
+  <StackPane>
+    <TextField fx:id="commandTextField" onAction="#handleCommandEntered" promptText="Type a command…"
+               minWidth="0" prefHeight="44" />
+    <!-- These cues overlay the field's padding and never intercept typing, clicks, or focus. -->
+    <HBox styleClass="command-cues" alignment="CENTER_LEFT" mouseTransparent="true">
+      <Label text="&gt;" styleClass="command-chevron" />
+      <Region HBox.hgrow="ALWAYS" />
+      <Label text="Enter ↵" styleClass="command-enter" />
+    </HBox>
+  </StackPane>
+</VBox>
 

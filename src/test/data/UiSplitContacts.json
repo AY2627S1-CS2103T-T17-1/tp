@@ -1,0 +1,73 @@
+{
+  "persons": [
+    {
+      "role": "student",
+      "name": "Daniel Tan",
+      "phone": "87652048",
+      "email": "daniel.tan@example.com",
+      "address": "12 Example Avenue, Singapore 540012",
+      "subject": "Science",
+      "level": "Secondary 2",
+      "note": "Review forces and energy before the next lesson.",
+      "tags": []
+    },
+    {
+      "role": "student",
+      "name": "Aisha Rahman",
+      "phone": "91234086",
+      "email": "aisha.rahman@example.com",
+      "address": "18 Maple Crescent, #05-12, Singapore 540018",
+      "subject": "Mathematics",
+      "level": "Secondary 3",
+      "note": "Prefers worked examples before independent practice. Focus on algebra and word problems.",
+      "tags": ["weekly"]
+    },
+    {
+      "role": "parent",
+      "name": "Mei Lin Wong",
+      "phone": "83467201",
+      "email": "mei.lin.wong@example.com",
+      "address": "12 Example Avenue, Singapore 540012",
+      "note": "Contact after 6 pm about Daniel and Ethan.",
+      "tags": []
+    },
+    {
+      "role": "student",
+      "name": "Ethan Lim",
+      "phone": "92345608",
+      "email": "ethan.lim@example.com",
+      "address": "12 Example Avenue, Singapore 540012",
+      "subject": "English",
+      "level": "Primary 6",
+      "tags": []
+    },
+    {
+      "role": "parent",
+      "name": "Farah Rahman",
+      "phone": "93334444",
+      "email": "farah.rahman@example.com",
+      "address": "18 Maple Crescent, #05-12, Singapore 540018",
+      "tags": []
+    }
+  ],
+  "links": [
+    {
+      "parentName": "Mei Lin Wong",
+      "parentPhone": "83467201",
+      "studentName": "Daniel Tan",
+      "studentPhone": "87652048"
+    },
+    {
+      "parentName": "Mei Lin Wong",
+      "parentPhone": "83467201",
+      "studentName": "Ethan Lim",
+      "studentPhone": "92345608"
+    },
+    {
+      "parentName": "Farah Rahman",
+      "parentPhone": "93334444",
+      "studentName": "Aisha Rahman",
+      "studentPhone": "91234086"
+    }
+  ]
+}

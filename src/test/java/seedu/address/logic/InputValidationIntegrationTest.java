@@ -25,6 +25,7 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
@@ -33,7 +34,7 @@ import seedu.address.storage.StorageManager;
 import seedu.address.testutil.PersonBuilder;
 
 /**
- * Checks long-email validation and Unicode whitespace through real commands and JSON persistence.
+ * Checks input validation and Unicode handling through real commands and JSON persistence.
  */
 public class InputValidationIntegrationTest {
     private static final String PARENT = "add r/parent n/Alpha Parent p/91000001 e/alpha@example.com"
@@ -60,6 +61,51 @@ public class InputValidationIntegrationTest {
         storage = new JsonAddressBookStorage(temporaryFolder.resolve("contacts.json"));
         logic = new LogicManager(model, new StorageManager(storage,
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
+    }
+
+    /**
+     * Checks that rejected address changes preserve contacts, links, the filtered and sorted view, and JSON.
+     *
+     * @throws Exception If fixture setup or a saved-file assertion fails.
+     */
+    @Test
+    public void execute_addressWithoutContent_rejectsAddAndEditWithoutChanges() throws Exception {
+        logic.execute(PARENT);
+        logic.execute(STUDENT);
+        logic.execute("link 1 2");
+        logic.execute("filter n/Alpha");
+        logic.execute("sort level");
+        String[] addresses = {"\u200B", "\u200D\uFEFF", "\u00A0\u2003", "\u0301\uFE0F"};
+        for (String address : addresses) {
+            String[] commands = {"edit 2 a/" + address,
+                "add r/parent n/Other Parent p/91000003 e/other@example.com a/" + address};
+            for (String command : commands) {
+                ParseException exception = assertRejectedWithoutChanges(command, ParseException.class);
+                assertEquals(Address.MESSAGE_CONSTRAINTS, exception.getMessage());
+            }
+        }
+        assertEquals("Showing 2 contacts.", logic.execute("list").getFeedbackToUser());
+    }
+
+    /**
+     * Checks that Unicode letters, marks, and format characters survive add, edit, and JSON reloads.
+     *
+     * @throws Exception If a valid command or storage round trip unexpectedly fails.
+     */
+    @Test
+    public void execute_unicodeAddress_preservesContentAndLinksAcrossReloads() throws Exception {
+        String address = "Cafe\u0301\u200D 1 Road";
+        logic.execute(PARENT.replace("1 Test Road", address));
+        logic.execute(STUDENT);
+        logic.execute("link 1 2");
+        assertEquals(address, storage.readAddressBook().orElseThrow().getPersonList().getFirst().getAddress().value);
+
+        String editedAddress = "شارع\u200C 12";
+        logic.execute("edit 1 a/" + editedAddress);
+        ReadOnlyAddressBook restored = storage.readAddressBook().orElseThrow();
+        assertEquals(editedAddress, restored.getPersonList().getFirst().getAddress().value);
+        assertEquals(model.getAddressBook(), restored);
+        assertEquals(1, restored.getLinkList().size());
     }
 
     /**
