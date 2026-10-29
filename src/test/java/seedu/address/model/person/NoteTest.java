@@ -29,6 +29,29 @@ public class NoteTest {
         assertEquals("Contact after 6 pm", new Note("  Contact after 6 pm  ").value);
     }
 
+    /**
+     * Checks Unicode padding, internal spacing, and length limits after normalization.
+     */
+    @Test
+    public void constructor_unicodePadding_normalizesBeforeCheckingLength() {
+        assertEquals("After\u20036 pm", new Note("\u2002After\u20036 pm\u3000").value);
+        assertEquals("a".repeat(200), new Note("\u2003" + "a".repeat(200) + "\u3000").value);
+        assertThrows(IllegalArgumentException.class, () -> new Note("\u2003" + "a".repeat(201)));
+    }
+
+    /**
+     * Checks that Java whitespace alone cannot form a note, while nonbreaking spaces remain content.
+     */
+    @Test
+    public void isValidNote_unicodeWhitespace_followsJavaWhitespaceDefinition() {
+        for (String blank : new String[] {"\u2003", " \t\u2002\u3000 "}) {
+            assertFalse(Note.isValidNote(blank));
+            assertThrows(IllegalArgumentException.class, () -> new Note(blank));
+        }
+        assertEquals("\u00a0", new Note("\u00a0").value);
+        assertEquals("\u200b", new Note("\u200b").value);
+    }
+
     @Test
     public void isValidNote() {
         assertFalse(Note.isValidNote(null));

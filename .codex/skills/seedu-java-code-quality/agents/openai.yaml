@@ -1,0 +1,3 @@
+interface:
+  display_name: "Seedu Java Code Quality"
+  short_description: "Review Java code quality using SE-EDU guidance"

@@ -15,6 +15,7 @@ public class FilterCommand extends Command {
     public static final String MESSAGE_USAGE = COMMAND_WORD + " [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]";
     public static final String MESSAGE_INVALID_FORMAT = "Invalid command format. Expected: " + MESSAGE_USAGE;
     public static final String MESSAGE_EMPTY_NAME = "Name filter requires at least one keyword.";
+    public static final String MESSAGE_INVALID_NAME_KEYWORD = "Name filter keywords must be nonblank single words.";
     public static final String MESSAGE_SUCCESS = "Showing %1$d matching contacts.";
     public static final String MESSAGE_NO_MATCHES = "No matching contacts.";
 

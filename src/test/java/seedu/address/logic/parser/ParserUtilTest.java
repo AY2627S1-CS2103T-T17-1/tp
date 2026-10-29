@@ -75,6 +75,20 @@ public class ParserUtilTest {
         });
     }
 
+    /**
+     * Checks that Unicode-only whitespace omits a note and nonblank notes share model normalization.
+     *
+     * @throws ParseException If a supported note unexpectedly fails validation.
+     */
+    @Test
+    public void parseNote_unicodeWhitespace_omitsBlankAndNormalizesContent() throws ParseException {
+        assertTrue(ParserUtil.parseNote("\u2003").isEmpty());
+        assertTrue(ParserUtil.parseNote(" \t\u2002\u3000 ").isEmpty());
+        assertEquals("After\u20036 pm", ParserUtil.parseNote("\u2003After\u20036 pm\u3000")
+                .orElseThrow().value);
+        assertEquals("\u00a0", ParserUtil.parseNote("\u00a0").orElseThrow().value);
+    }
+
     @Test
     public void parseIndex_invalidInput_throwsParseException() {
         assertThrows(ParseException.class, () -> ParserUtil.parseIndex("10 a"));

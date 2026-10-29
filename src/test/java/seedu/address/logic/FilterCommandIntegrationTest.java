@@ -192,7 +192,8 @@ public class FilterCommandIntegrationTest {
         logic.execute("filter s/Mathematics");
         assertEquals(AMY, logic.execute("view 1").getContact().orElseThrow());
         assertEquals(ZOE, logic.execute("view 3").getContact().orElseThrow());
-        assertEquals("Deleted contact: Amy Tan.", logic.execute("delete 1").getFeedbackToUser());
+        assertEquals("Deleted contact: student Amy Tan (" + AMY.getPhone().value + ").",
+                logic.execute("delete 1").getFeedbackToUser());
         assertEquals(List.of(AMY_LOWER, ZOE), logic.getFilteredPersonList());
         assertEquals(AMY_LOWER, logic.execute("view 1").getContact().orElseThrow());
         assertThrows(CommandException.class, "No contact exists at index 3 in the current list.", () ->
@@ -240,6 +241,32 @@ public class FilterCommandIntegrationTest {
             assertEquals(saved, Files.readString(storage.getAddressBookFilePath()));
         }
         assertEquals(0, saveCount);
+    }
+
+    /**
+     * Checks that the reported EM SPACE input preserves the active view and file and allows subsequent commands.
+     *
+     * @throws Exception If a valid command or reading the saved fixture unexpectedly fails.
+     */
+    @Test
+    public void execute_mixedUnicodeWhitespace_preservesStateAndAllowsRecovery() throws Exception {
+        logic.execute("filter s/Mathematics");
+        logic.execute("sort level");
+        List<Person> before = List.copyOf(logic.getFilteredPersonList());
+        Comparator<? super Person> comparator = model.getPersonListComparator();
+        String saved = Files.readString(storage.getAddressBookFilePath());
+
+        assertThrows(ParseException.class, FilterCommand.MESSAGE_INVALID_NAME_KEYWORD, () -> {
+            logic.execute("filter n/Amy \u2003 Tan");
+        });
+
+        assertEquals(before, logic.getFilteredPersonList());
+        assertSame(comparator, model.getPersonListComparator());
+        assertEquals(INSERTION_ORDER, model.getAddressBook().getPersonList());
+        assertEquals(saved, Files.readString(storage.getAddressBookFilePath()));
+        assertEquals(0, saveCount);
+        logic.execute("list");
+        assertEquals(INSERTION_ORDER, logic.getFilteredPersonList());
     }
 
     /**

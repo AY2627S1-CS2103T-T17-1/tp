@@ -3,6 +3,7 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalPersons.ALICE;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,9 +61,12 @@ import javafx.stage.Window;
 import seedu.address.MainApp;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.SortCommand;
+import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
+import seedu.address.model.person.Email;
 import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
@@ -152,6 +157,64 @@ public class ContactCardsUiTest {
             } finally {
                 stage.close();
             }
+        });
+    }
+
+    /**
+     * Checks normal error feedback and unchanged selection, expansion, ordering, and JSON for issue #119.
+     *
+     * @throws Exception If JavaFX execution or reading and writing the saved fixture fails.
+     */
+    @Test
+    void window_mixedUnicodeWhitespace_reportsErrorAndPreservesState() throws Exception {
+        callOnFxThread(() -> {
+            Person zoe = new PersonBuilder().withName("Zoe Tan").build();
+            Person amy = new PersonBuilder().withName("Amy Tan").build();
+            Person parent = new PersonBuilder().withName("Alpha Parent").withRole("parent").build();
+            List<Person> contacts = List.of(zoe, parent, amy);
+            Model model = new ModelManager();
+            contacts.forEach(model::addPerson);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataPath);
+            addressBookStorage.saveAddressBook(model.getAddressBook());
+            String saved = Files.readString(dataPath);
+            StorageManager storage = new StorageManager(addressBookStorage,
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(1000, 620);
+            try {
+                enter(root, "filter s/Mathematics");
+                enter(root, "view 2");
+                Comparator<? super Person> comparator = model.getPersonListComparator();
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+
+                String input = "filter n/Amy \u2003 Tan";
+                enter(root, input);
+
+                TextField commandField = (TextField) root.lookup("#commandTextField");
+                assertEquals(input, commandField.getText());
+                assertTrue(commandField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                assertEquals(FilterCommand.MESSAGE_INVALID_NAME_KEYWORD, feedback.getText());
+                assertEquals(List.of(amy, zoe), list(root).getItems());
+                assertSame(comparator, model.getPersonListComparator());
+                assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertEquals(contacts, model.getAddressBook().getPersonList());
+                assertEquals(saved, Files.readString(dataPath));
+
+                enter(root, "list");
+                assertEquals(contacts, list(root).getItems());
+                assertEquals("", commandField.getText());
+                assertFalse(commandField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+            } finally {
+                stage.close();
+            }
+            return null;
         });
     }
 
@@ -541,6 +604,112 @@ public class ContactCardsUiTest {
         assertEquals("A-Math", restored.getSubject().orElseThrow().value);
         assertEquals("Secondary 3", restored.getLevel().orElseThrow().value);
         assertEquals("Discuss x/foo", restored.getNote().orElseThrow().value);
+    }
+
+    /**
+     * Checks long-email feedback, selection preservation on rejection, and subsequent command recovery.
+     *
+     * @throws Exception If JavaFX execution or JSON verification fails.
+     */
+    @Test
+    void window_longEmail_handlesSuccessAndRejectionWithoutStaleFeedback() throws Exception {
+        Path dataPath = temporaryFolder.resolve("contacts.json");
+        String email = "a@" + "a.".repeat(2500) + "com";
+        AddressBook expected = callOnFxThread(() -> {
+            Model model = new ModelManager();
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(800, 600);
+            try {
+                enter(root, "add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Road");
+                enter(root, "add r/parent n/Email Parent p/91000002 e/" + email + " a/2 Road");
+                TextField field = (TextField) root.lookup("#commandTextField");
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                assertEquals("Added parent: Email Parent.", feedback.getText());
+                assertEquals("", field.getText());
+                assertFalse(field.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+                enter(root, "view 1");
+                Person selected = (Person) list(root).getSelectionModel().getSelectedItem();
+                AddressBook before = new AddressBook(model.getAddressBook());
+                String invalidCommand = "edit 1 e/" + email + ".";
+                enter(root, invalidCommand);
+                assertEquals(Email.MESSAGE_CONSTRAINTS, feedback.getText());
+                assertTrue(field.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+                assertEquals(invalidCommand, field.getText());
+                assertEquals(before, model.getAddressBook());
+                assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                enter(root, "list");
+                assertEquals("Showing 2 contacts.", feedback.getText());
+                assertEquals("", field.getText());
+                assertFalse(field.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+                saveSnapshot(root, "input-validation-email");
+                return before;
+            } finally {
+                stage.close();
+            }
+        });
+        assertEquals(expected, new JsonAddressBookStorage(dataPath).readAddressBook().orElseThrow());
+    }
+
+    /**
+     * Checks Unicode note clearing, sort selection retention, list restoration, and read-only JSON behavior.
+     *
+     * @throws Exception If JavaFX execution or JSON verification fails.
+     */
+    @Test
+    void window_unicodeWhitespace_updatesNotesAndRetainsDisplayedContactState() throws Exception {
+        Path dataPath = temporaryFolder.resolve("contacts.json");
+        AddressBook expected = callOnFxThread(() -> {
+            Model model = new ModelManager();
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(800, 600);
+            try {
+                enter(root, "add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Road o/Original");
+                enter(root, "add r/student n/Alpha Student p/91000002 e/student@example.com"
+                        + " a/2 Road s/Mathematics l/Secondary 3");
+                enter(root, "link 1 2");
+                enter(root, "edit 1 o/\u2003 a/1 Road");
+                enter(root, "view 1");
+                assertEquals("Note: None", label(selectedCard(root), "note").getText());
+                Person selected = (Person) list(root).getSelectionModel().getSelectedItem();
+                assertTrue(selected.getNote().isEmpty());
+                String saved = Files.readString(dataPath);
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                enter(root, "\u2003sort \u2002LEVEL\u3000");
+                assertEquals("Contacts sorted by academic level.", feedback.getText());
+                assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
+                assertEquals("2.", label(selectedCard(root), "id").getText());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                enter(root, "sort \u2003level extra\u3000");
+                assertEquals("Invalid command format. Expected: sort level", feedback.getText());
+                assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                enter(root, "\u2003list\u3000");
+                assertEquals("Showing 2 contacts.", feedback.getText());
+                assertEquals("1.", label(selectedCard(root), "id").getText());
+                assertFalse(selectedCard(root).lookup("#details").isVisible());
+                assertFalse(((TextField) root.lookup("#commandTextField")).getStyleClass()
+                        .contains(CommandBox.ERROR_STYLE_CLASS));
+                assertEquals(saved, Files.readString(dataPath));
+                assertEquals(1, model.getAddressBook().getLinkList().size());
+                enter(root, "view 1");
+                saveSnapshot(root, "input-validation-whitespace");
+                return new AddressBook(model.getAddressBook());
+            } finally {
+                stage.close();
+            }
+        });
+        assertEquals(expected, new JsonAddressBookStorage(dataPath).readAddressBook().orElseThrow());
     }
 
     @Test

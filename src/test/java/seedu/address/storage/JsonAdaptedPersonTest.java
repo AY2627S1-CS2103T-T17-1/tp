@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.storage.JsonAdaptedPerson.INVALID_PARENT_FIELDS_MESSAGE;
+import static seedu.address.storage.JsonAdaptedPerson.MESSAGE_NULL_TAG;
 import static seedu.address.storage.JsonAdaptedPerson.MISSING_FIELD_MESSAGE_FORMAT;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.BENSON;
@@ -23,6 +24,7 @@ import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.Role;
 import seedu.address.model.person.Subject;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Tests JSON-to-model field validation and compatibility with stored contact records.
@@ -139,6 +141,16 @@ public class JsonAdaptedPersonTest {
     }
 
     @Test
+    public void toModelType_nullTag_throwsIllegalValueException() {
+        List<JsonAdaptedTag> invalidTags = new ArrayList<>(VALID_TAGS);
+        invalidTags.add(null);
+        JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
+                VALID_SUBJECT, VALID_LEVEL, VALID_NOTE, invalidTags);
+
+        assertThrows(IllegalValueException.class, MESSAGE_NULL_TAG, person::toModelType);
+    }
+
+    @Test
     public void toModelType_invalidRole_throwsIllegalValueException() {
         JsonAdaptedPerson person =
                 createPerson(INVALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
@@ -204,6 +216,49 @@ public class JsonAdaptedPersonTest {
         JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
                 VALID_SUBJECT, VALID_LEVEL, null, VALID_TAGS);
         assertEquals(BENSON, person.toModelType());
+    }
+
+    /**
+     * Checks that previously stored blank notes remain loadable without changing the other contact fields.
+     *
+     * @throws Exception If a compatible contact cannot be converted.
+     */
+    @Test
+    public void toModelType_whitespaceOnlyNote_returnsPersonWithoutNote() throws Exception {
+        for (String blank : List.of("", " \t ", "\u2003", "\u2002\u3000")) {
+            JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
+                    VALID_SUBJECT, VALID_LEVEL, blank, VALID_TAGS);
+            assertEquals(BENSON, person.toModelType());
+        }
+    }
+
+    /**
+     * Checks that nonblank stored notes use the same Unicode padding normalization as commands.
+     *
+     * @throws Exception If a valid stored note cannot be converted.
+     */
+    @Test
+    public void toModelType_unicodePaddedNote_preservesInternalSpacing() throws Exception {
+        JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
+                VALID_SUBJECT, VALID_LEVEL, "\u2003After\u20036 pm\u3000", VALID_TAGS);
+        Person expected = new PersonBuilder(BENSON).withNote("After\u20036 pm").build();
+        assertEquals(expected, person.toModelType());
+        assertEquals(expected, new JsonAdaptedPerson(person.toModelType()).toModelType());
+    }
+
+    /**
+     * Checks that JSON loading and adapter round trips also handle long email domains safely.
+     *
+     * @throws Exception If a valid stored email cannot be converted.
+     */
+    @Test
+    public void toModelType_manyEmailDomainLabels_roundTripsValue() throws Exception {
+        String email = "a@" + "a.".repeat(2500) + "com";
+        JsonAdaptedPerson person = createPerson(VALID_ROLE, VALID_NAME, VALID_PHONE, email, VALID_ADDRESS,
+                VALID_SUBJECT, VALID_LEVEL, null, VALID_TAGS);
+        Person expected = new PersonBuilder(BENSON).withEmail(email).build();
+        assertEquals(expected, person.toModelType());
+        assertEquals(expected, new JsonAdaptedPerson(person.toModelType()).toModelType());
     }
 
     private static JsonAdaptedPerson createPerson(String role, String name, String phone, String email,
