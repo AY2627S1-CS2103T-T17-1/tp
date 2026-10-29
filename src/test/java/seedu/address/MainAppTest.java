@@ -38,7 +38,7 @@ import seedu.address.storage.StorageManager;
 public class MainAppTest {
 
     @TempDir
-    public Path temporaryFolder;
+    private Path temporaryFolder;
 
     /**
      * Checks that contact storage is resolved beneath the shared application home directory.
@@ -327,6 +327,9 @@ public class MainAppTest {
 
     /**
      * Creates storage backed by a temporary contact file for startup tests.
+     *
+     * @param dataPath Location of the temporary contact file.
+     * @return Storage backed by the contact file and a temporary preferences file.
      */
     private StorageManager createStorage(Path dataPath) {
         JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataPath);
