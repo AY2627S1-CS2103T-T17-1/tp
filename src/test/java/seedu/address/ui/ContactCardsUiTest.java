@@ -68,6 +68,7 @@ import seedu.address.logic.commands.SortCommand;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
+import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
@@ -606,6 +607,64 @@ public class ContactCardsUiTest {
         assertEquals("A-Math", restored.getSubject().orElseThrow().value);
         assertEquals("Secondary 3", restored.getLevel().orElseThrow().value);
         assertEquals("Discuss x/foo", restored.getNote().orElseThrow().value);
+    }
+
+    /**
+     * Checks rejected address feedback while preserving selection, expansion, links, the sorted view, and saved data.
+     *
+     * @throws Exception If JavaFX execution or JSON verification fails.
+     */
+    @Test
+    void window_addressWithoutContent_rejectsChangesAndPreservesView() throws Exception {
+        Path dataPath = temporaryFolder.resolve("contacts.json");
+        AddressBook expected = callOnFxThread(() -> {
+            Model model = new ModelManager();
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.resize(800, 600);
+            try {
+                enter(root, "add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Road");
+                enter(root, "add r/student n/Alpha Student p/91000002 e/student@example.com"
+                        + " a/2 Road s/Mathematics l/Secondary 3");
+                enter(root, "link 1 2");
+                enter(root, "filter n/Alpha");
+                enter(root, "sort level");
+                enter(root, "view 2");
+                Person selected = (Person) list(root).getSelectionModel().getSelectedItem();
+                AddressBook before = new AddressBook(model.getAddressBook());
+                List<Person> displayed = List.copyOf(model.getFilteredPersonList());
+                String saved = Files.readString(dataPath);
+                TextField field = (TextField) root.lookup("#commandTextField");
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                for (String address : new String[]{"\u200B", "\u00A0\u200D", "\u0301\uFE0F"}) {
+                    String[] commands = {"edit 2 a/" + address,
+                        "add r/parent n/Other Parent p/91000003 e/other@example.com a/" + address};
+                    for (String command : commands) {
+                        enter(root, command);
+                        assertEquals(Address.MESSAGE_CONSTRAINTS, feedback.getText());
+                        assertEquals(command, field.getText());
+                        assertTrue(field.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+                        assertEquals(before, model.getAddressBook());
+                        assertEquals(displayed, List.copyOf(model.getFilteredPersonList()));
+                        assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
+                        assertTrue(selectedCard(root).lookup("#details").isVisible());
+                        assertEquals(saved, Files.readString(dataPath));
+                    }
+                }
+                enter(root, "list");
+                assertEquals("Showing 2 contacts.", feedback.getText());
+                assertEquals("", field.getText());
+                assertFalse(field.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+                return before;
+            } finally {
+                stage.close();
+            }
+        });
+        assertEquals(expected, new JsonAddressBookStorage(dataPath).readAddressBook().orElseThrow());
     }
 
     /**

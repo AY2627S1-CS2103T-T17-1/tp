@@ -118,9 +118,11 @@ public class ParserUtil {
 
     /**
      * Parses a {@code String address} into an {@code Address}.
-     * Leading and trailing whitespaces will be trimmed.
+     * Uses the shared content constraints and removes surrounding characters at or below U+0020.
      *
-     * @throws ParseException if the given {@code address} is invalid.
+     * @param address Address text supplied by the user.
+     * @return The validated address normalized with {@link String#trim()}.
+     * @throws ParseException If the address violates the shared length, line, or content constraints.
      */
     public static Address parseAddress(String address) throws ParseException {
         requireNonNull(address);

@@ -149,10 +149,20 @@ which are stored in their canonical forms.
 | Name | 1–70 characters; starts with a letter or digit; letters, digits, spaces, apostrophes, full stops, and hyphens. |
 | Phone | 3–15 digits; optional leading `+`; spaces and hyphens only between digits. |
 | Email | One `@`, a nonempty local part, and at least two nonempty dot-separated domain labels. No internal whitespace; domain labels use letters, digits, and internal hyphens. |
-| Address | 1–150 printable characters on one line. |
+| Address | 1–150 characters on one line; no control characters; must include a Unicode letter, number, punctuation mark, or symbol. |
 | Subject | 1–40 characters; letters, digits, spaces, and `& + - ' / ( ) . ,`. |
 | Level | `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, or `JC 1`–`JC 2`. Input is case-insensitive and stored as, for example, `Secondary 3` or `JC 2`. |
 | Note | 1–200 printable characters on one line, or empty to omit it. |
+
+Addresses retain the existing trimming of leading and trailing characters at or below U+0020, including ordinary spaces
+and tabs. The length limit counts Unicode code points, including accompanying combining marks.
+Other Unicode spaces, format characters, and combining marks can accompany address content, but cannot
+satisfy the required content rule alone. For example, an address containing only ZERO WIDTH SPACE (U+200B),
+NON-BREAKING SPACE (U+00A0), or combining accents is rejected. Ordinary Unicode text and its accompanying marks or
+formatting are preserved.
+
+This rule uses Unicode categories: BRAILLE PATTERN BLANK (U+2800) counts as a symbol and HANGUL FILLER (U+3164)
+counts as a letter, even when they appear blank in a font.
 
 Notes also trim surrounding Java whitespace, including EN SPACE (U+2002), EM SPACE (U+2003), and IDEOGRAPHIC SPACE
 (U+3000), before checking the 200-character limit. Internal spacing in a nonblank note is preserved. A note containing
@@ -468,6 +478,10 @@ Links are saved in a `links` list. Each link names the parent and student by the
 `{ "parentName": "Bernice Yu", "parentPhone": "99272758", "studentName": "Alex Yeoh", "studentPhone": "87438807" }`.
 If you change a contact's name or phone in the file, update its links too: a link to a contact that does not exist
 makes the file invalid.
+
+The address content rule also applies to JSON. An older file containing an address made only of spaces, format
+characters, or combining marks is invalid under this rule. TutorContacts displays the load warning below and preserves
+the entire file. Back up the file, replace the invalid address with valid address text, and restart to load the contacts.
 
 A missing, empty, or Java-whitespace-only stored note is loaded as absent. Surrounding Java whitespace is removed
 from a nonblank note. Loading does not rewrite the contact file; the normalized values are saved with the next
