@@ -228,6 +228,8 @@ Format: `sort level`
 
 Example: run `find Amy`, then `sort level` to order only the matching contacts. Run `list` to reset.
 
+![Result of sort level after filter s/Mathematics: Bea Tan (Primary 5) is listed before Alex Tan (Secondary 3)](images/sortByLevelResult.png)
+
 ### Viewing a contact: `view`
 
 Shows the details of the specified contact from TutorContacts.
@@ -284,6 +286,8 @@ Format: `link PARENT_INDEX STUDENT_INDEX`
 Examples:
 * `list` followed by `link 2 1` links the parent at index 2 to the student at index 1.
 * `find Tan` followed by `link 1 3` links the first search result (a parent) to the third (a student).
+
+![Result of link 4 2: Mary Tan's expanded card lists her linked students with their phone numbers](images/linkContactsResult.png)
 
 Invalid input leaves contact data, links, and the displayed list unchanged:
 
@@ -342,6 +346,8 @@ Examples (assuming contact 1 is a student and contact 2 is a parent):
 * `edit 2 o/` clears an existing note on either role.
 * `edit 1 p/91234567 e/johndoe@example.com` updates the first displayed contact's phone and email.
 * `edit 2 n/Betsy Crower t/` changes the second displayed contact's name and clears all its tags.
+
+![Result of view 1 after edit 1 s/Physics l/JC 1 o/Prefers worked examples, showing the updated subject, level, and note](images/editStudentDetailsResult.png)
 
 For a parent contact, `edit 2 s/Math` is rejected with `Subject and level are only valid for student contacts.` An
 empty `s/` or `l/` is invalid for a student contact rather than a way to remove its subject or level.
@@ -402,6 +408,8 @@ Examples:
 * `filter n/Alice s/Mathematics l/Secondary 3` requires all three criteria.
 * `filter s/Mathematics`, then `view 1`, shows the first result in the displayed order.
 * `filter s/Mathematics`, then `list`, restores the complete insertion-order list.
+
+![Result of filter s/Mathematics showing only the two Mathematics students](images/filterContactsResult.png)
 
 Successful filtering reports `Showing N matching contacts.`, including `Showing 1 matching contacts.` for one match.
 Zero matches (including an empty address book) reports `No matching contacts.` and displays an empty list.
