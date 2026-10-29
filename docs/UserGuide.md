@@ -444,6 +444,8 @@ Additional text is rejected with `Invalid command format. Expected: exit`; for e
 TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `link`, `delete`, and
 `clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `filter`, `help`, and `exit` do not rewrite
 the data file. A failed save leaves both the displayed contacts and the existing data file unchanged.
+TutorContacts then says the change was not made, for example
+`Contact was not edited because TutorContacts could not save the data file.`
 
 ### Editing the data file
 

@@ -10,7 +10,9 @@ import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.ROLE_DESC_AMY;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.AMY;
+import static seedu.address.testutil.TypicalPersons.GEORGE;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -32,6 +34,7 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.person.ParentStudentLink;
 import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
@@ -290,9 +293,21 @@ public class LogicManagerTest {
                 new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
         logic = new LogicManager(model, storage);
 
-        String expectedMessage = String.format(LogicManager.FILE_OPS_PERMISSION_ERROR_FORMAT,
-                DUMMY_AD_EXCEPTION.getMessage());
-        assertCommandFailure("clear", CommandException.class, expectedMessage, expectedModel);
+        // The message explains what was not done, without the storage exception's file path.
+        assertCommandFailure("clear", CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_linkSaveFails_reportsGeneralMessageAndKeepsContactsUnlinked() throws Exception {
+        model.addPerson(ALICE);
+        model.addPerson(GEORGE);
+        addressBookStorage.failNextSave = true;
+
+        assertThrows(CommandException.class, LogicManager.MESSAGE_SAVE_FAILURE, () -> logic.execute("link 2 1"));
+
+        assertFalse(model.hasLink(ParentStudentLink.between(GEORGE, ALICE)));
+        assertEquals(List.of(), model.getLinkedPersons(GEORGE));
     }
 
     @Test
@@ -301,8 +316,8 @@ public class LogicManagerTest {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         addressBookStorage.failNextSave = true;
 
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
-        assertCommandFailure("edit 1 p/22222222", CommandException.class, expectedMessage, expectedModel);
+        assertCommandFailure("edit 1 p/22222222", CommandException.class, LogicManager.MESSAGE_EDIT_SAVE_FAILURE,
+                expectedModel);
         assertEquals(AMY, model.getFilteredPersonList().get(0));
     }
 
@@ -365,8 +380,8 @@ public class LogicManagerTest {
         String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
         addressBookStorage.failNextSave = true;
 
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error");
-        assertThrows(CommandException.class, expectedMessage, () -> logic.execute("edit 1 s/Physics o/"));
+        assertThrows(CommandException.class, LogicManager.MESSAGE_EDIT_SAVE_FAILURE, () ->
+                logic.execute("edit 1 s/Physics o/"));
 
         assertEquals(student, model.getFilteredPersonList().get(0));
         assertEquals(1, model.getFilteredPersonList().size());
@@ -513,10 +528,9 @@ public class LogicManagerTest {
         assertEquals(List.of(earlier, later), model.getFilteredPersonList());
 
         addressBookStorage.failNextSave = true;
-        assertThrows(CommandException.class,
-                String.format(LogicManager.FILE_OPS_ERROR_FORMAT, "temporary save error"), () -> {
-                    logic.execute("edit 1 n/Zed");
-                });
+        assertThrows(CommandException.class, LogicManager.MESSAGE_EDIT_SAVE_FAILURE, () -> {
+            logic.execute("edit 1 n/Zed");
+        });
         assertEquals(List.of(earlier, later), model.getFilteredPersonList());
 
         addressBookStorage.failNextSave = true;
