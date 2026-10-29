@@ -126,6 +126,25 @@ public class AddressBookTest {
     }
 
     @Test
+    public void removeLink_existingLink_removesOnlyThatLinkAndKeepsContacts() {
+        addLinkedGeorgeAliceAndBenson();
+
+        addressBook.removeLink(ParentStudentLink.between(GEORGE, ALICE));
+
+        assertEquals(List.of(ParentStudentLink.between(GEORGE, BENSON)), addressBook.getLinkList());
+        assertEquals(List.of(BENSON), addressBook.getLinkedPersons(GEORGE));
+        assertTrue(addressBook.hasPerson(ALICE));
+    }
+
+    @Test
+    public void removeLink_missingLink_throwsAssertionError() {
+        addressBook.addPerson(GEORGE);
+        addressBook.addPerson(ALICE);
+
+        assertThrows(AssertionError.class, () -> addressBook.removeLink(ParentStudentLink.between(GEORGE, ALICE)));
+    }
+
+    @Test
     public void setLinks_duplicateLinks_throwsAssertionError() {
         ParentStudentLink link = ParentStudentLink.between(GEORGE, ALICE);
 

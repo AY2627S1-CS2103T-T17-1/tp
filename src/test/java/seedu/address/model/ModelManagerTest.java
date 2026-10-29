@@ -105,6 +105,25 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void removeLink_existingLink_unlinksContacts() {
+        modelManager.addPerson(GEORGE);
+        modelManager.addPerson(ALICE);
+        ParentStudentLink link = ParentStudentLink.between(GEORGE, ALICE);
+        modelManager.addLink(link);
+
+        modelManager.removeLink(link);
+
+        assertFalse(modelManager.hasLink(link));
+        assertEquals(List.of(), modelManager.getLinkedPersons(GEORGE));
+        assertTrue(modelManager.hasPerson(ALICE));
+    }
+
+    @Test
+    public void removeLink_nullLink_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> modelManager.removeLink(null));
+    }
+
+    @Test
     public void hasLink_nullLink_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> modelManager.hasLink(null));
     }

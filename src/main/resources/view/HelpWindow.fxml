@@ -77,6 +77,13 @@
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
+                <Label minHeight="-Infinity" text="Unlink a parent from a student" styleClass="command-title" />
+                <Label minHeight="-Infinity" text="unlink PARENT_INDEX STUDENT_INDEX" styleClass="command-syntax" />
+                <Label minHeight="-Infinity"
+                    text="Remove the link between the parent at PARENT_INDEX and the student at STUDENT_INDEX. Both contacts are kept. Example: unlink 2 1"
+                    wrapText="true" maxWidth="Infinity" />
+              </VBox>
+              <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="Edit a contact" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVEL] [o/NOTE] [t/TAG]..."
                     styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />

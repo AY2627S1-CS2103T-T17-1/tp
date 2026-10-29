@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.parser.ParserUtil.MESSAGE_INVALID_INDEX;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
+import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 
 import java.util.List;
 import java.util.Set;
@@ -44,6 +45,7 @@ public class ParserUtilTest {
     private static final String VALID_ROLE = "student";
 
     private static final String WHITESPACE = " \t\r\n";
+    private static final String TWO_INDEX_FORMAT_MESSAGE = "Expected two indices.";
 
     @Test
     public void parseStudentFields_normalizesAndRejectsInvalidValues() throws ParseException {
@@ -134,6 +136,30 @@ public class ParserUtilTest {
     @Test
     public void parseDisplayedIndex_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> ParserUtil.parseDisplayedIndex(null));
+    }
+
+    @Test
+    public void parseTwoDisplayedIndices_twoValidIndices_returnsBothInOrder() throws Exception {
+        assertEquals(List.of(INDEX_SECOND_PERSON, INDEX_FIRST_PERSON),
+                ParserUtil.parseTwoDisplayedIndices("  2 \t 01 ", TWO_INDEX_FORMAT_MESSAGE));
+    }
+
+    @Test
+    public void parseTwoDisplayedIndices_wrongArgumentCount_throwsParseException() {
+        for (String args : List.of("", "   ", "1", "1 2 3")) {
+            assertThrows(ParseException.class, TWO_INDEX_FORMAT_MESSAGE, () ->
+                    ParserUtil.parseTwoDisplayedIndices(args, TWO_INDEX_FORMAT_MESSAGE));
+        }
+    }
+
+    @Test
+    public void parseTwoDisplayedIndices_invalidIndexInEitherPosition_throwsParseException() {
+        for (String args : List.of("0 1", "1 0", "-1 2", "1 b")) {
+            assertThrows(ParseException.class, Messages.MESSAGE_INVALID_DISPLAYED_INDEX, () ->
+                    ParserUtil.parseTwoDisplayedIndices(args, TWO_INDEX_FORMAT_MESSAGE));
+        }
+        assertThrows(ParseException.class, "No contact exists at index 2147483648 in the current list.", () ->
+                ParserUtil.parseTwoDisplayedIndices("1 2147483648", TWO_INDEX_FORMAT_MESSAGE));
     }
 
     @Test

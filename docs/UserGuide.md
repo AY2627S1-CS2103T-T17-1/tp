@@ -281,7 +281,8 @@ Format: `link PARENT_INDEX STUDENT_INDEX`
   For example, a parent shows `Linked students: Alex Tan (91234567)` and a student shows `Linked parents: …`.
   A contact without links shows `None`.
 * Links are saved with your contacts. Deleting a linked contact removes its links, and editing a linked contact's
-  name or phone keeps its links.
+  name or phone keeps its links. To remove one link but keep both contacts, use
+  [`unlink`](#unlinking-a-parent-from-a-student-unlink).
 
 Examples:
 * `list` followed by `link 2 1` links the parent at index 2 to the student at index 1.
@@ -300,6 +301,32 @@ Invalid input leaves contact data, links, and the displayed list unchanged:
 | The first contact is not a parent | `The contact at index INDEX is not a parent.` |
 | The second contact is not a student | `The contact at index INDEX is not a student.` |
 | The two contacts are already linked | `PARENT_NAME (PHONE) is already linked to STUDENT_NAME (PHONE).` |
+
+### Unlinking a parent from a student: `unlink`
+
+Removes the link between a parent contact and a student contact. Both contacts are kept.
+
+Format: `unlink PARENT_INDEX STUDENT_INDEX`
+
+* Uses the same indices as `link`: the parent first, then the student, as numbered in the currently displayed list.
+* On success, the message is `Unlinked parent PARENT_NAME (PHONE) from student STUDENT_NAME (PHONE).`
+  The parent's card is highlighted and its details appear in the detail pane, so you can check its remaining links.
+* Only the link between these two contacts is removed. Their other links are kept.
+
+Example:
+* `list` followed by `unlink 2 1` removes the link between the parent at index 2 and the student at index 1.
+
+Invalid input leaves contact data, links, and the displayed list unchanged:
+
+| Input problem | Error message |
+| --- | --- |
+| Missing or extra arguments | `Invalid command format. Expected: unlink PARENT_INDEX STUDENT_INDEX` |
+| An index that is not a positive integer | `Index must be a positive integer shown in the current list.` |
+| An index outside the displayed list | `No contact exists at index INDEX in the current list.` |
+| The same index twice | `A contact cannot be unlinked from itself.` |
+| The first contact is not a parent | `The contact at index INDEX is not a parent.` |
+| The second contact is not a student | `The contact at index INDEX is not a student.` |
+| The two contacts are not linked | `PARENT_NAME (PHONE) is not linked to STUDENT_NAME (PHONE).` |
 
 ### Editing a contact: `edit`
 
@@ -482,7 +509,7 @@ Additional text is rejected with `Invalid command format. Expected: exit`; for e
 
 ### Saving the data
 
-TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `link`, `delete`, and
+TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `link`, `unlink`, `delete`, and
 `clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `filter`, `help`, and `exit` do not rewrite
 the data file. A failed save leaves both the displayed contacts and the existing data file unchanged.
 TutorContacts then says the change was not made, for example
@@ -560,6 +587,7 @@ Action | Format, Examples
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **Filter** | `filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]` (at least one criterion)<br> e.g., `filter s/Mathematics l/Secondary 3`
 **Link** | `link PARENT_INDEX STUDENT_INDEX`<br> e.g., `link 2 1`
+**Unlink** | `unlink PARENT_INDEX STUDENT_INDEX`<br> e.g., `unlink 2 1`
 **List** | `list`
 **Sort** | `sort level`
 **View** | `view INDEX`<br> e.g., `view 2`

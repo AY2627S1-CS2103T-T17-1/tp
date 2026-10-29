@@ -143,6 +143,17 @@ public class AddressBook implements ReadOnlyAddressBook {
     }
 
     /**
+     * Removes {@code link} from the address book. Both of its contacts are kept.
+     * The link must exist in the address book.
+     */
+    public void removeLink(ParentStudentLink link) {
+        requireNonNull(link);
+        assert hasLink(link) : "Link to remove must exist";
+
+        links.remove(link);
+    }
+
+    /**
      * Returns the contacts linked to {@code person}: the students of a parent, or the parents of a student.
      */
     public List<Person> getLinkedPersons(Person person) {

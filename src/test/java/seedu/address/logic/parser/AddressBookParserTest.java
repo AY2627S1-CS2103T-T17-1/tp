@@ -25,6 +25,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.LinkCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.SortCommand;
+import seedu.address.logic.commands.UnlinkCommand;
 import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
@@ -146,6 +147,12 @@ public class AddressBookParserTest {
     public void parseCommand_link() throws Exception {
         LinkCommand command = (LinkCommand) parser.parseCommand(LinkCommand.COMMAND_WORD + " 1 2");
         assertEquals(new LinkCommand(INDEX_FIRST_PERSON, INDEX_SECOND_PERSON), command);
+    }
+
+    @Test
+    public void parseCommand_unlink() throws Exception {
+        UnlinkCommand command = (UnlinkCommand) parser.parseCommand(UnlinkCommand.COMMAND_WORD + " 1 2");
+        assertEquals(new UnlinkCommand(INDEX_FIRST_PERSON, INDEX_SECOND_PERSON), command);
     }
 
     @Test
