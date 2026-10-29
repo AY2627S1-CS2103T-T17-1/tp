@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -28,6 +29,7 @@ public class ContactDetailPanel extends UiPart<Region> {
     private static final double CONTENT_PADDING = 24;
     private static final double TUITION_PADDING = 16;
     private static final double FIELD_GAP = 24;
+    private static final double MAX_TAG_LABEL_WIDTH = 320;
 
     private Person displayedContact;
 
@@ -78,6 +80,8 @@ public class ContactDetailPanel extends UiPart<Region> {
             boolean hasPairedFields = newBounds.getWidth() >= PAIRED_FIELDS_MIN_WIDTH;
             resizeFields(contactFields, availableWidth, hasPairedFields);
             resizeFields(tuitionFields, Math.max(0, availableWidth - 2 * TUITION_PADDING), hasPairedFields);
+            tags.setPrefWrapLength(availableWidth);
+            tags.setMaxWidth(availableWidth);
         });
         clear(false);
     }
@@ -105,11 +109,27 @@ public class ContactDetailPanel extends UiPart<Region> {
         showRelationships(person, linkedPersons);
         tags.getChildren().clear();
         person.getTags().stream().sorted(Comparator.comparing(tag -> tag.tagName))
-                .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
+                .map(tag -> createTagLabel(tag.tagName))
+                .forEach(tags.getChildren()::add);
         setShown(tags, !person.getTags().isEmpty());
         if (hasChangedContact) {
             detailScrollPane.setVvalue(0);
         }
+    }
+
+    /**
+     * Creates a tag that wraps within the available detail width, including after resizing.
+     *
+     * @param tagName Complete tag text to display.
+     * @return Label whose full text remains accessible through vertical scrolling.
+     */
+    private Label createTagLabel(String tagName) {
+        Label label = new Label(tagName);
+        label.setWrapText(true);
+        label.setMinWidth(0);
+        label.setMinHeight(Region.USE_PREF_SIZE);
+        label.maxWidthProperty().bind(Bindings.min(tags.widthProperty(), MAX_TAG_LABEL_WIDTH));
+        return label;
     }
 
     /**

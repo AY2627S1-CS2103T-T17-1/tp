@@ -17,6 +17,8 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -342,11 +344,34 @@ public class LogicManagerTest {
 
         assertThrows(CommandException.class, AddCommand.MESSAGE_PARENT_FIELDS, () -> logic.execute(
                 "edit 1 s/Math o/Changed note"));
+        assertThrows(CommandException.class, AddCommand.MESSAGE_PARENT_FIELDS, () -> logic.execute("edit 1 s/"));
+        assertThrows(CommandException.class, AddCommand.MESSAGE_PARENT_FIELDS, () -> logic.execute("edit 1 l/"));
 
         assertEquals(parent, model.getFilteredPersonList().get(0));
         assertEquals(1, model.getFilteredPersonList().size());
         assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
         assertEquals(1, addressBookStorage.saveCount);
+    }
+
+    /**
+     * Checks that long and numerous valid tags remain intact through edit parsing and persistence.
+     */
+    @Test
+    public void execute_editLongAndManyTags_persistsWithoutTruncation() throws Exception {
+        Person parent = new PersonBuilder().withRole("parent").build();
+        model.addPerson(parent);
+        addressBookStorage.saveAddressBook(model.getAddressBook());
+        String longTag = "A".repeat(1000);
+        String shortTags = IntStream.range(0, 199)
+                .mapToObj(index -> "t/T" + index)
+                .collect(Collectors.joining(" "));
+
+        logic.execute("edit 1 t/" + longTag + " " + shortTags);
+
+        Person editedParent = model.getAddressBook().getPersonList().getFirst();
+        assertEquals(200, editedParent.getTags().size());
+        assertTrue(editedParent.getTags().stream().anyMatch(tag -> tag.tagName.equals(longTag)));
+        assertEquals(model.getAddressBook(), addressBookStorage.readAddressBook().orElseThrow());
     }
 
     /**

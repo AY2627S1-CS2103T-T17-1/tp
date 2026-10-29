@@ -154,10 +154,20 @@ which are stored in their canonical forms.
 | Name | 1–70 characters; starts with a letter or digit; letters, digits, spaces, apostrophes, full stops, and hyphens. |
 | Phone | 3–15 digits; optional leading `+`; spaces and hyphens only between digits. |
 | Email | One `@`, a nonempty local part, and at least two nonempty dot-separated domain labels. No internal whitespace; domain labels use letters, digits, and internal hyphens. |
-| Address | 1–150 printable characters on one line. |
+| Address | 1–150 characters on one line; no control characters; must include a Unicode letter, number, punctuation mark, or symbol. |
 | Subject | 1–40 characters; letters, digits, spaces, and `& + - ' / ( ) . ,`. |
 | Level | `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, or `JC 1`–`JC 2`. Input is case-insensitive and stored as, for example, `Secondary 3` or `JC 2`. |
 | Note | 1–200 printable characters on one line, or empty to omit it. |
+
+Addresses retain the existing trimming of leading and trailing characters at or below U+0020, including ordinary spaces
+and tabs. The length limit counts Unicode code points, including accompanying combining marks.
+Other Unicode spaces, format characters, and combining marks can accompany address content, but cannot
+satisfy the required content rule alone. For example, an address containing only ZERO WIDTH SPACE (U+200B),
+NON-BREAKING SPACE (U+00A0), or combining accents is rejected. Ordinary Unicode text and its accompanying marks or
+formatting are preserved.
+
+This rule uses Unicode categories: BRAILLE PATTERN BLANK (U+2800) counts as a symbol and HANGUL FILLER (U+3164)
+counts as a letter, even when they appear blank in a font.
 
 Notes also trim surrounding Java whitespace, including EN SPACE (U+2002), EM SPACE (U+2003), and IDEOGRAPHIC SPACE
 (U+3000), before checking the 200-character limit. Internal spacing in a nonblank note is preserved. A note containing
@@ -232,7 +242,8 @@ Format: `view INDEX`
   All contact cards remain compact. Clicking a card or selecting it with the list's arrow keys also shows its details.
 * The detail pane shows email, address, note, linked contacts, and subject and academic level for students.
   An absent note is shown as `None`. Older student records without subject or level show `Not recorded` for those fields.
-  Existing tags, if any, appear in the detail pane.
+  Existing tags, if any, appear in the detail pane. Long tags wrap within its width, and all tags can be reached
+  by scrolling vertically.
 * Use `view` on another contact to change the detail pane. `list` keeps the selected contact and its details.
 * On startup, the pane prompts you to select a contact. An empty displayed list shows guidance to use `list` or add a contact.
 * The list and detail pane start at a resizable 40/60 split. Below 800 logical pixels of workspace width,
@@ -294,6 +305,8 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
 
 * `INDEX` is the positive number shown beside the contact in the currently displayed list. At least one field must
   follow it. Prefixes may appear in any order, and fields not supplied remain unchanged.
+  An invalid index gets the same messages as `view` and `delete`: `Index must be a positive integer shown in the
+  current list.` or `No contact exists at index INDEX in the current list.`
 * The tutor may edit `s/SUBJECT` and `l/LEVEL` for a **student contact**. These fields may be changed independently;
   `edit 1 s/Physics` keeps the student's existing level. A parent contact cannot be given either field. This includes
   empty `s/` or `l/` prefixes. `edit` cannot change a contact's role.
@@ -305,13 +318,20 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
   [Prefixes and literal text](#prefixes-and-literal-text).
 * `t/TAG` replaces all existing tags, rather than adding to them. An empty `t/` clears all tags; repeated `t/`
   prefixes can supply multiple replacement tags.
+  * A tag contains one or more ASCII letters (`A`-`Z`, `a`-`z`) or digits (`0`-`9`) and no other characters.
+  * Tags are case-sensitive. Repeating the exact same tag keeps one copy, while `priority` and `Priority` are
+    different tags.
+  * TutorContacts does not impose a tag-length or tag-count limit. Long tag names wrap, and large tag collections
+    remain within the detail pane's scrollable area.
 * Edits still follow the existing duplicate-contact rule: the same role and normalized name, together with a
-  matching normalized phone or case-insensitive email, is a duplicate. Invalid input, a duplicate, or a failed save
-  leaves the displayed and saved contact data unchanged. Successful edits are saved automatically.
+  matching normalized phone or case-insensitive email, is a duplicate. A duplicate is rejected with
+  `This contact duplicates an existing ROLE: NAME (PHONE).`, naming the existing contact.
+  Invalid input, a duplicate, or a failed save leaves the displayed and saved contact data unchanged.
+  Successful edits are saved automatically.
 * After a successful edit, TutorContacts reports `Edited person: ...` and displays the complete contact list again.
-  A search filter is cleared, so contact indices may change. Editing the selected contact keeps its updated details
-  visible at its new index. Editing another contact retains the current selection and refreshes linked-contact details.
-  The success message itself lists only the general contact fields.
+  A search filter is cleared, so contact indices may change. The edited contact becomes selected and its updated
+  details appear in the detail pane at its new index. Linked-contact details refresh after the edit.
+  The success message lists the general contact fields and tags; it does not list subject, level, or note.
 * Editing a linked contact's name or phone keeps its links to other contacts.
 
 Examples (assuming contact 1 is a student and contact 2 is a parent):
@@ -461,11 +481,21 @@ Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
 to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
 the first successful data-changing command. Advanced users can edit the JSON file directly.
+The file must contain a single JSON object. A file containing only `null`, or an object followed by another JSON value
+or other text, is invalid. Spaces, tabs, and line breaks around the object are allowed.
+
+Launching the JAR from a terminal in another folder still uses the data and preferences beside that JAR.
+If an older version saved your contacts under a different launch folder, close TutorContacts and copy that folder's
+`data/tutorcontacts.json` into the JAR folder's `data` directory. Back up both copies before replacing an existing file.
 
 Links are saved in a `links` list. Each link names the parent and student by their name and phone, for example
 `{ "parentName": "Bernice Yu", "parentPhone": "99272758", "studentName": "Alex Yeoh", "studentPhone": "87438807" }`.
 If you change a contact's name or phone in the file, update its links too: a link to a contact that does not exist
 makes the file invalid.
+
+The address content rule also applies to JSON. An older file containing an address made only of spaces, format
+characters, or combining marks is invalid under this rule. TutorContacts displays the load warning below and preserves
+the entire file. Back up the file, replace the invalid address with valid address text, and restart to load the contacts.
 
 A missing, empty, or Java-whitespace-only stored note is loaded as absent. Surrounding Java whitespace is removed
 from a nonblank note. Loading does not rewrite the contact file; the normalized values are saved with the next
@@ -480,7 +510,9 @@ Certain edits can also cause TutorContacts to behave unexpectedly (for example, 
 range). Edit the data file only if you are confident that you can update it correctly.
 </div>
 
-Window settings are stored separately in `preferences.json` next to the JAR file. If that file is invalid or unreadable,
+Window settings are stored separately in `preferences.json` next to the JAR file. You can also copy this file from an
+older launch folder while the app is closed if you want to retain its window settings.
+If the file is invalid or unreadable,
 TutorContacts uses default window settings and displays
 `Warning: TutorContacts could not load preferences.json. Default window settings are in use; the existing file was not changed.`
 The file is not overwritten at startup or exit. Repair or rename it before restarting if you want window settings to be

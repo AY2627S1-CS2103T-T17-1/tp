@@ -55,7 +55,7 @@
           <Label fx:id="note" wrapText="true" minHeight="-Infinity" />
         </VBox>
         <Label fx:id="links" wrapText="true" minHeight="-Infinity" />
-        <FlowPane fx:id="tags" hgap="7" vgap="4" />
+        <FlowPane fx:id="tags" hgap="7" vgap="4" minWidth="0" />
       </VBox>
     </VBox>
   </content>

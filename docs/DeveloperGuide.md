@@ -94,19 +94,25 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <img src="images/LogicClassDiagram.png" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below shows the successful `execute("delete 1")` path, assuming the displayed list is not empty.
 
 ![Interactions Inside the Logic Component for the `delete 1` Command](images/DeleteSequenceDiagram.png)
 
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
-</div>
+`DeleteCommand` requests the current displayed view with `Model#getFilteredPersonList()`. The note abbreviates
+the local lookup `displayedContacts.get(0)`, which resolves displayed index 1 to `contactToDelete`. Filtering and
+sorting determine which `Person` occupies that position. The command passes this contact to `Model#deletePerson(Person)`.
+
+For readability, bounds checks, index conversion, collection internals, linked-contact lookup, result construction,
+and object lifetime endings are omitted. `r` is the `CommandResult`; its feedback names the deleted contact and
+includes the removed-link count when applicable. The data snapshot and Storage save/rollback flow are also omitted:
+`LogicManager` saves the changed address book before returning `r`.
 
 How the `Logic` component works:
 
 1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
-1. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
-   Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
+1. The command queries or changes the `Model` when it is executed. For deletion, the displayed index is resolved
+   to a contact before the model is changed.
 1. The result of the command execution is encapsulated as a `CommandResult` object which is returned from `Logic`.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
@@ -688,7 +694,8 @@ in the current AB3 codebase.)
 
     Use case resumes at step 1.
 * 2b. The replacement contact would duplicate another contact under the existing role, name, phone, and email rule.
-  * 2b1. TutorContacts reports `This person already exists in the address book.` No contact data is changed.
+  * 2b1. TutorContacts reports `This contact duplicates an existing ROLE: NAME (PHONE).`, naming the existing contact.
+    No contact data is changed.
 
     Use case resumes at step 1.
 * 4a. TutorContacts cannot save the data file.
@@ -838,6 +845,14 @@ and is retained in stored data. `ExitCommandParser` rejects arguments before an 
 labels do not need to be reconsidered. This avoids recursive matcher backtracking for long domains while retaining
 the existing email grammar and shared command/JSON validation. No email-length limit is introduced.
 
+`Address` retains `String.trim()` normalization and the 1–150 code-point limit. Its regex requires at least one character
+in Unicode category `L`, `N`, `P`, or `S`, and still excludes controls (`Cc`) and line/paragraph separators (`Zl`, `Zp`).
+Formatting and combining marks are preserved alongside qualifying content. Values containing only spaces, formatting,
+or marks are rejected through both command parsing and JSON loading. This is a category-based policy: the letter
+U+3164 and symbol U+2800 satisfy it even when their rendering appears blank. Do not describe the rule as detecting
+every visually invisible value. A newly invalid stored address triggers the existing startup warning and write
+protection; users repair the preserved file before restarting. No address or contact is silently substituted or dropped.
+
 `AddressBookParser` strips outer command padding with `String.strip()`. `ListCommandParser` uses `isBlank()`, and
 `SortCommandParser` strips its criterion before comparing it with `level`. These methods use Java whitespace,
 including U+2003 EM SPACE; U+00A0 NON-BREAKING SPACE and U+200B ZERO WIDTH SPACE are not Java whitespace. Prefix
@@ -941,8 +956,8 @@ The prefix and student/parent flow tests in `ContactCardsUiTest` check prefix re
 through real command-box execution and JSON storage when `RUN_UI_TESTS=true`.
 
 `CommandResult` carries a `ContactListAction`, an optional target, and an optional previous contact.
-`add`, `view`, and `link` request selection. `edit` supplies an explicit old/new replacement pair, so the UI
-follows a selected edit without guessing identity from names or list indices. `list` retains selection and details.
+`add`, `view`, `link`, and `edit` request selection of their target contact. Successful edits select the updated
+contact after restoring the full list, including when another contact was selected. `list` retains selection and details.
 `MainWindow` applies presentation requests only after `Logic.execute` returns, including any required save.
 `PersonListPanel` suppresses transient JavaFX selection changes during execution and reconciles the final list
 using `ContactListState`. The state contains one selected contact; there is no independent expansion state.
@@ -950,6 +965,9 @@ Failed commands restore presentation against the final model; the logic layer re
 save failures.
 
 `ContactDetailPanel` owns role-specific fields, tags, missing-value labels, and relationship text.
+Tag labels wrap within the current detail width, and the tag container follows the viewport width so every
+tag remains reachable by vertical scrolling. The rendered-layout regression uses a 1,000-character tag and
+199 additional tags in both side-by-side and stacked workspaces, including scrolling to the final tag.
 The workspace refreshes it after every command, even when a link changes without a list-change event.
 Relationships come from `Logic#getLinkedPersons`, including relatives outside the current filter.
 
@@ -986,7 +1004,8 @@ Manual checks for the UI contribution:
    Keyboard command entry must remain usable after selection changes.
 7. Click another card and use arrow-key list selection: the pane follows selection without changing feedback.
 8. Edit the selected contact's name, phone, and email; its new identity stays selected. Edit a linked contact:
-   the pane refreshes the relationship text. Run `link`: the parent becomes selected even without a list change.
+   that edited contact becomes selected. View its relative again and check the refreshed relationship text.
+   Run `link`: the parent becomes selected even without a list change.
 9. Filter out the selection, then run `list`: selection must remain empty. Test zero results, clear, and restart.
 10. Drag the divider and resize across the 800-pixel workspace breakpoint; selection and command text remain.
 11. Repeat add, edit, link, clear, and delete with a failing save and check both the list data and selection remain unchanged.
@@ -1060,41 +1079,141 @@ testers are expected to do more *exploratory* testing.
 
 1. Initial launch
 
-   1. Download the JAR file and copy it into an empty folder.
+   1. Download the JAR file and copy it into an empty writable folder.
 
-   1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
+   1. Open a command window in that folder and run `java -version`. Confirm that the version is Java 25.
+
+   1. Launch with `java -jar "tutorcontacts.jar"`, substituting the downloaded filename if it differs.<br>
+      Expected: The GUI opens with an empty contact list because `data/tutorcontacts.json` does not exist yet.
+      No sample contacts are added automatically. Run `list` and expect `No contacts to display.`
+      The initial window size may need adjustment.
 
 1. Saving window preferences
 
    1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
-   1. Relaunch the app by double-clicking the JAR file.<br>
+   1. Relaunch from the same folder with `java -jar "tutorcontacts.jar"`.<br>
        Expected: The most recent window size and location are retained.
 
-1. _{ more test cases …​ }_
+### Address content validation
+
+Use a disposable folder containing the rebuilt JAR and launch with Java 25. Add a fictional parent with
+`add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road`, then enter `view 1`.
+
+1. In PowerShell, copy an edit containing exactly ZERO WIDTH SPACE as its address:
+
+   ```powershell
+   Set-Clipboard -Value ('edit 1 a/' + [char]0x200B)
+   ```
+
+   Paste and execute it in TutorContacts.<br>
+   Expected: The address-constraint message replaces the prior feedback, error styling appears, and the input remains.
+   The selected, expanded contact and saved JSON remain unchanged. Repeat with an add command whose address is U+200B.
+
+1. Edit the address to `Café 1 Road` (the accent may be a separate combining character), then exit and restart.<br>
+   Expected: The edit succeeds and the address text reloads without losing its combining mark.
+
+1. Close the app and back up its disposable data file. Replace the address value with the JSON string `"\u200B"`.
+   Restart and try to add a contact.<br>
+   Expected: An empty list, the invalid-data warning, and a rejected add. The original file remains unchanged.
+   Repair the address while the app is closed and restart; saved contacts should load again.
+
+`AddressTest`, `ParserUtilTest`, `InputValidationIntegrationTest`, `MainAppTest`, and the desktop address test in
+`ContactCardsUiTest` cover this policy, preserved command/view state, JSON round trips, and invalid-file recovery.
 
 ### Deleting a person
 
 1. Deleting a person while all persons are being shown
 
-   1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
+   1. Prerequisites: Start with an empty contact list in a separate writable test folder, then enter:
+
+      ```text
+      add r/student n/Alpha Student p/91000001 e/alpha.student@example.com a/1 Test Road s/Mathematics l/Primary 1
+      add r/parent n/Alpha Parent p/91000002 e/alpha.parent@example.com a/2 Test Road
+      list
+      ```
+
+      Expected: `Showing 2 contacts.` Alpha Student is index 1 and Alpha Parent is index 2. Neither has any links.
 
    1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
+      Expected: `Deleted contact: Alpha Student.` Only Alpha Parent remains, renumbered to index 1.
 
    1. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
+      Expected: `Index must be a positive integer shown in the current list.` No contact is deleted.
 
-   1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
+   1. Other incorrect commands to try independently: `delete`, `delete x`, and `delete 2`.<br>
+      Expected: Respectively, `Invalid command format. Expected: delete INDEX`,
+      `Index must be a positive integer shown in the current list.`, and
+      `No contact exists at index 2 in the current list.` Alpha Parent remains unchanged.
 
-1. _{ more test cases …​ }_
+   1. Clean-up: Close the app and discard the disposable test folder when it is no longer needed.
+
+### Application files and launch directories
+
+`AppPaths` determines the application home from its own code-source URI. Packaged launches use the JAR's parent
+directory; IDE and Gradle launches from compiled class directories use the working directory, normally the project root.
+`MainApp` resolves contact data and preferences beneath this shared home. `LogsCenter` uses it for rotating log files
+and escapes literal percent characters before passing the path to `FileHandler`.
+The resolver does not use logging because it is also needed during logger initialization. If a log file cannot be
+opened, console logging remains available. An unavailable application code location fails explicitly rather than
+selecting another storage folder.
+
+1. Create a disposable test directory with three subdirectories: `jar-home`, `run-a`, and `run-b`.
+   Copy the newly built `build/libs/tutorcontacts.jar` into `jar-home`.
+
+1. Open a terminal in `run-a`, verify Java 25 with `java -version`, and run
+   `java -jar ../jar-home/tutorcontacts.jar`.<br>
+   Expected: A fresh empty contact list. `preferences.json` and `addressbook.log.*` appear in `jar-home`.
+
+1. Enter `add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road`.
+   Resize the window and exit.<br>
+   Expected: `jar-home/data/tutorcontacts.json` contains Alpha Parent, and preferences are saved beside the JAR.
+
+1. Launch the same JAR from `run-b` using `java -jar ../jar-home/tutorcontacts.jar`.<br>
+   Expected: Alpha Parent and the saved window settings reload. Changes are saved to the same files.
+   Both `run-a` and `run-b` remain empty.
+
+1. Repeat using a JAR directory named `Tutor Contacts café %h # +`.<br>
+   Expected: Spaces, Unicode, and punctuation do not alter file placement. Logs also stay in that directory.
+
+1. Logging failure: in a fresh `jar-home`, create a directory named `addressbook.log.0` before launching.<br>
+   Expected: Console output explains the log-file failure; the app still opens, and contact saves work normally.
+
+`AppPathsTest`, `LogsCenterTest`, and `MainAppTest` cover directory resolution, encoded paths, literal logging
+patterns, unavailable locations, development behavior, and the default storage paths. Verify packaged behavior with
+the rebuilt JAR because development tests load classes from directories rather than the release JAR.
 
 ### Saving data
 
-1. Dealing with missing/corrupted data files
+Run these checks in a separate test folder without personal contact data. Put `tutorcontacts.jar` in that folder,
+open a terminal there, verify Java 25 with `java -version`, and launch with `java -jar tutorcontacts.jar`.
+Close the app before preparing each test file.
 
-   1. _{Explain how to simulate missing or corrupted data files and state the expected behavior.}_
+1. Missing data file: start without `data/tutorcontacts.json`.<br>
+   Expected: An empty contact list with no invalid-data warning. Enter
+   `add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road`.<br>
+   Expected: `Added parent: Alpha Parent.` and a new data file. Restart; the contact should reload.
 
-1. _{ more test cases …​ }_
+1. Invalid root: create `data/tutorcontacts.json` containing exactly `null`, then start the app.<br>
+   Expected: An empty contact list and
+   `Warning: TutorContacts could not load data/tutorcontacts.json. The existing file was not changed.`
+
+1. Trailing content: repeat the previous test with each of these complete file contents:
+   `{"persons":[]} unexpected trailing content`, `{"persons":[]} {}`, and `{"persons":[]} null`.<br>
+   Expected: The same warning and empty list for every case; the valid first object must not bypass recovery.
+
+1. Protection and recovery: during each invalid-file session, enter `list`, then the add command above.<br>
+   Expected: `list` shows `No contacts to display.`; add shows
+   `Contact was not added because TutorContacts could not save the data file.` No contact is added.
+   Exit and compare the complete file contents with the original; they must be unchanged.
+   Replace the file with `{"persons":[]}`, restart, and repeat add.<br>
+   Expected: No warning; add succeeds and the new contact survives another restart.
+
+1. Valid trailing whitespace: create a file containing `{"persons":[]}` followed only by spaces, tabs,
+   and line breaks, then start the app.<br>
+   Expected: An empty list without a warning; add succeeds normally.
+
+`JsonUtil` checks that deserialization consumes the complete document and rejects a null file root with
+`DataLoadingException`. These failures use `MainApp`'s existing recovery path, which displays the warning and
+disables data-changing commands until restart. `JsonUtilTest`, `JsonAddressBookStorageTest`, and `MainAppTest`
+cover document validation, unchanged invalid files, startup protection, and recovery after repair and restart.

@@ -68,8 +68,9 @@ public class JsonAddressBookStorage {
     /**
      * Saves the given {@link ReadOnlyAddressBook} by atomically replacing the existing data file.
      *
-     * @param addressBook cannot be null.
-     * @throws IOException if the temporary file cannot be written or atomically moved into place.
+     * @param addressBook Address book to save; cannot be {@code null}.
+     * @throws IOException If the directory or temporary file cannot be created, the data cannot be written or
+     *     replaced atomically, or temporary-file cleanup fails.
      */
     public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
         saveAddressBook(addressBook, filePath);
