@@ -15,6 +15,7 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -22,6 +23,9 @@ import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
+import seedu.address.model.person.Person;
+import seedu.address.testutil.EditPersonDescriptorBuilder;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Tests command-driven selection and expansion without requiring a graphical display.
@@ -39,6 +43,78 @@ public class ContactListStateTest {
         assertEquals(BOB, state.getSelectedContact().orElseThrow());
         assertFalse(state.isExpanded(ALICE));
         assertFalse(state.isExpanded(BOB));
+    }
+
+    /**
+     * Checks that editing after linking and filtering selects the edited contact and collapses the old card.
+     *
+     * @throws Exception If a valid command unexpectedly fails.
+     */
+    @Test
+    void apply_editAfterLinkAndFilter_selectsEditedContact() throws Exception {
+        Model model = new ModelManager();
+        AddressBookParser parser = new AddressBookParser();
+        parser.parseCommand("add r/student n/Alex Tan p/91234567 e/alex@example.com a/1 Clementi Rd"
+                + " s/Mathematics l/Secondary 3").execute(model);
+        parser.parseCommand("add r/student n/Bea Tan p/92345678 e/bea@example.com a/1 Clementi Rd"
+                + " s/Mathematics l/Primary 5").execute(model);
+        parser.parseCommand("add r/parent n/Mary Tan p/98765432 e/mary@example.com a/1 Clementi Rd").execute(model);
+        Person parent = model.getFilteredPersonList().get(2);
+        state.apply(parser.parseCommand("link 3 1").execute(model), model.getFilteredPersonList());
+        state.apply(parser.parseCommand("filter n/Tan").execute(model), model.getFilteredPersonList());
+        assertEquals(parent, state.getSelectedContact().orElseThrow());
+        assertTrue(state.isExpanded(parent));
+
+        state.apply(parser.parseCommand("edit 1 o/Test").execute(model), model.getFilteredPersonList());
+
+        Person editedPerson = model.getFilteredPersonList().getFirst();
+        assertEquals("Test", editedPerson.getNote().orElseThrow().value);
+        assertEquals(editedPerson, state.getSelectedContact().orElseThrow());
+        assertFalse(state.isExpanded(parent));
+        assertFalse(state.isExpanded(editedPerson));
+    }
+
+    /**
+     * Checks that renaming a filtered contact selects it at its restored full-list index.
+     *
+     * @throws Exception If a valid command unexpectedly fails.
+     */
+    @Test
+    void apply_editFilteredContact_selectsContactAfterFilterReset() throws Exception {
+        Model model = new ModelManager();
+        model.addPerson(ALICE);
+        model.addPerson(BOB);
+        AddressBookParser parser = new AddressBookParser();
+        state.apply(parser.parseCommand("filter n/Bob").execute(model), model.getFilteredPersonList());
+        assertEquals(List.of(BOB), model.getFilteredPersonList());
+
+        state.apply(parser.parseCommand("edit 1 n/Robert").execute(model), model.getFilteredPersonList());
+
+        Person editedPerson = new PersonBuilder(BOB).withName("Robert").build();
+        assertEquals(List.of(ALICE, editedPerson), model.getFilteredPersonList());
+        assertEquals(editedPerson, state.getSelectedContact().orElseThrow());
+        assertFalse(state.isExpanded(editedPerson));
+    }
+
+    /**
+     * Checks that editing an expanded contact replaces the selection with its updated details.
+     *
+     * @throws CommandException If a valid edit unexpectedly fails.
+     */
+    @Test
+    void apply_editSelectedContact_selectsUpdatedCompactContact() throws CommandException {
+        Model model = new ModelManager();
+        model.addPerson(ALICE);
+        state.apply(new ViewCommand(Index.fromOneBased(1)).execute(model), model.getFilteredPersonList());
+        EditCommand edit = new EditCommand(Index.fromOneBased(1),
+                new EditPersonDescriptorBuilder().withPhone("99998888").build());
+
+        state.apply(edit.execute(model), model.getFilteredPersonList());
+
+        Person editedPerson = new PersonBuilder(ALICE).withPhone("99998888").build();
+        assertEquals(editedPerson, state.getSelectedContact().orElseThrow());
+        assertFalse(state.isExpanded(ALICE));
+        assertFalse(state.isExpanded(editedPerson));
     }
 
     @Test

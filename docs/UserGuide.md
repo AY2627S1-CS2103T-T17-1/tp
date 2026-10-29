@@ -478,6 +478,12 @@ Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
 to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
 the first successful data-changing command. Advanced users can edit the JSON file directly.
+The file must contain a single JSON object. A file containing only `null`, or an object followed by another JSON value
+or other text, is invalid. Spaces, tabs, and line breaks around the object are allowed.
+
+Launching the JAR from a terminal in another folder still uses the data and preferences beside that JAR.
+If an older version saved your contacts under a different launch folder, close TutorContacts and copy that folder's
+`data/tutorcontacts.json` into the JAR folder's `data` directory. Back up both copies before replacing an existing file.
 
 Links are saved in a `links` list. Each link names the parent and student by their name and phone, for example
 `{ "parentName": "Bernice Yu", "parentPhone": "99272758", "studentName": "Alex Yeoh", "studentPhone": "87438807" }`.
@@ -497,7 +503,9 @@ Certain edits can also cause TutorContacts to behave unexpectedly (for example, 
 range). Edit the data file only if you are confident that you can update it correctly.
 </div>
 
-Window settings are stored separately in `preferences.json` next to the JAR file. If that file is invalid or unreadable,
+Window settings are stored separately in `preferences.json` next to the JAR file. You can also copy this file from an
+older launch folder while the app is closed if you want to retain its window settings.
+If the file is invalid or unreadable,
 TutorContacts uses default window settings and displays
 `Warning: TutorContacts could not load preferences.json. Default window settings are in use; the existing file was not changed.`
 The file is not overwritten at startup or exit. Repair or rename it before restarting if you want window settings to be
