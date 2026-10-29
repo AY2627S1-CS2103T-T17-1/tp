@@ -310,7 +310,7 @@ Format: `unlink PARENT_INDEX STUDENT_INDEX`
 
 * Uses the same indices as `link`: the parent first, then the student, as numbered in the currently displayed list.
 * On success, the message is `Unlinked parent PARENT_NAME (PHONE) from student STUDENT_NAME (PHONE).`
-  The parent's card is highlighted and expanded, so you can check its remaining links.
+  The parent's card is highlighted and its details appear in the detail pane, so you can check its remaining links.
 * Only the link between these two contacts is removed. Their other links are kept.
 
 Example:

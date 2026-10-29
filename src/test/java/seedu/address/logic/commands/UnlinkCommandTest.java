@@ -42,7 +42,7 @@ public class UnlinkCommandTest {
         String expectedMessage = "Unlinked parent George Best (9482442) from student Alice Pauline (94351253).";
 
         assertCommandSuccess(new UnlinkCommand(INDEX_GEORGE, INDEX_FIRST_PERSON), model,
-                CommandResult.expandContact(expectedMessage, GEORGE), expectedModel);
+                CommandResult.selectContact(expectedMessage, GEORGE), expectedModel);
         assertEquals(List.of(BENSON), model.getLinkedPersons(GEORGE));
         assertTrue(model.hasPerson(ALICE));
     }

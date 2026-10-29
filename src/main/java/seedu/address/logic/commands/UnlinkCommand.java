@@ -34,7 +34,8 @@ public class UnlinkCommand extends ParentStudentCommand {
     }
 
     /**
-     * Removes the link between the two displayed contacts and expands the parent so the user can see the change.
+     * Removes the link between the two displayed contacts and selects the parent so the user can see its remaining
+     * links in its details.
      * Contact data is left unchanged if any check fails.
      */
     @Override
@@ -50,7 +51,7 @@ public class UnlinkCommand extends ParentStudentCommand {
         }
 
         model.removeLink(link);
-        return CommandResult.expandContact(
+        return CommandResult.selectContact(
                 String.format(MESSAGE_UNLINK_SUCCESS, describe(parent), describe(student)), parent);
     }
 }
