@@ -195,6 +195,8 @@ Examples:
 * `add r/student n/Alex Tan p/91234567 e/alex@example.com a/21 Clementi Ave 3 s/Math l/JC 1 o/Discuss \x/foo`
   stores the note `Discuss x/foo` using the [literal-prefix escape](#prefixes-and-literal-text).
 
+![Result of add r/PARENT n/Betsy Crowe …: the new parent is selected and her details appear in the detail pane](images/addParentResult.png)
+
 ### Listing all contacts: `list`
 
 Displays all contacts in insertion order, numbered from 1. This command clears filtering and sorting
@@ -322,6 +324,8 @@ Format: `unlink PARENT_INDEX STUDENT_INDEX`
 Example:
 * `list` followed by `unlink 2 1` removes the link between the parent at index 2 and the student at index 1.
 
+![Result of unlink 4 2: Mary Tan now lists only Alex Tan as a linked student](images/unlinkContactsResult.png)
+
 Invalid input leaves contact data, links, and the displayed list unchanged:
 
 | Input problem | Error message |
@@ -408,6 +412,8 @@ Examples:
 * `find John` returns `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`
 
+![Result of find Tan: Alex Tan, Bea Tan, and Mary Tan are shown](images/findContactsResult.png)
+
 ### Filtering contacts by name, subject, and level: `filter`
 
 Shows contacts that satisfy **all** supplied criteria.
@@ -488,6 +494,8 @@ Examples:
 * `list` followed by `delete 2` deletes the second displayed contact.
 * `find Betsy` followed by `delete 1` deletes the first search result.
 
+![Result of delete 3: Chris Lim is deleted and the remaining contacts are renumbered](images/deleteContactResult.png)
+
 Invalid input leaves contact data and the displayed list unchanged:
 
 | Input problem | Error message |
@@ -501,6 +509,8 @@ Invalid input leaves contact data and the displayed list unchanged:
 Deletes all contacts and links from TutorContacts.
 
 Format: `clear`
+
+![Result of clear: the contact list is empty](images/clearContactsResult.png)
 
 ### Exiting the program: `exit`
 
