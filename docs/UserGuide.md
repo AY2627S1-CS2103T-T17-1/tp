@@ -157,7 +157,7 @@ which are stored in their canonical forms.
 | Field | Accepted values |
 | --- | --- |
 | Role | `student` or `parent`, ignoring case; stored in lowercase. |
-| Name | 1–70 characters; starts with a letter or digit; letters, digits, spaces, apostrophes, full stops, and hyphens. |
+| Name | 1–70 characters; starts with a letter or digit; letters (including accented letters and other scripts' vowel signs and marks), digits, spaces, straight apostrophes (`'`), full stops, and hyphens. Replace a curly apostrophe (`’`) with `'`. Slashes are not allowed, even with a [backslash escape](#prefixes-and-literal-text), so write a patronymic such as `s/o` or `d/o` as `s.o.` or `d.o.`, for example `n/Ravi s.o. Kumar`. |
 | Phone | 3–15 digits; optional leading `+`; spaces and hyphens only between digits. |
 | Email | One `@`, a nonempty local part, and at least two nonempty dot-separated domain labels. No internal whitespace; domain labels use letters, digits, and internal hyphens. |
 | Address | 1–150 characters on one line; no control characters; must include a Unicode letter, number, punctuation mark, or symbol. |

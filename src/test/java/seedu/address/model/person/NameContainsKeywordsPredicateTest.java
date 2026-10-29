@@ -54,6 +54,10 @@ public class NameContainsKeywordsPredicateTest {
         // Mixed-case keywords
         predicate = new NameContainsKeywordsPredicate(List.of("aLIce", "bOB"));
         assertTrue(predicate.test(new PersonBuilder().withName("Alice Bob").build()));
+
+        // Keyword typed with a combining accent matches the stored precomposed name
+        predicate = new NameContainsKeywordsPredicate(List.of("Sine\u0301ad"));
+        assertTrue(predicate.test(new PersonBuilder().withName("Sin\u00e9ad Bhriain").build()));
     }
 
     @Test
