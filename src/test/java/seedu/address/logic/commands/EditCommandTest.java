@@ -118,7 +118,7 @@ public class EditCommandTest {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder(firstPerson).build();
         EditCommand editCommand = new EditCommand(INDEX_SECOND_PERSON, descriptor);
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        assertCommandFailure(editCommand, model, duplicateMessage(firstPerson));
     }
 
     @Test
@@ -130,7 +130,7 @@ public class EditCommandTest {
         EditCommand editCommand = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder(personInList).build());
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        assertCommandFailure(editCommand, model, duplicateMessage(personInList));
     }
 
     @Test
@@ -143,7 +143,9 @@ public class EditCommandTest {
         EditCommand editCommand = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder().withPhone(VALID_PHONE_BOB).build());
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        // The message names the existing contact that the edit would duplicate.
+        assertCommandFailure(editCommand, model, "This contact duplicates an existing "
+                + otherPerson.getRole() + ": " + otherPerson.getName() + ".");
     }
 
     @Test
@@ -319,4 +321,10 @@ public class EditCommandTest {
         assertEquals(expected, editCommand.toString());
     }
 
+    /**
+     * Returns the error expected when an edit would duplicate {@code existingPerson}.
+     */
+    private static String duplicateMessage(Person existingPerson) {
+        return String.format(EditCommand.MESSAGE_DUPLICATE_PERSON, existingPerson.getRole(), existingPerson.getName());
+    }
 }
