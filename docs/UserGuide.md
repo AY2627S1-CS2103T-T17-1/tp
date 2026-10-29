@@ -26,6 +26,12 @@ help you find and manage this information faster than traditional GUI applicatio
    A GUI similar to the one below should appear in a few seconds. On the first launch, the contact list is empty.<br>
    ![TutorContacts main window with a compact list and selected-contact detail pane](images/mainWindow.png)
 
+   <div markdown="span" class="alert alert-info">:information_source: **If TutorContacts does not start or save as expected:**<br>
+   **Launching:** use `java -jar tutorcontacts.jar` as above. Double-clicking the JAR file may fail, or may use a different Java version.<br>
+   **Saving:** keep the JAR file in a folder you can write to, such as a new folder in your Documents. TutorContacts saves its data in that folder, so a write-protected folder prevents saving.<br>
+   **macOS full screen:** if the main window is in full-screen mode, the Help window may open in a separate space. Exit full-screen mode, or switch spaces, to see it.
+   </div>
+
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
 
