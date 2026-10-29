@@ -17,7 +17,7 @@ public class CommandResult {
      * Describes the contact-list presentation requested after a successful command.
      */
     public enum ContactListAction {
-        NONE, SELECT, EXPAND, COLLAPSE
+        NONE, SELECT, REPLACE
     }
 
     private final String feedbackToUser;
@@ -30,21 +30,23 @@ public class CommandResult {
 
     private final ContactListAction contactListAction;
     private final Optional<Person> contact;
+    private final Optional<Person> previousContact;
 
     /**
      * Constructs a {@code CommandResult} with the specified fields.
      */
     public CommandResult(String feedbackToUser, boolean showHelp, boolean exit) {
-        this(feedbackToUser, showHelp, exit, ContactListAction.NONE, Optional.empty());
+        this(feedbackToUser, showHelp, exit, ContactListAction.NONE, Optional.empty(), Optional.empty());
     }
 
     private CommandResult(String feedbackToUser, boolean showHelp, boolean exit,
-            ContactListAction contactListAction, Optional<Person> contact) {
+            ContactListAction contactListAction, Optional<Person> contact, Optional<Person> previousContact) {
         this.feedbackToUser = requireNonNull(feedbackToUser);
         this.showHelp = showHelp;
         this.exit = exit;
         this.contactListAction = requireNonNull(contactListAction);
         this.contact = requireNonNull(contact);
+        this.previousContact = requireNonNull(previousContact);
     }
 
     /**
@@ -56,35 +58,28 @@ public class CommandResult {
     }
 
     /**
-     * Creates a result that selects a compact contact card after successful execution.
+     * Creates a result that selects a contact and shows its details after successful execution.
      *
      * @param feedbackToUser Feedback displayed to the user.
      * @param contact Contact to select in the displayed list.
-     * @return Result requesting selection without expansion.
+     * @return Result requesting selection and details.
      */
     public static CommandResult selectContact(String feedbackToUser, Person contact) {
-        return new CommandResult(feedbackToUser, false, false, ContactListAction.SELECT, Optional.of(contact));
+        return new CommandResult(feedbackToUser, false, false, ContactListAction.SELECT,
+                Optional.of(contact), Optional.empty());
     }
 
     /**
-     * Creates a result that selects and expands a contact card after successful execution.
+     * Creates a result that follows an edited contact only when its previous version was selected.
      *
      * @param feedbackToUser Feedback displayed to the user.
-     * @param contact Contact whose details should be shown.
-     * @return Result requesting selection and expansion.
+     * @param previousContact Contact replaced by the edit.
+     * @param contact Replacement contact in the final displayed list.
+     * @return Result describing the replacement without selecting an unrelated contact.
      */
-    public static CommandResult expandContact(String feedbackToUser, Person contact) {
-        return new CommandResult(feedbackToUser, false, false, ContactListAction.EXPAND, Optional.of(contact));
-    }
-
-    /**
-     * Creates a result that collapses contact details while retaining any visible selection.
-     *
-     * @param feedbackToUser Feedback displayed to the user.
-     * @return Result requesting compact cards.
-     */
-    public static CommandResult collapseContacts(String feedbackToUser) {
-        return new CommandResult(feedbackToUser, false, false, ContactListAction.COLLAPSE, Optional.empty());
+    public static CommandResult replaceContact(String feedbackToUser, Person previousContact, Person contact) {
+        return new CommandResult(feedbackToUser, false, false, ContactListAction.REPLACE,
+                Optional.of(contact), Optional.of(previousContact));
     }
 
     public ContactListAction getContactListAction() {
@@ -93,6 +88,15 @@ public class CommandResult {
 
     public Optional<Person> getContact() {
         return contact;
+    }
+
+    /**
+     * Returns the previous version of an edited contact, when this result describes a replacement.
+     *
+     * @return Previous contact for a replacement request, or an empty optional for other actions.
+     */
+    public Optional<Person> getPreviousContact() {
+        return previousContact;
     }
 
     public String getFeedbackToUser() {
@@ -122,12 +126,13 @@ public class CommandResult {
                 && showHelp == otherCommandResult.showHelp
                 && exit == otherCommandResult.exit
                 && contactListAction == otherCommandResult.contactListAction
-                && contact.equals(otherCommandResult.contact);
+                && contact.equals(otherCommandResult.contact)
+                && previousContact.equals(otherCommandResult.previousContact);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(feedbackToUser, showHelp, exit, contactListAction, contact);
+        return Objects.hash(feedbackToUser, showHelp, exit, contactListAction, contact, previousContact);
     }
 
     @Override
@@ -138,6 +143,7 @@ public class CommandResult {
                 .add("exit", exit)
                 .add("contactListAction", contactListAction)
                 .add("contact", contact)
+                .add("previousContact", previousContact)
                 .toString();
     }
 

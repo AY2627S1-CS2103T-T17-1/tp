@@ -8,15 +8,57 @@ import static seedu.address.testutil.Assert.assertThrows;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests printable address values, trimming, and length limits.
+ * Tests address content categories, trimming, and length limits.
  */
 public class AddressTest {
 
+    /**
+     * Checks that spaces, formatting, or combining marks cannot supply the required address content alone.
+     */
+    @Test
+    public void isValidAddress_noContentCharacter_returnsFalse() {
+        String[] addresses = {"\u200B", "\u200D", "\uFEFF", "\u00A0", "\u2003", "\u0301", "\uFE0F",
+            " \u200B\u200D\u00A0\u0301 "};
+        for (String address : addresses) {
+            assertFalse(Address.isValidAddress(address));
+            assertThrows(IllegalArgumentException.class, Address.MESSAGE_CONSTRAINTS, () -> new Address(address));
+        }
+    }
+
+    /**
+     * Checks that Unicode content and accompanying marks or formatting are preserved without substitution.
+     */
+    @Test
+    public void constructor_unicodeContent_preservesCharacters() {
+        String[] addresses = {"新加坡 1号", "شارع\u200C 12", "Cafe\u0301 Road", "1\u200BRoad", "-", "£", "½",
+            "\uD83C\uDFE0", "1\u2003Road"};
+        for (String address : addresses) {
+            assertTrue(Address.isValidAddress(address));
+            assertEquals(address, new Address("  " + address + "  ").value);
+        }
+    }
+
+    /**
+     * Checks the documented category boundary even for letters and symbols that can appear blank in a font.
+     */
+    @Test
+    public void isValidAddress_letterAndSymbolFillers_followCategoryRule() {
+        assertTrue(Address.isValidAddress("\u3164"));
+        assertTrue(Address.isValidAddress("\u2800"));
+    }
+
+    /**
+     * Checks unchanged length limits and rejection of internal controls and line separators.
+     */
     @Test
     public void constructor_printableAddress_enforcesBoundaries() {
         assertEquals("1 Road", new Address("  1 Road  ").value);
         assertTrue(Address.isValidAddress("a".repeat(150)));
         assertFalse(Address.isValidAddress("a".repeat(151)));
+        assertTrue(Address.isValidAddress("a" + "\u0301".repeat(149)));
+        assertFalse(Address.isValidAddress("a" + "\u0301".repeat(150)));
+        assertTrue(Address.isValidAddress("\uD83C\uDFE0".repeat(150)));
+        assertFalse(Address.isValidAddress("\uD83C\uDFE0".repeat(151)));
         assertFalse(Address.isValidAddress("1 Road\nUnit 2"));
         assertFalse(Address.isValidAddress("1 Road\tUnit 2"));
         assertFalse(Address.isValidAddress("1 Road\u2028Unit 2"));

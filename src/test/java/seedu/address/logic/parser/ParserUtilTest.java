@@ -209,6 +209,16 @@ public class ParserUtilTest {
         assertThrows(ParseException.class, () -> ParserUtil.parseAddress(INVALID_ADDRESS));
     }
 
+    /**
+     * Checks that address values without a content character produce actionable parser feedback.
+     */
+    @Test
+    public void parseAddress_noContentCharacter_throwsParseException() {
+        for (String address : new String[]{"\u200B", "\u00A0\u200D", "\u0301\uFE0F"}) {
+            assertThrows(ParseException.class, Address.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseAddress(address));
+        }
+    }
+
     @Test
     public void parseAddress_validValueWithoutWhitespace_returnsAddress() throws Exception {
         Address expectedAddress = new Address(VALID_ADDRESS);

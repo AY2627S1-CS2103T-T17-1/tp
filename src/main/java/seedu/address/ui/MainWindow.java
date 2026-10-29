@@ -3,12 +3,14 @@ package seedu.address.ui;
 import java.nio.file.Path;
 import java.util.logging.Logger;
 
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import seedu.address.commons.core.GuiSettings;
@@ -25,6 +27,8 @@ import seedu.address.logic.parser.exceptions.ParseException;
 public class MainWindow extends UiPart<Stage> {
 
     private static final String FXML = "MainWindow.fxml";
+    private static final PseudoClass COMPACT_HEIGHT = PseudoClass.getPseudoClass("compact-height");
+    private static final double COMPACT_HEIGHT_LIMIT = 500;
 
     private final Logger logger = LogsCenter.getLogger(getClass());
 
@@ -66,6 +70,7 @@ public class MainWindow extends UiPart<Stage> {
 
         // Configure the UI
         setWindowDefaultSize(logic.getGuiSettings());
+        configureCompactHeight();
 
         setAccelerators();
 
@@ -74,6 +79,16 @@ public class MainWindow extends UiPart<Stage> {
 
     public Stage getPrimaryStage() {
         return primaryStage;
+    }
+
+    /**
+     * Gives the two scrolling panes more room when the window has a small logical height.
+     */
+    private void configureCompactHeight() {
+        Region root = (Region) primaryStage.getScene().getRoot();
+        root.heightProperty().addListener((observable, oldHeight, height) ->
+                root.pseudoClassStateChanged(COMPACT_HEIGHT, height.doubleValue() < COMPACT_HEIGHT_LIMIT));
+        root.pseudoClassStateChanged(COMPACT_HEIGHT, root.getHeight() < COMPACT_HEIGHT_LIMIT);
     }
 
     private void setAccelerators() {
