@@ -1,38 +1,17 @@
 package seedu.address.ui;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Role;
 
 /**
- * A UI component that displays information of a {@code Person}.
+ * Displays a compact indexed contact summary; complete information belongs to the detail pane.
  */
 public class PersonCard extends UiPart<Region> {
-
     private static final String FXML = "PersonListCard.fxml";
-    private static final double MAX_TAG_LABEL_WIDTH = 320;
 
-    /**
-     * Note: Certain keywords such as "location" and "resources" are reserved keywords in JavaFX.
-     * As a consequence, UI elements' variable names cannot be set to such keywords
-     * or an exception will be thrown by JavaFX during runtime.
-     *
-     * @see <a href="https://github.com/se-edu/addressbook-level4/issues/336">The issue on AddressBook level 4</a>
-     */
-
-    public final Person person;
-
-    @FXML
-    private VBox details;
     @FXML
     private Label role;
     @FXML
@@ -42,101 +21,25 @@ public class PersonCard extends UiPart<Region> {
     @FXML
     private Label phone;
     @FXML
-    private Label address;
-    @FXML
-    private Label email;
-    @FXML
-    private Label subject;
-    @FXML
-    private Label level;
-    @FXML
-    private Label note;
-    @FXML
-    private Label links;
-    @FXML
-    private ScrollPane tagScroller;
-    @FXML
-    private FlowPane tags;
+    private Label summary;
 
     /**
-     * Creates a compact {@code PersonCard} with the given {@code Person} and index to display.
+     * Creates a compact card with a student tuition summary when applicable.
      *
      * @param person Contact to display.
-     * @param displayedIndex One-based index in the current list.
+     * @param displayedIndex One-based index in the current displayed list.
      */
     public PersonCard(Person person, int displayedIndex) {
-        this(person, displayedIndex, false);
-    }
-
-    /**
-     * Creates a compact or expanded card with role-specific contact details.
-     *
-     * @param person Contact to display.
-     * @param displayedIndex One-based index in the current list.
-     * @param isExpanded Whether to show the contact's complete details.
-     */
-    public PersonCard(Person person, int displayedIndex, boolean isExpanded) {
-        this(person, displayedIndex, isExpanded, List.of());
-    }
-
-    /**
-     * Creates a compact or expanded card that also lists the contact's linked students or parents.
-     *
-     * @param person Contact to display.
-     * @param displayedIndex One-based index in the current list.
-     * @param isExpanded Whether to show the contact's complete details.
-     * @param linkedPersons Students linked to a parent, or parents linked to a student.
-     */
-    public PersonCard(Person person, int displayedIndex, boolean isExpanded, List<Person> linkedPersons) {
         super(FXML);
-        this.person = person;
         id.setText(displayedIndex + ".");
         name.setText(person.getName().fullName);
+        phone.setText(person.getPhone().value);
         boolean isStudent = person.getRole() == Role.STUDENT;
         role.setText(isStudent ? "Student" : "Parent");
         role.getStyleClass().add(isStudent ? "student-role" : "parent-role");
-        phone.setText(person.getPhone().value);
-        address.setText("Address: " + person.getAddress().value);
-        email.setText("Email: " + person.getEmail().value);
-        subject.setText("Subject: " + person.getSubject().map(Object::toString).orElse("Not recorded"));
-        level.setText("Academic level: " + person.getLevel().map(Object::toString).orElse("Not recorded"));
-        note.setText("Note: " + person.getNote().map(Object::toString).orElse("None"));
-        links.setText((isStudent ? "Linked parents: " : "Linked students: ") + formatLinkedPersons(linkedPersons));
-        subject.setVisible(isStudent);
-        subject.setManaged(isStudent);
-        level.setVisible(isStudent);
-        level.setManaged(isStudent);
-        details.setVisible(isExpanded);
-        details.setManaged(isExpanded);
-        person.getTags().stream()
-                .sorted(Comparator.comparing(tag -> tag.tagName))
-                .map(tag -> createTagLabel(tag.tagName))
-                .forEach(tags.getChildren()::add);
-        tagScroller.setVisible(!person.getTags().isEmpty());
-        tagScroller.setManaged(!person.getTags().isEmpty());
-    }
-
-    /**
-     * Creates a tag label that wraps long values within the contact card.
-     */
-    private static Label createTagLabel(String tagName) {
-        Label label = new Label(tagName);
-        label.setWrapText(true);
-        label.setMinWidth(0);
-        label.setMinHeight(Region.USE_PREF_SIZE);
-        label.setMaxWidth(MAX_TAG_LABEL_WIDTH);
-        return label;
-    }
-
-    /**
-     * Returns each linked contact as {@code Name (phone)}, so that contacts with the same name can be told apart.
-     */
-    private static String formatLinkedPersons(List<Person> persons) {
-        if (persons.isEmpty()) {
-            return "None";
-        }
-        return persons.stream()
-                .map(person -> person.getName().fullName + " (" + person.getPhone().value + ")")
-                .collect(Collectors.joining(", "));
+        summary.setText(person.getLevel().map(Object::toString).orElse("Not recorded")
+                + " · " + person.getSubject().map(Object::toString).orElse("Not recorded"));
+        summary.setVisible(isStudent);
+        summary.setManaged(isStudent);
     }
 }

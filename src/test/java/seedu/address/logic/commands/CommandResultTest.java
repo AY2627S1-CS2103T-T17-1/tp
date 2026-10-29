@@ -15,33 +15,31 @@ import org.junit.jupiter.api.Test;
  */
 public class CommandResultTest {
     /**
-     * Checks that presentation actions and their target contacts participate in value equality.
+     * Checks that selection and edit replacement preserve distinct presentation contracts.
      */
     @Test
     public void contactActions_distinctRequests_preserveTargetAndValueEquality() {
-        CommandResult selected = CommandResult.selectContact("feedback", ALICE);
-        CommandResult expanded = CommandResult.expandContact("feedback", ALICE);
-        CommandResult collapsed = CommandResult.collapseContacts("feedback");
-
+        CommandResult selected = CommandResult.selectContact("feedback", BOB);
+        CommandResult replaced = CommandResult.replaceContact("feedback", ALICE, BOB);
         assertEquals(CommandResult.ContactListAction.SELECT, selected.getContactListAction());
-        assertEquals(CommandResult.ContactListAction.EXPAND, expanded.getContactListAction());
-        assertEquals(CommandResult.ContactListAction.COLLAPSE, collapsed.getContactListAction());
-        assertEquals(ALICE, expanded.getContact().orElseThrow());
-        assertTrue(collapsed.getContact().isEmpty());
-        assertNotEquals(selected, expanded);
-        assertNotEquals(selected, CommandResult.selectContact("feedback", BOB));
-        assertNotEquals(collapsed, new CommandResult("feedback"));
-        assertEquals(expanded, CommandResult.expandContact("feedback", ALICE));
-        assertEquals(expanded.hashCode(), CommandResult.expandContact("feedback", ALICE).hashCode());
+        assertEquals(CommandResult.ContactListAction.REPLACE, replaced.getContactListAction());
+        assertEquals(BOB, replaced.getContact().orElseThrow());
+        assertEquals(ALICE, replaced.getPreviousContact().orElseThrow());
+        assertTrue(selected.getPreviousContact().isEmpty());
+        assertNotEquals(selected, replaced);
+        assertNotEquals(replaced, CommandResult.replaceContact("feedback", BOB, BOB));
+        assertEquals(replaced, CommandResult.replaceContact("feedback", ALICE, BOB));
+        assertEquals(replaced.hashCode(), CommandResult.replaceContact("feedback", ALICE, BOB).hashCode());
     }
 
     /**
-     * Checks that selection and expansion always require a target contact.
+     * Checks that presentation targets cannot be null.
      */
     @Test
     public void contactActions_nullTarget_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> CommandResult.selectContact("feedback", null));
-        assertThrows(NullPointerException.class, () -> CommandResult.expandContact("feedback", null));
+        assertThrows(NullPointerException.class, () -> CommandResult.replaceContact("feedback", null, BOB));
+        assertThrows(NullPointerException.class, () -> CommandResult.replaceContact("feedback", ALICE, null));
     }
 
     @Test
@@ -94,7 +92,8 @@ public class CommandResultTest {
         String expected = CommandResult.class.getCanonicalName() + "{feedbackToUser="
                 + commandResult.getFeedbackToUser() + ", showHelp=" + commandResult.isShowHelp()
                 + ", exit=" + commandResult.isExit() + ", contactListAction=" + commandResult.getContactListAction()
-                + ", contact=" + commandResult.getContact() + "}";
+                + ", contact=" + commandResult.getContact()
+                + ", previousContact=" + commandResult.getPreviousContact() + "}";
         assertEquals(expected, commandResult.toString());
     }
 }

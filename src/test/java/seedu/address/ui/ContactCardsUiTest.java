@@ -3,6 +3,7 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,6 +40,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.geometry.Bounds;
+import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -47,7 +49,9 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
@@ -56,8 +60,12 @@ import javafx.scene.input.DataFormat;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.PickResult;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import seedu.address.MainApp;
@@ -68,6 +76,8 @@ import seedu.address.logic.commands.SortCommand;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
+import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.model.UserPrefs;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Person;
@@ -107,7 +117,7 @@ public class ContactCardsUiTest {
     }
 
     /**
-     * Checks command-box filtering, card numbering, selection, expansion, and list restoration.
+     * Checks command-box filtering, card numbering, selection, details, and list restoration.
      *
      * @throws Exception If JavaFX execution, command handling, or saving the snapshot fails.
      */
@@ -135,12 +145,12 @@ public class ContactCardsUiTest {
                 enter(root, "filter s/Mathematics");
                 assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
                 assertEquals("2.", label(selectedCard(root), "id").getText());
-                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(root.lookup("#details").isVisible());
                 saveSnapshot(root, "filter-name-order");
 
                 enter(root, "filter n/");
                 assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
-                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(root.lookup("#details").isVisible());
                 enter(root, "filter n/Amy Tan");
                 assertEquals(List.of(amy), list(root).getItems());
                 assertTrue(list(root).getSelectionModel().isEmpty());
@@ -156,7 +166,7 @@ public class ContactCardsUiTest {
                 assertEquals("1.", label(selectedCard(root), "id").getText());
                 enter(root, "list");
                 assertEquals(List.of(zoe, parent), list(root).getItems());
-                assertFalse(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(root.lookup("#details").isVisible());
             } finally {
                 stage.close();
             }
@@ -164,7 +174,7 @@ public class ContactCardsUiTest {
     }
 
     /**
-     * Checks normal error feedback and unchanged selection, expansion, ordering, and JSON for issue #119.
+     * Checks normal error feedback and unchanged selection, detail content, ordering, and JSON for issue #119.
      *
      * @throws Exception If JavaFX execution or reading and writing the saved fixture fails.
      */
@@ -193,7 +203,8 @@ public class ContactCardsUiTest {
                 enter(root, "view 2");
                 Comparator<? super Person> comparator = model.getPersonListComparator();
                 assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
-                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(detail(root).isVisible());
+                assertEquals(zoe.getName().fullName, label(detail(root), "name").getText());
 
                 String input = "filter n/Amy \u2003 Tan";
                 enter(root, input);
@@ -206,7 +217,8 @@ public class ContactCardsUiTest {
                 assertEquals(List.of(amy, zoe), list(root).getItems());
                 assertSame(comparator, model.getPersonListComparator());
                 assertEquals(zoe, list(root).getSelectionModel().getSelectedItem());
-                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(detail(root).isVisible());
+                assertEquals(zoe.getName().fullName, label(detail(root), "name").getText());
                 assertEquals(contacts, model.getAddressBook().getPersonList());
                 assertEquals(saved, Files.readString(dataPath));
 
@@ -414,44 +426,40 @@ public class ContactCardsUiTest {
     }
 
     @Test
-    void cards_compactAndExpanded_showApplicableFields() throws Exception {
+    void cards_andDetailPane_showApplicableFields() throws Exception {
         runOnFxThread(() -> {
             PersonCard compact = new PersonCard(ALICE, 1);
             assertEquals("Student", label(compact.getRoot(), "role").getText());
             assertEquals(ALICE.getName().fullName, label(compact.getRoot(), "name").getText());
-            assertEquals(ALICE.getPhone().value, label(compact.getRoot(), "phone").getText());
-            assertFalse(compact.getRoot().lookup("#details").isVisible());
-            assertFalse(compact.getRoot().lookup("#details").isManaged());
+            assertEquals("Secondary 3 · Mathematics", label(compact.getRoot(), "summary").getText());
+            assertNull(compact.getRoot().lookup("#details"));
+            PersonCard parentCard = new PersonCard(GEORGE, 2);
+            assertFalse(parentCard.getRoot().lookup("#summary").isManaged());
 
-            PersonCard student = new PersonCard(ALICE, 2, true);
-            assertTrue(student.getRoot().lookup("#details").isVisible());
-            assertTrue(student.getRoot().lookup("#details").isManaged());
-            assertEquals("Subject: " + ALICE.getSubject().orElseThrow(), label(student.getRoot(), "subject").getText());
-            assertEquals("Academic level: " + ALICE.getLevel().orElseThrow(),
-                    label(student.getRoot(), "level").getText());
-            assertEquals("Note: " + ALICE.getNote().orElseThrow(), label(student.getRoot(), "note").getText());
-            assertEquals("Email: " + ALICE.getEmail(), label(student.getRoot(), "email").getText());
-            assertEquals("Address: " + ALICE.getAddress(), label(student.getRoot(), "address").getText());
+            ContactDetailPanel panel = new ContactDetailPanel();
+            new Scene(panel.getRoot(), 600, 700);
+            panel.showContact(ALICE, 1, List.of(GEORGE));
+            layout(panel.getRoot());
+            assertEquals(ALICE.getEmail().value, label(panel.getRoot(), "email").getText());
+            assertEquals(ALICE.getAddress().value, label(panel.getRoot(), "address").getText());
+            assertEquals(ALICE.getNote().orElseThrow().value, label(panel.getRoot(), "note").getText());
+            assertEquals("Linked parents: George Best (9482442)", label(panel.getRoot(), "links").getText());
+            assertTrue(panel.getRoot().lookup("#tuitionFields").isManaged());
 
-            PersonCard parent = new PersonCard(GEORGE, 3, true);
-            assertEquals("Parent", label(parent.getRoot(), "role").getText());
-            assertFalse(parent.getRoot().lookup("#subject").isVisible());
-            assertFalse(parent.getRoot().lookup("#subject").isManaged());
-            assertFalse(parent.getRoot().lookup("#level").isManaged());
-            assertEquals("Note: " + GEORGE.getNote().orElseThrow(), label(parent.getRoot(), "note").getText());
-            assertEquals("Linked students: None", label(parent.getRoot(), "links").getText());
-
-            PersonCard linkedParent = new PersonCard(GEORGE, 3, true, List.of(ALICE, BOB));
-            assertEquals("Linked students: Alice Pauline (94351253), Bob Choo (22222222)",
-                    label(linkedParent.getRoot(), "links").getText());
-            PersonCard linkedStudent = new PersonCard(ALICE, 1, true, List.of(GEORGE));
-            assertEquals("Linked parents: George Best (9482442)", label(linkedStudent.getRoot(), "links").getText());
-
-            // Students who share a name are told apart by phone.
-            Person otherAlice = new PersonBuilder(ALICE).withPhone("81112222").withEmail("alice2@example.com").build();
-            PersonCard parentOfNamesakes = new PersonCard(GEORGE, 3, true, List.of(ALICE, otherAlice));
-            assertEquals("Linked students: Alice Pauline (94351253), Alice Pauline (81112222)",
-                    label(parentOfNamesakes.getRoot(), "links").getText());
+            Person otherAlice = new PersonBuilder(ALICE).withPhone("98765432").build();
+            panel.showContact(GEORGE, 2, List.of(ALICE, otherAlice));
+            assertFalse(panel.getRoot().lookup("#tuitionFields").isManaged());
+            assertEquals("Linked students: Alice Pauline (94351253), Alice Pauline (98765432)",
+                    label(panel.getRoot(), "links").getText());
+            panel.showContact(new PersonBuilder().withoutSubject().withoutLevel().withoutNote().build(),
+                    3, List.of());
+            assertEquals("Not recorded", label(panel.getRoot(), "subject").getText());
+            assertEquals("Not recorded", label(panel.getRoot(), "level").getText());
+            assertEquals("None", label(panel.getRoot(), "note").getText());
+            assertEquals("Linked parents: None", label(panel.getRoot(), "links").getText());
+            panel.clear(true);
+            assertFalse(panel.getRoot().lookup("#details").isManaged());
+            assertEquals("No contact selected", label(panel.getRoot(), "emptyTitle").getText());
         });
     }
 
@@ -461,14 +469,14 @@ public class ContactCardsUiTest {
             ObservableList<Person> contacts = FXCollections.observableArrayList(ALICE, BOB);
             PersonListPanel panel = new PersonListPanel(contacts);
             new Scene(panel.getRoot(), 760, 600);
-            panel.completeCommand(CommandResult.expandContact("view", BOB));
+            panel.completeCommand(CommandResult.selectContact("view", BOB));
             panel.beginCommand();
             contacts.remove(ALICE);
             panel.completeCommand(new CommandResult("delete"));
             layout(panel.getRoot());
             assertEquals(BOB, list(panel.getRoot()).getSelectionModel().getSelectedItem());
             assertEquals("1.", label(selectedCard(panel.getRoot()), "id").getText());
-            assertTrue(selectedCard(panel.getRoot()).lookup("#details").isVisible());
+            assertTrue(panel.getRoot().lookup("#details").isVisible());
 
             panel.beginCommand();
             contacts.clear();
@@ -476,7 +484,7 @@ public class ContactCardsUiTest {
             panel.cancelCommand();
             layout(panel.getRoot());
             assertEquals(BOB, list(panel.getRoot()).getSelectionModel().getSelectedItem());
-            assertTrue(selectedCard(panel.getRoot()).lookup("#details").isVisible());
+            assertTrue(panel.getRoot().lookup("#details").isVisible());
 
             panel.beginCommand();
             contacts.clear();
@@ -486,7 +494,7 @@ public class ContactCardsUiTest {
     }
 
     @Test
-    void window_commands_updateCardsAndPreserveExpansionOnInvalidInput() throws Exception {
+    void window_commands_updateCardsAndPreserveDetailsOnInvalidInput() throws Exception {
         runOnFxThread(() -> {
             Model model = new ModelManager();
             model.addPerson(ALICE);
@@ -502,27 +510,39 @@ public class ContactCardsUiTest {
 
             enter(root, "view 2");
             assertEquals(BOB, list(root).getSelectionModel().getSelectedItem());
-            assertTrue(selectedCard(root).lookup("#details").isVisible());
+            assertTrue(root.lookup("#details").isVisible());
             saveSnapshot(root, "view-student");
             enter(root, "view 99");
-            assertTrue(selectedCard(root).lookup("#details").isVisible());
+            assertTrue(root.lookup("#details").isVisible());
             enter(root, "view nope");
             assertEquals(BOB, list(root).getSelectionModel().getSelectedItem());
-            assertTrue(selectedCard(root).lookup("#details").isVisible());
+            assertTrue(root.lookup("#details").isVisible());
+            TextField commandField = (TextField) root.lookup("#commandTextField");
+            assertEquals("view nope", commandField.getText());
+            assertTrue(commandField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+            commandField.setText("list");
+            assertFalse(commandField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
             enter(root, "list");
-            assertFalse(selectedCard(root).lookup("#details").isVisible());
+            assertEquals("", commandField.getText());
+            assertTrue(root.lookup("#details").isVisible());
 
             enter(root, "add r/parent n/New Parent p/81234567 e/new@example.com a/1 Road");
             assertEquals("New Parent", ((Person) list(root).getSelectionModel().getSelectedItem()).getName().fullName);
-            assertFalse(selectedCard(root).lookup("#details").isVisible());
+            assertTrue(root.lookup("#details").isVisible());
             enter(root, "view 3");
-            assertEquals("Note: None", label(selectedCard(root), "note").getText());
-            assertFalse(selectedCard(root).lookup("#subject").isManaged());
+            assertEquals("None", label(detail(root), "note").getText());
+            assertFalse(root.lookup("#tuitionFields").isManaged());
             saveSnapshot(root, "view-parent");
             enter(root, "delete 3");
             assertTrue(list(root).getSelectionModel().isEmpty());
             enter(root, "view 1");
             saveSnapshot(root, "view-student");
+            enter(root, "clear");
+            assertTrue(list(root).getItems().isEmpty());
+            assertTrue(list(root).getSelectionModel().isEmpty());
+            assertFalse(detail(root).isManaged());
+            assertEquals("0 contacts", label(root, "contactCount").getText());
+            assertEquals("No contact selected", label(root, "emptyTitle").getText());
             stage.close();
         });
     }
@@ -546,10 +566,10 @@ public class ContactCardsUiTest {
             enter(root, "add n/Alex x/foo");
             assertEquals(1, model.getFilteredPersonList().size());
             assertEquals(selectedContact, list(root).getSelectionModel().getSelectedItem());
-            assertTrue(selectedCard(root).lookup("#details").isVisible());
+            assertTrue(root.lookup("#details").isVisible());
             enter(root, "add n/Alex N/Bob");
             assertEquals(selectedContact, list(root).getSelectionModel().getSelectedItem());
-            assertTrue(selectedCard(root).lookup("#details").isVisible());
+            assertTrue(root.lookup("#details").isVisible());
 
             enter(root, "add r/parent n/Literal Parent p/91234567 e/literal@example.com a/Block \\x/12");
             Person addedContact = (Person) list(root).getSelectionModel().getSelectedItem();
@@ -580,24 +600,24 @@ public class ContactCardsUiTest {
             enter(root, "view 1");
             Person student = (Person) list(root).getSelectionModel().getSelectedItem();
             assertEquals("Alex Tan", student.getName().fullName);
-            assertEquals("Subject: A-Math", label(selectedCard(root), "subject").getText());
-            assertEquals("Academic level: Secondary 3", label(selectedCard(root), "level").getText());
-            assertEquals("Note: Discuss x/foo", label(selectedCard(root), "note").getText());
+            assertEquals("A-Math", label(detail(root), "subject").getText());
+            assertEquals("Secondary 3", label(detail(root), "level").getText());
+            assertEquals("Discuss x/foo", label(detail(root), "note").getText());
 
             enter(root, "add r/parent n/May Tan p/88888888 e/may@example.com a/2 Road s/");
             assertEquals(1, model.getFilteredPersonList().size());
             assertEquals(student, list(root).getSelectionModel().getSelectedItem());
-            assertTrue(selectedCard(root).lookup("#details").isVisible());
+            assertTrue(root.lookup("#details").isVisible());
             enter(root, "exit 3");
             assertEquals(student, list(root).getSelectionModel().getSelectedItem());
 
             enter(root, "add r/parent n/May Tan p/88888888 e/may@example.com a/2 Road o/");
             enter(root, "view 2");
-            assertFalse(selectedCard(root).lookup("#subject").isManaged());
-            assertFalse(selectedCard(root).lookup("#level").isManaged());
-            assertEquals("Note: None", label(selectedCard(root), "note").getText());
+            assertFalse(root.lookup("#tuitionFields").isManaged());
+            assertFalse(root.lookup("#tuitionFields").isManaged());
+            assertEquals("None", label(detail(root), "note").getText());
             enter(root, "list");
-            assertFalse(selectedCard(root).lookup("#details").isVisible());
+            assertTrue(root.lookup("#details").isVisible());
             enter(root, "delete 2");
             assertEquals(1, model.getFilteredPersonList().size());
             stage.close();
@@ -610,7 +630,7 @@ public class ContactCardsUiTest {
     }
 
     /**
-     * Checks rejected address feedback while preserving selection, expansion, links, the sorted view, and saved data.
+     * Checks rejected address feedback while preserving selection, details, links, the sorted view, and saved data.
      *
      * @throws Exception If JavaFX execution or JSON verification fails.
      */
@@ -651,7 +671,8 @@ public class ContactCardsUiTest {
                         assertEquals(before, model.getAddressBook());
                         assertEquals(displayed, List.copyOf(model.getFilteredPersonList()));
                         assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
-                        assertTrue(selectedCard(root).lookup("#details").isVisible());
+                        assertTrue(detail(root).isVisible());
+                        assertEquals(selected.getName().fullName, label(detail(root), "name").getText());
                         assertEquals(saved, Files.readString(dataPath));
                     }
                 }
@@ -703,7 +724,7 @@ public class ContactCardsUiTest {
                 assertEquals(invalidCommand, field.getText());
                 assertEquals(before, model.getAddressBook());
                 assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
-                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(detail(root).isVisible());
                 enter(root, "list");
                 assertEquals("Showing 2 contacts.", feedback.getText());
                 assertEquals("", field.getText());
@@ -741,7 +762,7 @@ public class ContactCardsUiTest {
                 enter(root, "link 1 2");
                 enter(root, "edit 1 o/\u2003 a/1 Road");
                 enter(root, "view 1");
-                assertEquals("Note: None", label(selectedCard(root), "note").getText());
+                assertEquals("None", label(detail(root), "note").getText());
                 Person selected = (Person) list(root).getSelectionModel().getSelectedItem();
                 assertTrue(selected.getNote().isEmpty());
                 String saved = Files.readString(dataPath);
@@ -750,15 +771,17 @@ public class ContactCardsUiTest {
                 assertEquals("Contacts sorted by academic level.", feedback.getText());
                 assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
                 assertEquals("2.", label(selectedCard(root), "id").getText());
-                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(detail(root).isVisible());
                 enter(root, "sort \u2003level extra\u3000");
                 assertEquals("Invalid command format. Expected: sort level", feedback.getText());
                 assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
-                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(detail(root).isVisible());
                 enter(root, "\u2003list\u3000");
                 assertEquals("Showing 2 contacts.", feedback.getText());
                 assertEquals("1.", label(selectedCard(root), "id").getText());
-                assertFalse(selectedCard(root).lookup("#details").isVisible());
+                assertEquals(selected, list(root).getSelectionModel().getSelectedItem());
+                assertTrue(detail(root).isVisible());
+                assertEquals(selected.getName().fullName, label(detail(root), "name").getText());
                 assertFalse(((TextField) root.lookup("#commandTextField")).getStyleClass()
                         .contains(CommandBox.ERROR_STYLE_CLASS));
                 assertEquals(saved, Files.readString(dataPath));
@@ -800,9 +823,9 @@ public class ContactCardsUiTest {
 
                 enter(root, "view 1");
                 assertEquals(ALICE, list(root).getSelectionModel().getSelectedItem());
-                assertTrue(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(root.lookup("#details").isVisible());
                 enter(root, "list");
-                assertFalse(selectedCard(root).lookup("#details").isVisible());
+                assertTrue(root.lookup("#details").isVisible());
                 saveSnapshot(root, "minimum-height-window");
             } finally {
                 stage.close();
@@ -842,86 +865,388 @@ public class ContactCardsUiTest {
             PersonListPanel panel = new PersonListPanel(FXCollections.observableArrayList(contact, GEORGE));
             Scene scene = new Scene(panel.getRoot(), 460, 300);
             scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
-            panel.completeCommand(CommandResult.expandContact("view", contact));
+            panel.completeCommand(CommandResult.selectContact("view", contact));
             panel.getRoot().resize(460, 300);
             layout(panel.getRoot());
             saveSnapshot(panel.getRoot(), "narrow-card");
             Node card = selectedCard(panel.getRoot());
             assertTrue(label(card, "name").getHeight() > 20, "Long name must wrap to multiple lines");
-            assertTrue(label(card, "note").getHeight() > 20, "Long note must wrap to multiple lines");
+            assertTrue(label(detail(panel.getRoot()), "note").getHeight() > 20, "Long note must wrap");
             assertTrue(card.getBoundsInParent().getMaxX() <= list(panel.getRoot()).getWidth());
         });
     }
 
+    /**
+     * Checks rendered tag wrapping and vertical reachability in side-by-side and stacked workspaces.
+     *
+     * @throws Exception If JavaFX execution or layout fails.
+     */
     @Test
-    void cards_longAndManyTags_stayWithinScrollableTagArea() throws Exception {
+    void details_longAndManyTags_stayWithinViewportAndRemainReachable() throws Exception {
         String longTag = "A".repeat(1000);
-        Stage stage = callOnFxThread(() -> {
-            String[] tagNames = IntStream.range(0, 200)
-                    .mapToObj(index -> "T" + index)
-                    .toArray(String[]::new);
-            tagNames[0] = longTag;
-            Person contact = new PersonBuilder(ALICE).withTags(tagNames).build();
-            PersonListPanel panel = new PersonListPanel(FXCollections.observableArrayList(contact, GEORGE));
-            Scene scene = new Scene(panel.getRoot(), 460, 300);
-            scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
-            Stage testStage = new Stage();
-            testStage.setScene(scene);
-            testStage.show();
-            panel.completeCommand(CommandResult.expandContact("view", contact));
-            return testStage;
+        for (int width : new int[]{1000, 460}) {
+            Stage stage = callOnFxThread(() -> {
+                String[] tagNames = IntStream.range(0, 200)
+                        .mapToObj(index -> "T" + index)
+                        .toArray(String[]::new);
+                tagNames[0] = longTag;
+                Person contact = new PersonBuilder(ALICE).withTags(tagNames).build();
+                PersonListPanel panel = new PersonListPanel(FXCollections.observableArrayList(contact, GEORGE));
+                Scene scene = new Scene(panel.getRoot(), width, 700);
+                scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+                Stage testStage = new Stage();
+                testStage.setScene(scene);
+                testStage.show();
+                panel.completeCommand(CommandResult.selectContact("view", contact));
+                return testStage;
+            });
+            Scene scene = callOnFxThread(stage::getScene);
+            try {
+                waitForLayout(scene);
+                runOnFxThread(() -> {
+                    Region root = (Region) scene.getRoot();
+                    layout(root);
+                    ScrollPane scroller = (ScrollPane) root.lookup("#detailScrollPane");
+                    FlowPane tags = (FlowPane) root.lookup("#tags");
+                    Label longTagLabel = (Label) tags.getChildren().stream()
+                            .filter(node -> ((Label) node).getText().equals(longTag))
+                            .findFirst().orElseThrow();
+                    Node viewport = scroller.lookup(".viewport");
+                    assertNotNull(viewport);
+                    assertEquals(200, tags.getChildren().size());
+                    assertTrue(longTagLabel.isWrapText());
+                    assertEquals(longTag, longTagLabel.getText());
+                    assertTrue(longTagLabel.getWidth() <= 320);
+                    assertTrue(longTagLabel.getHeight() > 30, "The complete long tag must wrap");
+                    assertTrue(longTagLabel.getHeight() >= longTagLabel.prefHeight(longTagLabel.getWidth()) - 1,
+                            "The tag label must have enough height for every wrapped line");
+                    Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                    assertTrue(tags.getWidth() <= viewportBounds.getWidth() + 1);
+                    for (Node tag : tags.getChildren()) {
+                        Bounds bounds = tag.localToScene(tag.getBoundsInLocal());
+                        assertTrue(bounds.getMinX() >= viewportBounds.getMinX() - 1);
+                        assertTrue(bounds.getMaxX() <= viewportBounds.getMaxX() + 1);
+                    }
+                    saveSnapshot(root, "long-and-many-tags-" + width);
+                    scroller.setVvalue(1);
+                });
+                waitForLayout(scene);
+                runOnFxThread(() -> {
+                    Region root = (Region) scene.getRoot();
+                    ScrollPane scroller = (ScrollPane) root.lookup("#detailScrollPane");
+                    FlowPane tags = (FlowPane) root.lookup("#tags");
+                    Node finalTag = tags.getChildren().getLast();
+                    Node viewport = scroller.lookup(".viewport");
+                    Bounds bounds = finalTag.localToScene(finalTag.getBoundsInLocal());
+                    Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                    assertTrue(bounds.getMinX() >= viewportBounds.getMinX() - 1);
+                    assertTrue(bounds.getMaxX() <= viewportBounds.getMaxX() + 1);
+                    assertTrue(bounds.getMinY() >= viewportBounds.getMinY() - 1);
+                    assertTrue(bounds.getMaxY() <= viewportBounds.getMaxY() + 1);
+                    saveSnapshot(root, "long-and-many-tags-bottom-" + width);
+                });
+            } finally {
+                runOnFxThread(stage::close);
+            }
+        }
+    }
+
+    /**
+     * Checks that a relative storage path has an absolute tooltip while retaining the relative footer label.
+     *
+     * @throws Exception If JavaFX execution fails.
+     */
+    @Test
+    void footer_relativePath_showsResolvedAbsoluteTooltip() throws Exception {
+        runOnFxThread(() -> {
+            Path dataPath = Path.of("data", "..", "data", "tutorcontacts.json");
+            StatusBarFooter footer = new StatusBarFooter(dataPath);
+            Label pathLabel = label(footer.getRoot(), "saveLocationStatus");
+            assertEquals(Path.of(".").resolve(dataPath).toString(), pathLabel.getText());
+            Path expectedPath = Path.of("").toAbsolutePath().resolve("data").resolve("tutorcontacts.json");
+            assertEquals(expectedPath.toString(), pathLabel.getTooltip().getText());
         });
+    }
+
+    /**
+     * Checks narrow-window feedback and path access after JavaFX has completed its layout pulses.
+     *
+     * @throws Exception If JavaFX execution or layout synchronization fails.
+     */
+    @Test
+    void window_narrowLayout_keepsLongFeedbackAndStoragePathAccessible() throws Exception {
+        Path dataPath = temporaryFolder.resolve("a-long-directory-name/".repeat(10) + "contacts.json");
+        String warning = MainApp.DATA_FILE_WARNING + "\n" + "Long error details. ".repeat(100);
+        MainWindow window = callOnFxThread(() -> {
+            Model model = new ModelManager();
+            model.addPerson(ALICE);
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow mainWindow = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            mainWindow.fillInnerParts();
+            stage.setWidth(450);
+            stage.setHeight(420);
+            return mainWindow;
+        });
+        Stage stage = callOnFxThread(window::getPrimaryStage);
         Scene scene = callOnFxThread(stage::getScene);
         try {
-            waitForLayout(scene);
             runOnFxThread(() -> {
-                Region root = (Region) scene.getRoot();
-                layout(root);
-                Node card = selectedCard(root);
-                ScrollPane tagScroller = (ScrollPane) card.lookup("#tagScroller");
-                assertNotNull(tagScroller);
-                FlowPane tags = (FlowPane) tagScroller.getContent();
-                Label longTagLabel = (Label) tags.getChildren().stream()
-                        .filter(node -> ((Label) node).getText().equals(longTag))
-                        .findFirst()
-                        .orElseThrow();
-                Node viewport = tagScroller.lookup(".viewport");
-                assertNotNull(viewport);
+                window.show();
+                window.showStartupWarning(warning);
+            });
+            // Yield the JavaFX thread so the window, compact-height styles, and text skin can finish layout.
+            waitForLayout(scene);
 
-                assertEquals(200, tags.getChildren().size());
-                assertTrue(longTagLabel.isWrapText());
-                assertTrue(longTagLabel.getWidth() <= 320);
-                assertTrue(longTagLabel.getHeight() > 30,
-                        "The complete long tag must wrap instead of being ellipsized on one line");
-                assertTrue(tagScroller.getHeight() <= 96);
-                assertEquals(ScrollPane.ScrollBarPolicy.AS_NEEDED, tagScroller.getVbarPolicy());
-                Bounds tagAreaBounds = tags.localToScene(tags.getBoundsInLocal());
-                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
-                assertTrue(tagAreaBounds.getWidth() <= viewportBounds.getWidth() + 1,
-                        "Tag area width " + tagAreaBounds.getWidth() + " must fit viewport width "
-                                + viewportBounds.getWidth() + "; min=" + tags.minWidth(-1)
-                                + ", pref=" + tags.prefWidth(-1) + ", max=" + tags.maxWidth(-1));
-                saveSnapshot(root, "long-and-many-tags");
-                tagScroller.setVvalue(1);
-            });
-            waitForLayout(scene);
             runOnFxThread(() -> {
                 Region root = (Region) scene.getRoot();
-                Node card = selectedCard(root);
-                ScrollPane tagScroller = (ScrollPane) card.lookup("#tagScroller");
-                FlowPane tags = (FlowPane) tagScroller.getContent();
-                Node finalTagLabel = tags.getChildren().get(tags.getChildren().size() - 1);
-                Node viewport = tagScroller.lookup(".viewport");
-                Bounds finalTagBounds = finalTagLabel.localToScene(finalTagLabel.getBoundsInLocal());
-                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
-                assertTrue(finalTagBounds.getMinX() >= viewportBounds.getMinX() - 1);
-                assertTrue(finalTagBounds.getMaxX() <= viewportBounds.getMaxX() + 1);
-                assertTrue(finalTagBounds.getMinY() >= viewportBounds.getMinY() - 1);
-                assertTrue(finalTagBounds.getMaxY() <= viewportBounds.getMaxY() + 1);
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                assertEquals(warning, feedback.getText());
+                assertTrue(feedback.isWrapText());
+                assertFalse(feedback.isEditable());
+                feedback.selectAll();
+                assertEquals(warning, feedback.getSelectedText());
+                ScrollBar scrollbar = (ScrollBar) feedback.lookup(".scroll-bar:vertical");
+                assertNotNull(scrollbar);
+                assertTrue(scrollbar.isVisible());
+                feedback.setScrollTop(Double.MAX_VALUE);
             });
+            waitForLayout(scene);
+
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                assertTrue(feedback.getScrollTop() > 0);
+
+                Label pathLabel = label(root, "saveLocationStatus");
+                assertEquals(dataPath.toString(), pathLabel.getText());
+                assertNotNull(pathLabel.getTooltip());
+                assertEquals(dataPath.toAbsolutePath().normalize().toString(), pathLabel.getTooltip().getText());
+                assertTrue(pathLabel.getTooltip().isWrapText());
+                assertVisibleWithinWindow(root, pathLabel);
+                assertVisibleWithinWindow(root, root.lookup(".status-guidance"));
+                assertVisibleWithinWindow(root, root.lookup(".command-guidance"));
+                assertVisibleWithinWindow(root, root.lookup("#commandTextField"));
+                assertTrue(list(root).getHeight() > 0, "Contacts must remain scrollable at minimum size");
+                assertFalse(Files.exists(dataPath));
+                feedback.deselect();
+                feedback.setScrollTop(0);
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> saveSnapshot((Region) scene.getRoot(), "main-window-narrow-feedback"));
         } finally {
             runOnFxThread(stage::close);
         }
+    }
+
+    @Test
+    void window_availableContentSizes_keepsCommandCuesAndContactsUsable() throws Exception {
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            model.addPerson(ALICE);
+            model.addPerson(BOB);
+            model.addPerson(GEORGE);
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(dataPath),
+                    new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, new LogicManager(model, storage), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            try {
+                // Logical content budgets allow for native chrome; they do not emulate OS display scaling.
+                int[][] sizes = {{1900, 1000}, {1500, 800}, {830, 420}, {1000, 760}};
+                for (int[] size : sizes) {
+                    resizeContent(stage, size[0], size[1]);
+                    TextField commandField = (TextField) root.lookup("#commandTextField");
+                    assertEquals("Type a command…", commandField.getPromptText());
+                    Node cues = root.lookup(".command-cues");
+                    assertTrue(cues.isMouseTransparent());
+                    assertFalse(cues.isFocusTraversable());
+                    assertFalse(root.lookup(".command-chevron").isFocusTraversable());
+                    assertFalse(root.lookup(".command-enter").isFocusTraversable());
+                    assertVisibleWithinWindow(root, commandField);
+                    assertVisibleWithinWindow(root, root.lookup(".command-guidance"));
+                    assertVisibleWithinWindow(root, root.lookup(".status-guidance"));
+                    assertVisibleWithinWindow(root, list(root));
+
+                    enter(root, "view 1");
+                    assertEquals("", commandField.getText());
+                    assertEquals(ALICE, list(root).getSelectionModel().getSelectedItem());
+                    assertTrue(root.lookup("#details").isVisible());
+                    saveSnapshot(root, "main-window-" + size[0] + "x" + size[1]);
+                    assertEquals(size[0], root.getWidth(), 1);
+                    assertEquals(size[1], root.getHeight(), 1);
+                    enter(root, "list");
+                    assertTrue(root.lookup("#details").isVisible());
+                }
+                assertFalse(Files.exists(dataPath));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /**
+     * Checks relationships, selected edits, hidden relatives, list restoration, and actual JSON persistence.
+     *
+     * @throws Exception If JavaFX execution or test storage access fails.
+     */
+    @Test
+    void window_splitContacts_commandsKeepDetailsCurrent() throws Exception {
+        ReadOnlyAddressBook fixture = new JsonAddressBookStorage(Path.of("src/test/data/UiSplitContacts.json"))
+                .readAddressBook().orElseThrow();
+        runOnFxThread(() -> {
+            Model model = new ModelManager(fixture, new UserPrefs());
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            MainWindow window = new MainWindow(new Stage(), new LogicManager(model,
+                    new StorageManager(new JsonAddressBookStorage(dataPath),
+                            new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")))), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) window.getPrimaryStage().getScene().getRoot();
+            resizeContent(window.getPrimaryStage(), 1000, 817);
+            try {
+                layout(root);
+                assertEquals("Select a contact", label(root, "emptyTitle").getText());
+                assertFalse(detail(root).isManaged());
+                enter(root, "view 2");
+                assertEquals("Aisha Rahman", label(detail(root), "name").getText());
+                assertEquals("Linked parents: Farah Rahman (93334444)", label(detail(root), "links").getText());
+                list(root).scrollTo(0);
+                layout(root);
+                saveSnapshot(root, "split-contacts");
+                assertEquals(1000, root.getWidth(), 1);
+                assertEquals(817, root.getHeight(), 1);
+                TextField commandField = (TextField) root.lookup("#commandTextField");
+                commandField.requestFocus();
+                enter(root, "view 2");
+                assertEquals(commandField, root.getScene().getFocusOwner());
+                commandField.setText("draft command");
+                ListCell<?> firstCell = root.lookupAll(".list-cell").stream()
+                        .filter(node -> node instanceof ListCell<?> cell && cell.getIndex() == 0)
+                        .map(node -> (ListCell<?>) node).findFirst().orElseThrow();
+                click(firstCell);
+                assertEquals("Daniel Tan", label(detail(root), "name").getText());
+                assertEquals("draft command", commandField.getText());
+                assertEquals("Showing contact: Aisha Rahman.", ((TextArea) root.lookup("#resultDisplay")).getText());
+                list(root).fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.DOWN,
+                        false, false, false, false));
+                assertEquals("Aisha Rahman", label(detail(root), "name").getText());
+                enter(root, "filter n/Aisha");
+                assertEquals("CONTACT 1", label(root, "contactIndex").getText());
+                assertEquals("1 contact", label(root, "contactCount").getText());
+                assertEquals("Linked parents: Farah Rahman (93334444)", label(detail(root), "links").getText());
+                enter(root, "edit 1 n/Aisha Abdullah p/98887777 e/aisha.new@example.com");
+                assertEquals("Aisha Abdullah", label(detail(root), "name").getText());
+                assertEquals("98887777", label(detail(root), "phone").getText());
+                enter(root, "list");
+                assertEquals("Aisha Abdullah", label(detail(root), "name").getText());
+                enter(root, "view 5");
+                assertEquals("Linked students: Aisha Abdullah (98887777)", label(detail(root), "links").getText());
+                enter(root, "edit 2 p/92223333");
+                assertEquals("Aisha Abdullah", label(detail(root), "name").getText());
+                assertEquals("92223333", label(detail(root), "phone").getText());
+                enter(root, "view 5");
+                assertEquals("Farah Rahman", label(detail(root), "name").getText());
+                assertEquals("Linked students: Aisha Abdullah (92223333)", label(detail(root), "links").getText());
+                enter(root, "link 5 4");
+                assertEquals("Farah Rahman", label(detail(root), "name").getText());
+                assertTrue(label(detail(root), "links").getText().contains("Ethan Lim (92345608)"));
+                enter(root, "delete 4");
+                assertEquals("CONTACT 4", label(root, "contactIndex").getText());
+                assertEquals("Linked students: Aisha Abdullah (92223333)", label(detail(root), "links").getText());
+                enter(root, "filter n/Daniel");
+                assertFalse(detail(root).isManaged());
+                enter(root, "list");
+                assertTrue(list(root).getSelectionModel().isEmpty());
+                enter(root, "filter n/NoMatch");
+                assertEquals("0 contacts", label(root, "contactCount").getText());
+                assertEquals("No contact selected", label(root, "emptyTitle").getText());
+            } finally {
+                window.getPrimaryStage().close();
+            }
+        });
+        assertEquals(4, new JsonAddressBookStorage(temporaryFolder.resolve("contacts.json"))
+                .readAddressBook().orElseThrow().getPersonList().size());
+    }
+
+    /**
+     * Checks real save failures restore the selected contact and relationship content after model mutation.
+     *
+     * @throws Exception If JavaFX execution or test storage access fails.
+     */
+    @Test
+    void window_saveFailures_restoreDetailPaneAndSelection() throws Exception {
+        runOnFxThread(() -> {
+            Model model = new ModelManager();
+            model.addPerson(ALICE);
+            model.addPerson(GEORGE);
+            Path dataPath = temporaryFolder.resolve("unwritable.json");
+            JsonAddressBookStorage failingStorage = new JsonAddressBookStorage(dataPath) {
+                @Override
+                public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                    throw new IOException("Simulated save failure");
+                }
+            };
+            MainWindow window = new MainWindow(new Stage(), new LogicManager(model,
+                    new StorageManager(failingStorage,
+                            new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")))), dataPath);
+            window.fillInnerParts();
+            Region root = (Region) window.getPrimaryStage().getScene().getRoot();
+            root.resize(1000, 760);
+            try {
+                enter(root, "view 1");
+                for (String command : List.of("edit 1 n/Changed", "delete 1", "clear", "link 2 1",
+                        "add r/parent n/New Parent p/98887777 e/new@example.com a/1 Road")) {
+                    enter(root, command);
+                    assertEquals(ALICE, list(root).getSelectionModel().getSelectedItem());
+                    assertEquals(ALICE.getName().fullName, label(detail(root), "name").getText());
+                    assertEquals("Linked parents: None", label(detail(root), "links").getText());
+                    assertEquals(List.of(ALICE, GEORGE), model.getFilteredPersonList());
+                    assertTrue(model.getAddressBook().getLinkList().isEmpty());
+                }
+                assertFalse(Files.exists(dataPath));
+            } finally {
+                window.getPrimaryStage().close();
+            }
+        });
+    }
+
+    /**
+     * Checks direct JavaFX selection, divider resizing, orientation changes, and repeat viewing without saving.
+     *
+     * @throws Exception If JavaFX execution or test storage access fails.
+     */
+    @Test
+    void panel_selectionAndResizing_keepOneDetailTarget() throws Exception {
+        runOnFxThread(() -> {
+            PersonListPanel panel = new PersonListPanel(FXCollections.observableArrayList(ALICE, GEORGE));
+            Region root = panel.getRoot();
+            new Scene(root, 1000, 600);
+            root.resize(1000, 600);
+            layout(root);
+            SplitPane split = (SplitPane) root;
+            assertEquals(Orientation.HORIZONTAL, split.getOrientation());
+            assertEquals(0.4, split.getDividerPositions()[0], 0.02);
+            list(root).getSelectionModel().select(1);
+            layout(root);
+            assertEquals(GEORGE.getName().fullName, label(detail(root), "name").getText());
+            split.setDividerPositions(0.55);
+            layout(root);
+            assertEquals(0.55, split.getDividerPositions()[0], 0.02);
+            panel.completeCommand(CommandResult.selectContact("view", GEORGE));
+            panel.completeCommand(CommandResult.selectContact("view", GEORGE));
+            assertEquals("CONTACT 2", label(root, "contactIndex").getText());
+            root.resize(500, 400);
+            layout(root);
+            assertEquals(Orientation.VERTICAL, split.getOrientation());
+            assertEquals(GEORGE.getName().fullName, label(detail(root), "name").getText());
+            root.resize(1000, 600);
+            layout(root);
+            assertEquals(Orientation.HORIZONTAL, split.getOrientation());
+            assertEquals(0.4, split.getDividerPositions()[0], 0.02);
+        });
     }
 
     /**
@@ -943,6 +1268,13 @@ public class ContactCardsUiTest {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Returns the detail content separately from the selected compact card.
+     */
+    private static Node detail(Node root) {
+        return root.lookup("#details");
     }
 
     private static Label label(Node root, String id) {
@@ -972,9 +1304,39 @@ public class ContactCardsUiTest {
         layout(root);
     }
 
+    /**
+     * Sends a primary click through the cell's normal JavaFX behavior using its actual scene coordinates.
+     */
+    private static void click(Node node) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        double x = bounds.getMinX() + 20;
+        double y = bounds.getMaxY() - 20;
+        node.fireEvent(new MouseEvent(MouseEvent.MOUSE_PRESSED, x, y, x, y,
+                MouseButton.PRIMARY, 1, false, false, false, false,
+                true, false, false, false, false, true, new PickResult(node, x, y)));
+        node.fireEvent(new MouseEvent(MouseEvent.MOUSE_RELEASED, x, y, x, y,
+                MouseButton.PRIMARY, 1, false, false, false, false,
+                false, false, false, false, false, true, new PickResult(node, x, y)));
+    }
+
     private static void layout(Region root) {
         root.applyCss();
         root.layout();
+    }
+
+    /**
+     * Sets an explicit scene content size so snapshots cannot silently use the scene's preferred dimensions.
+     */
+    private static void resizeContent(Stage stage, double width, double height) {
+        Scene previousScene = stage.getScene();
+        Region root = (Region) previousScene.getRoot();
+        List<String> stylesheets = List.copyOf(previousScene.getStylesheets());
+        previousScene.setRoot(new StackPane());
+        Scene scene = new Scene(root, width, height);
+        scene.getStylesheets().setAll(stylesheets);
+        stage.setScene(scene);
+        root.resize(width, height);
+        layout(root);
     }
 
     /**
@@ -1043,10 +1405,10 @@ public class ContactCardsUiTest {
     }
 
     /**
-     * Checks that an expanded card follows its contact when sorting changes the displayed index.
+     * Checks that the selected contact and its details follow sorting rather than the previous row number.
      */
     @Test
-    void panel_sort_preservesExpandedContactAndUpdatesIndex() throws Exception {
+    void panel_sort_preservesSelectedContactAndUpdatesIndex() throws Exception {
         runOnFxThread(() -> {
             Person later = new PersonBuilder().withName("Zoe").withLevel("JC 2").build();
             Person earlier = new PersonBuilder().withName("Amy").withLevel("Primary 1").build();
@@ -1055,14 +1417,14 @@ public class ContactCardsUiTest {
             model.addPerson(earlier);
             PersonListPanel panel = new PersonListPanel(model.getFilteredPersonList());
             new Scene(panel.getRoot(), 760, 600);
-            panel.completeCommand(CommandResult.expandContact("view", later));
+            panel.completeCommand(CommandResult.selectContact("view", later));
 
             panel.beginCommand();
             panel.completeCommand(new SortCommand().execute(model));
             layout(panel.getRoot());
             assertEquals(later, list(panel.getRoot()).getSelectionModel().getSelectedItem());
             assertEquals("2.", label(selectedCard(panel.getRoot()), "id").getText());
-            assertTrue(selectedCard(panel.getRoot()).lookup("#details").isVisible());
+            assertTrue(panel.getRoot().lookup("#details").isVisible());
 
         });
     }
