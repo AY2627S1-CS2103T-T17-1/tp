@@ -94,19 +94,25 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <img src="images/LogicClassDiagram.png" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below shows the successful `execute("delete 1")` path, assuming the displayed list is not empty.
 
 ![Interactions Inside the Logic Component for the `delete 1` Command](images/DeleteSequenceDiagram.png)
 
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
-</div>
+`DeleteCommand` requests the current displayed view with `Model#getFilteredPersonList()`. The note abbreviates
+the local lookup `displayedContacts.get(0)`, which resolves displayed index 1 to `contactToDelete`. Filtering and
+sorting determine which `Person` occupies that position. The command passes this contact to `Model#deletePerson(Person)`.
+
+For readability, bounds checks, index conversion, collection internals, linked-contact lookup, result construction,
+and object lifetime endings are omitted. `r` is the `CommandResult`; its feedback names the deleted contact and
+includes the removed-link count when applicable. The data snapshot and Storage save/rollback flow are also omitted:
+`LogicManager` saves the changed address book before returning `r`.
 
 How the `Logic` component works:
 
 1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
-1. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
-   Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
+1. The command queries or changes the `Model` when it is executed. For deletion, the displayed index is resolved
+   to a contact before the model is changed.
 1. The result of the command execution is encapsulated as a `CommandResult` object which is returned from `Logic`.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
@@ -1008,36 +1014,48 @@ testers are expected to do more *exploratory* testing.
 
 1. Initial launch
 
-   1. Download the JAR file and copy it into an empty folder.
+   1. Download the JAR file and copy it into an empty writable folder.
 
-   1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
+   1. Open a command window in that folder and run `java -version`. Confirm that the version is Java 25.
+
+   1. Launch with `java -jar "tutorcontacts.jar"`, substituting the downloaded filename if it differs.<br>
+      Expected: The GUI opens with an empty contact list because `data/tutorcontacts.json` does not exist yet.
+      No sample contacts are added automatically. Run `list` and expect `No contacts to display.`
+      The initial window size may need adjustment.
 
 1. Saving window preferences
 
    1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
-   1. Relaunch the app by double-clicking the JAR file.<br>
+   1. Relaunch from the same folder with `java -jar "tutorcontacts.jar"`.<br>
        Expected: The most recent window size and location are retained.
-
-1. _{ more test cases …​ }_
 
 ### Deleting a person
 
 1. Deleting a person while all persons are being shown
 
-   1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
+   1. Prerequisites: Start with an empty contact list in a separate writable test folder, then enter:
+
+      ```text
+      add r/student n/Alpha Student p/91000001 e/alpha.student@example.com a/1 Test Road s/Mathematics l/Primary 1
+      add r/parent n/Alpha Parent p/91000002 e/alpha.parent@example.com a/2 Test Road
+      list
+      ```
+
+      Expected: `Showing 2 contacts.` Alpha Student is index 1 and Alpha Parent is index 2. Neither has any links.
 
    1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
+      Expected: `Deleted contact: Alpha Student.` Only Alpha Parent remains, renumbered to index 1.
 
    1. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
+      Expected: `Index must be a positive integer shown in the current list.` No contact is deleted.
 
-   1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
+   1. Other incorrect commands to try independently: `delete`, `delete x`, and `delete 2`.<br>
+      Expected: Respectively, `Invalid command format. Expected: delete INDEX`,
+      `Index must be a positive integer shown in the current list.`, and
+      `No contact exists at index 2 in the current list.` Alpha Parent remains unchanged.
 
-1. _{ more test cases …​ }_
+   1. Clean-up: Close the app and discard the disposable test folder when it is no longer needed.
 
 ### Saving data
 
