@@ -295,6 +295,8 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
 
 * `INDEX` is the positive number shown beside the contact in the currently displayed list. At least one field must
   follow it. Prefixes may appear in any order, and fields not supplied remain unchanged.
+  An invalid index gets the same messages as `view` and `delete`: `Index must be a positive integer shown in the
+  current list.` or `No contact exists at index INDEX in the current list.`
 * The tutor may edit `s/SUBJECT` and `l/LEVEL` for a **student contact**. These fields may be changed independently;
   `edit 1 s/Physics` keeps the student's existing level. A parent contact cannot be given either field. This includes
   empty `s/` or `l/` prefixes. `edit` cannot change a contact's role.

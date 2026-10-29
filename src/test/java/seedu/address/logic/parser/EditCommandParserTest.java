@@ -57,6 +57,7 @@ public class EditCommandParserTest {
 
     private static final String MESSAGE_INVALID_FORMAT =
             String.format(MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE);
+    private static final String MESSAGE_INVALID_INDEX = "Index must be a positive integer shown in the current list.";
 
     private EditCommandParser parser = new EditCommandParser();
 
@@ -90,11 +91,14 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_invalidPreamble_failure() {
-        // negative index
-        assertParseFailure(parser, "-5" + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
+        // A single invalid index gets the same feedback as view, delete, and link
+        assertParseFailure(parser, "-5" + NAME_DESC_AMY, MESSAGE_INVALID_INDEX);
+        assertParseFailure(parser, "0" + NAME_DESC_AMY, MESSAGE_INVALID_INDEX);
+        assertParseFailure(parser, "abc" + NAME_DESC_AMY, MESSAGE_INVALID_INDEX);
 
-        // zero index
-        assertParseFailure(parser, "0" + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
+        // An index too large for an int cannot exist in the displayed list
+        assertParseFailure(parser, "2147483648" + NAME_DESC_AMY,
+                "No contact exists at index 2147483648 in the current list.");
 
         // invalid arguments being parsed as preamble
         assertParseFailure(parser, "1 some random string", MESSAGE_INVALID_FORMAT);
