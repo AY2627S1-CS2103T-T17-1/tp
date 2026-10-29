@@ -38,13 +38,7 @@ public class EditCommandParser implements Parser<EditCommand> {
                 ArgumentTokenizer.tokenizeForCommand(args, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL,
                         PREFIX_ADDRESS, PREFIX_SUBJECT, PREFIX_LEVEL, PREFIX_NOTE, PREFIX_TAG);
 
-        Index index;
-
-        try {
-            index = ParserUtil.parseIndex(argMultimap.getPreamble());
-        } catch (ParseException pe) {
-            throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE), pe);
-        }
+        Index index = parseTargetIndex(argMultimap.getPreamble());
 
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS,
                 PREFIX_SUBJECT, PREFIX_LEVEL, PREFIX_NOTE);
@@ -79,6 +73,23 @@ public class EditCommandParser implements Parser<EditCommand> {
         }
 
         return new EditCommand(index, editPersonDescriptor);
+    }
+
+    /**
+     * Parses the text before the first prefix as the index of the contact to edit.
+     * A single value follows the same index rules as {@code view}, {@code delete}, and {@code link}, so an invalid
+     * index gets the same feedback in every command.
+     *
+     * @param preamble Text before the first prefix.
+     * @return The index of the contact to edit.
+     * @throws ParseException If the preamble is not exactly one value, or that value is not a valid index.
+     */
+    private static Index parseTargetIndex(String preamble) throws ParseException {
+        String trimmedPreamble = preamble.trim();
+        if (trimmedPreamble.isEmpty() || trimmedPreamble.split("\\s+").length != 1) {
+            throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE));
+        }
+        return ParserUtil.parseDisplayedIndex(trimmedPreamble);
     }
 
     /**
