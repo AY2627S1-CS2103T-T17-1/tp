@@ -61,7 +61,7 @@ public class EditCommand extends Command {
 
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
-    public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
+    public static final String MESSAGE_DUPLICATE_PERSON = "This contact duplicates an existing %1$s: %2$s (%3$s).";
 
     private final Index index;
     private final EditPersonDescriptor editPersonDescriptor;
@@ -101,11 +101,15 @@ public class EditCommand extends Command {
         }
         Person editedPerson = createEditedPerson(personToEdit, editPersonDescriptor);
 
-        boolean hasDuplicatePerson = model.getAddressBook().getPersonList().stream()
+        // Name the clashing contact with its phone, since contacts with the same name can coexist.
+        Optional<Person> duplicatePerson = model.getAddressBook().getPersonList().stream()
                 .filter(person -> !person.equals(personToEdit))
-                .anyMatch(editedPerson::isSamePerson);
-        if (hasDuplicatePerson) {
-            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+                .filter(editedPerson::isSamePerson)
+                .findFirst();
+        if (duplicatePerson.isPresent()) {
+            Person existingPerson = duplicatePerson.get();
+            throw new CommandException(String.format(MESSAGE_DUPLICATE_PERSON,
+                    existingPerson.getRole(), existingPerson.getName(), existingPerson.getPhone()));
         }
 
         model.setPerson(personToEdit, editedPerson);
