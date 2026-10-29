@@ -63,9 +63,20 @@ public class MainAppTest {
         assertEquals(AppPaths.getHomeDirectory().resolve("preferences.json"), filePathField.get(null));
     }
 
+    /**
+     * Checks that instance coordination uses the same application home directory as contact data.
+     */
     @Test
-    public void init_wiresApplicationComponentsWithoutWritingFiles() throws Exception {
-        MainApp app = new MainApp() {
+    public void applicationLockFilePath_usesApplicationHome() throws ReflectiveOperationException {
+        Field filePathField = MainApp.class.getDeclaredField("APPLICATION_LOCK_FILE_PATH");
+        filePathField.setAccessible(true);
+
+        assertEquals(AppPaths.getHomeDirectory().resolve(".tutorcontacts.lock"), filePathField.get(null));
+    }
+
+    @Test
+    public void init_availableApplicationHome_wiresApplicationComponents() throws Exception {
+        MainApp app = new MainApp(temporaryFolder.resolve(".tutorcontacts.lock")) {
             @Override
             protected UserPrefs initPrefs(JsonUserPrefsStorage storage) {
                 return new UserPrefs();
@@ -84,6 +95,66 @@ public class MainAppTest {
         assertNotNull(app.logic);
         assertNotNull(app.ui);
         assertNull(app.getStartupWarning());
+        app.stop();
+    }
+
+    @Test
+    public void init_secondInstance_blocksBeforeSharedStateAccessAndReleaseAllowsRestart() throws Exception {
+        Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
+        MainApp firstApp = createApp(dataPath);
+        MainApp secondApp = createApp(dataPath);
+
+        firstApp.init();
+        secondApp.init();
+
+        assertNull(firstApp.getStartupBlockMessage());
+        assertEquals(MainApp.ALREADY_RUNNING_MESSAGE, secondApp.getStartupBlockMessage());
+        assertNull(secondApp.storage);
+        assertNull(secondApp.model);
+        assertNull(secondApp.logic);
+        assertNull(secondApp.ui);
+
+        secondApp.stop();
+        firstApp.stop();
+
+        MainApp restartedApp = createApp(dataPath);
+        restartedApp.init();
+        assertNull(restartedApp.getStartupBlockMessage());
+        assertNotNull(restartedApp.storage);
+        restartedApp.stop();
+    }
+
+    @Test
+    public void init_unusableLockPath_blocksBeforeSharedStateAccess() throws Exception {
+        Path lockPath = temporaryFolder.resolve("lock-directory");
+        Files.createDirectory(lockPath);
+        MainApp app = createApp(temporaryFolder.resolve("tutorcontacts.json"), lockPath);
+
+        app.init();
+
+        assertEquals(MainApp.LOCK_FAILURE_MESSAGE, app.getStartupBlockMessage());
+        assertNull(app.storage);
+        assertNull(app.model);
+        app.stop();
+    }
+
+    @Test
+    public void init_componentInitializationFails_releasesApplicationLock() throws Exception {
+        Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
+        Path lockPath = temporaryFolder.resolve(".tutorcontacts.lock");
+        MainApp failingApp = new MainApp(lockPath) {
+            @Override
+            protected UserPrefs initPrefs(JsonUserPrefsStorage storage) {
+                throw new IllegalStateException("Test initialization failure");
+            }
+        };
+
+        assertThrows(IllegalStateException.class, failingApp::init);
+
+        MainApp restartedApp = createApp(dataPath, lockPath);
+        restartedApp.init();
+        assertNull(restartedApp.getStartupBlockMessage());
+        restartedApp.stop();
     }
 
     @Test
@@ -175,6 +246,8 @@ public class MainAppTest {
         assertThrows(CommandException.class, () -> app.logic.execute(addCommand));
         assertArrayEquals(repairedData, Files.readAllBytes(dataPath));
 
+        app.stop();
+
         MainApp restartedApp = createApp(dataPath);
         restartedApp.init();
 
@@ -182,6 +255,7 @@ public class MainAppTest {
         restartedApp.logic.execute(addCommand);
         assertEquals(1, restartedApp.model.getAddressBook().getPersonList().size());
         assertEquals(restartedApp.model.getAddressBook(), createStorage(dataPath).readAddressBook().orElseThrow());
+        restartedApp.stop();
     }
 
     /**
@@ -365,8 +439,15 @@ public class MainAppTest {
      * Creates an application that uses temporary contact storage without writing real preferences.
      */
     private MainApp createApp(Path dataPath) {
+        return createApp(dataPath, temporaryFolder.resolve(".tutorcontacts.lock"));
+    }
+
+    /**
+     * Creates an application using temporary contact storage and the specified lock path.
+     */
+    private MainApp createApp(Path dataPath, Path lockPath) {
         Storage testStorage = createStorage(dataPath);
-        return new MainApp() {
+        return new MainApp(lockPath) {
             @Override
             protected UserPrefs initPrefs(JsonUserPrefsStorage prefsStorage) {
                 return new UserPrefs();

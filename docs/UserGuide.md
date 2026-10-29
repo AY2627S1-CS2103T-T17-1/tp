@@ -521,12 +521,18 @@ the data file. A failed save leaves both the displayed contacts and the existing
 TutorContacts then says the change was not made, for example
 `Contact was not edited because TutorContacts could not save the data file.`
 
+Only one TutorContacts instance can use a JAR folder at a time. A second launch from the same folder shows
+`TutorContacts is already running` and exits without reading or writing contacts or preferences. Close the existing
+TutorContacts window before launching another instance. Copies in different folders use separate data files and can run
+independently.
+
 ### Editing the data file
 
 Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.json`. The previous default file,
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
 to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
 the first successful data-changing command. Advanced users can edit the JSON file directly.
+Close TutorContacts before editing this file; a running instance does not reload external changes.
 The file must contain a single JSON object. A file containing only `null`, or an object followed by another JSON value
 or other text, is invalid. Spaces, tabs, and line breaks around the object are allowed.
 
