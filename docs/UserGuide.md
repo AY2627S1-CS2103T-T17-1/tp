@@ -24,7 +24,7 @@ help you find and manage this information faster than traditional GUI applicatio
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar tutorcontacts.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. On the first launch, the contact list is empty.<br>
-   ![Ui](images/Ui.png)
+   ![TutorContacts main window with a compact list and selected-contact detail pane](images/mainWindow.png)
 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
@@ -42,6 +42,11 @@ help you find and manage this information faster than traditional GUI applicatio
    * `exit` : Exits the app.
 
 1. Refer to the [Features](#features) section below for details of each command.
+
+The command field shows `Type a command…` when empty. The `>` and `Enter ↵` cues are hints, not part of
+the command you type. Failed input stays in the field so you can correct it; successful commands clear it.
+Feedback appears below the field. Long messages wrap and can be scrolled or selected for copying.
+The **Local data** footer shows your contact-data path; hover over the path to see it in full if it is shortened.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -137,7 +142,7 @@ Format: `add r/ROLE n/NAME p/PHONE e/EMAIL a/ADDRESS [s/SUBJECT] [l/LEVEL] [o/NO
 * Either role may supply `o/NOTE`. An omitted or whitespace-only note is treated as absent.
 * `t/` and other unsupported prefixes are rejected. Adding tags or multiple subjects is not supported.
 * On success, TutorContacts reports `Added student: NAME.` or `Added parent: NAME.`
-* The newly added contact is selected and scrolled into view as a compact card.
+* The newly added contact is selected and scrolled into view; its complete information appears in the detail pane.
 
 Field rules apply to normalized values. Leading and trailing spaces and tabs are trimmed; consecutive spaces in
 names, subjects, and levels are collapsed. Capitalization is retained except for roles and academic levels,
@@ -149,10 +154,20 @@ which are stored in their canonical forms.
 | Name | 1–70 characters; starts with a letter or digit; letters, digits, spaces, apostrophes, full stops, and hyphens. |
 | Phone | 3–15 digits; optional leading `+`; spaces and hyphens only between digits. |
 | Email | One `@`, a nonempty local part, and at least two nonempty dot-separated domain labels. No internal whitespace; domain labels use letters, digits, and internal hyphens. |
-| Address | 1–150 printable characters on one line. |
+| Address | 1–150 characters on one line; no control characters; must include a Unicode letter, number, punctuation mark, or symbol. |
 | Subject | 1–40 characters; letters, digits, spaces, and `& + - ' / ( ) . ,`. |
 | Level | `Primary 1`–`Primary 6`, `Secondary 1`–`Secondary 5`, or `JC 1`–`JC 2`. Input is case-insensitive and stored as, for example, `Secondary 3` or `JC 2`. |
 | Note | 1–200 printable characters on one line, or empty to omit it. |
+
+Addresses retain the existing trimming of leading and trailing characters at or below U+0020, including ordinary spaces
+and tabs. The length limit counts Unicode code points, including accompanying combining marks.
+Other Unicode spaces, format characters, and combining marks can accompany address content, but cannot
+satisfy the required content rule alone. For example, an address containing only ZERO WIDTH SPACE (U+200B),
+NON-BREAKING SPACE (U+00A0), or combining accents is rejected. Ordinary Unicode text and its accompanying marks or
+formatting are preserved.
+
+This rule uses Unicode categories: BRAILLE PATTERN BLANK (U+2800) counts as a symbol and HANGUL FILLER (U+3164)
+counts as a letter, even when they appear blank in a font.
 
 Notes also trim surrounding Java whitespace, including EN SPACE (U+2002), EM SPACE (U+2003), and IDEOGRAPHIC SPACE
 (U+3000), before checking the 200-character limit. Internal spacing in a nonblank note is preserved. A note containing
@@ -179,7 +194,8 @@ Examples:
 Displays all contacts in insertion order, numbered from 1. This command clears filtering and sorting
 to restore the complete insertion-order list.
 
-Compact cards show only the index, role, name, and phone. `list` collapses any expanded card.
+Compact cards show index, role, name, and phone, plus academic level and subject for students.
+`list` retains the selected contact and its details while restoring the complete insertion-order list.
 
 Format: `list`
 
@@ -192,7 +208,7 @@ Format: `list`
 
 Example: `list`
 
-![Result of the list command showing four compact contact cards](images/listContactsResult.png)
+![Compact contact list beside the detail pane](images/mainWindow.png)
 
 ### Sorting contacts by academic level: `sort`
 
@@ -201,7 +217,7 @@ Format: `sort level`
 * Students come first: `Primary 1`–`Primary 6`, then `Secondary 1`–`Secondary 5`, then `JC 1`–`JC 2`.
   Names break level ties, ignoring case. Legacy students without levels follow other students;
   parents come last, ordered by name. Equal sort keys have no additional guaranteed order.
-* Sorts the current results, retaining the filter and any visible selected or expanded contact.
+* Sorts the current results, retaining the filter and any visible selected contact and its details.
   Sorting remains active as results change; `list` clears filtering and sorting.
 * `view`, `edit`, and `delete` use the displayed indices. Sorting does not save data or change stored order.
 * `SORT LEVEL` and surrounding Java whitespace are accepted, including EM SPACE (U+2003) around `level`.
@@ -211,6 +227,8 @@ Format: `sort level`
   `Invalid command format. Expected: sort level` and leave the display unchanged.
 
 Example: run `find Amy`, then `sort level` to order only the matching contacts. Run `list` to reset.
+
+![Result of sort level after filter s/Mathematics: Bea Tan (Primary 5) is listed before Alex Tan (Secondary 3)](images/sortByLevelResult.png)
 
 ### Viewing a contact: `view`
 
@@ -222,19 +240,24 @@ Format: `view INDEX`
 * Supply exactly one **positive integer**: `1`, `2`, `3`, … Use digits only; leading zeros are accepted.
 * On success, the message is `Showing contact: NAME.`
 * This command does not change contact details or save the data file.
-* The selected card is highlighted and expanded in place; other cards remain compact.
-* Expanded cards also show email, address, and note, plus subject and academic level for students.
+* The selected card is highlighted, and its complete information appears in the separate detail pane.
+  All contact cards remain compact. Clicking a card or selecting it with the list's arrow keys also shows its details.
+* The detail pane shows email, address, note, linked contacts, and subject and academic level for students.
   An absent note is shown as `None`. Older student records without subject or level show `Not recorded` for those fields.
-  Existing tags, if any, appear only in the expanded card.
-* Use `view` on another contact to move the expansion, or `list` to collapse it.
+  Existing tags, if any, appear in the detail pane. Long tags wrap within its width, and all tags can be reached
+  by scrolling vertically.
+* Use `view` on another contact to change the detail pane. `list` keeps the selected contact and its details.
+* On startup, the pane prompts you to select a contact. An empty displayed list shows guidance to use `list` or add a contact.
+* The list and detail pane start at a resizable 40/60 split. Below 800 logical pixels of workspace width,
+  they stack vertically. Each region scrolls independently. No selection or divider position is saved across restarts.
 
 Examples:
 * `list` followed by `view 2` shows the second displayed contact.
 * `find Betsy` followed by `view 1` shows the first search result.
 
-![Result of view 1 showing an expanded student contact card](images/viewContactResult.png)
+![Selected student shown beside the compact contact list](images/mainWindow.png)
 
-Invalid input leaves contact data, the displayed list, and the current selection and expansion unchanged:
+Invalid input leaves contact data, the displayed list, and the current selection and displayed details unchanged:
 
 | Input problem | Error message |
 | --- | --- |
@@ -253,8 +276,8 @@ Format: `link PARENT_INDEX STUDENT_INDEX`
 * Supply exactly two **positive integers**. The first must be a parent and the second must be a student.
 * A parent can be linked to several students, and a student can be linked to several parents.
 * On success, the message is `Linked parent PARENT_NAME (PHONE) to student STUDENT_NAME (PHONE).`
-  The parent's card is highlighted and expanded.
-* Expanded cards list linked contacts with their phone numbers, so contacts with the same name can be told apart.
+  The parent's card is highlighted and its details appear in the detail pane.
+* The detail pane lists linked contacts with their phone numbers, so contacts with the same name can be told apart.
   For example, a parent shows `Linked students: Alex Tan (91234567)` and a student shows `Linked parents: …`.
   A contact without links shows `None`.
 * Links are saved with your contacts. Deleting a linked contact removes its links, and editing a linked contact's
@@ -264,6 +287,8 @@ Format: `link PARENT_INDEX STUDENT_INDEX`
 Examples:
 * `list` followed by `link 2 1` links the parent at index 2 to the student at index 1.
 * `find Tan` followed by `link 1 3` links the first search result (a parent) to the third (a student).
+
+![Result of link 4 2: Mary Tan's expanded card lists her linked students with their phone numbers](images/linkContactsResult.png)
 
 Invalid input leaves contact data, links, and the displayed list unchanged:
 
@@ -311,6 +336,8 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
 
 * `INDEX` is the positive number shown beside the contact in the currently displayed list. At least one field must
   follow it. Prefixes may appear in any order, and fields not supplied remain unchanged.
+  An invalid index gets the same messages as `view` and `delete`: `Index must be a positive integer shown in the
+  current list.` or `No contact exists at index INDEX in the current list.`
 * The tutor may edit `s/SUBJECT` and `l/LEVEL` for a **student contact**. These fields may be changed independently;
   `edit 1 s/Physics` keeps the student's existing level. A parent contact cannot be given either field. This includes
   empty `s/` or `l/` prefixes. `edit` cannot change a contact's role.
@@ -322,13 +349,20 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
   [Prefixes and literal text](#prefixes-and-literal-text).
 * `t/TAG` replaces all existing tags, rather than adding to them. An empty `t/` clears all tags; repeated `t/`
   prefixes can supply multiple replacement tags.
+  * A tag contains one or more ASCII letters (`A`-`Z`, `a`-`z`) or digits (`0`-`9`) and no other characters.
+  * Tags are case-sensitive. Repeating the exact same tag keeps one copy, while `priority` and `Priority` are
+    different tags.
+  * TutorContacts does not impose a tag-length or tag-count limit. Long tag names wrap, and large tag collections
+    remain within the detail pane's scrollable area.
 * Edits still follow the existing duplicate-contact rule: the same role and normalized name, together with a
-  matching normalized phone or case-insensitive email, is a duplicate. Invalid input, a duplicate, or a failed save
-  leaves the displayed and saved contact data unchanged. Successful edits are saved automatically.
+  matching normalized phone or case-insensitive email, is a duplicate. A duplicate is rejected with
+  `This contact duplicates an existing ROLE: NAME (PHONE).`, naming the existing contact.
+  Invalid input, a duplicate, or a failed save leaves the displayed and saved contact data unchanged.
+  Successful edits are saved automatically.
 * After a successful edit, TutorContacts reports `Edited person: ...` and displays the complete contact list again.
-  A search filter is cleared, so contact indices may change. Check the contact's current index, or search for the
-  contact again, before using `view INDEX` to inspect its subject, level, or note. The success message itself lists
-  only the general contact fields.
+  A search filter is cleared, so contact indices may change. The edited contact becomes selected and its updated
+  details appear in the detail pane at its new index. Linked-contact details refresh after the edit.
+  The success message lists the general contact fields and tags; it does not list subject, level, or note.
 * Editing a linked contact's name or phone keeps its links to other contacts.
 
 Examples (assuming contact 1 is a student and contact 2 is a parent):
@@ -339,6 +373,8 @@ Examples (assuming contact 1 is a student and contact 2 is a parent):
 * `edit 2 o/` clears an existing note on either role.
 * `edit 1 p/91234567 e/johndoe@example.com` updates the first displayed contact's phone and email.
 * `edit 2 n/Betsy Crower t/` changes the second displayed contact's name and clears all its tags.
+
+![Result of view 1 after edit 1 s/Physics l/JC 1 o/Prefers worked examples, showing the updated subject, level, and note](images/editStudentDetailsResult.png)
 
 For a parent contact, `edit 2 s/Math` is rejected with `Subject and level are only valid for student contacts.` An
 empty `s/` or `l/` is invalid for a student contact rather than a way to remove its subject or level.
@@ -386,8 +422,8 @@ Command words and prefixes are case-insensitive, and prefixes can appear in any 
 * Results default to ascending full-name order, ignoring case. Equal names retain insertion order.
   An already active display ordering is preserved.
 * `view INDEX`, `edit INDEX`, and `delete INDEX` use the numbered results currently displayed.
-  `list` clears both filtering and ordering, shows all remaining contacts in insertion order, and collapses details.
-* Selection and expansion stay with the selected contact if it remains visible; otherwise they clear.
+  `list` clears both filtering and ordering, shows all remaining contacts in insertion order, and retains the selected contact's details.
+* Selection and details stay with the selected contact if it remains visible; otherwise they clear.
 * Filtering does not change stored contacts or rewrite the data file. Filters and display ordering are not retained
   when the application restarts. Startup uses insertion order.
 * Existing `add` and `edit` commands clear the filter after success and preserve active display ordering.
@@ -400,10 +436,12 @@ Examples:
 * `filter s/Mathematics`, then `view 1`, shows the first result in the displayed order.
 * `filter s/Mathematics`, then `list`, restores the complete insertion-order list.
 
+![Result of filter s/Mathematics showing only the two Mathematics students](images/filterContactsResult.png)
+
 Successful filtering reports `Showing N matching contacts.`, including `Showing 1 matching contacts.` for one match.
 Zero matches (including an empty address book) reports `No matching contacts.` and displays an empty list.
 
-Invalid input leaves contacts, the displayed list, ordering, selection, expansion, and saved data unchanged.
+Invalid input leaves contacts, the displayed list, ordering, selection, details, and saved data unchanged.
 
 | Input problem | Error message |
 | --- | --- |
@@ -434,8 +472,8 @@ Format: `delete INDEX`
 * On success, the message is `Deleted contact: ROLE NAME (PHONE).` The role and phone distinguish contacts that
   share a name. The remaining contacts keep their order and are renumbered.
 * Deleting a linked contact also removes its links. The message then ends with `Removed COUNT link(s).`
-* Deleting the selected contact clears the selection and expansion. Deleting another contact keeps the selected
-  contact highlighted, with its new index and any expanded details.
+* Deleting the selected contact clears the selection and detail pane. Deleting another contact keeps the selected
+  contact highlighted, with its new index and current details.
 
 Examples:
 * `list` followed by `delete 2` deletes the second displayed contact.
@@ -471,6 +509,8 @@ Additional text is rejected with `Invalid command format. Expected: exit`; for e
 TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `link`, `unlink`, `delete`, and
 `clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `filter`, `help`, and `exit` do not rewrite
 the data file. A failed save leaves both the displayed contacts and the existing data file unchanged.
+TutorContacts then says the change was not made, for example
+`Contact was not edited because TutorContacts could not save the data file.`
 
 ### Editing the data file
 
@@ -478,11 +518,21 @@ Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
 to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
 the first successful data-changing command. Advanced users can edit the JSON file directly.
+The file must contain a single JSON object. A file containing only `null`, or an object followed by another JSON value
+or other text, is invalid. Spaces, tabs, and line breaks around the object are allowed.
+
+Launching the JAR from a terminal in another folder still uses the data and preferences beside that JAR.
+If an older version saved your contacts under a different launch folder, close TutorContacts and copy that folder's
+`data/tutorcontacts.json` into the JAR folder's `data` directory. Back up both copies before replacing an existing file.
 
 Links are saved in a `links` list. Each link names the parent and student by their name and phone, for example
 `{ "parentName": "Bernice Yu", "parentPhone": "99272758", "studentName": "Alex Yeoh", "studentPhone": "87438807" }`.
 If you change a contact's name or phone in the file, update its links too: a link to a contact that does not exist
 makes the file invalid.
+
+The address content rule also applies to JSON. An older file containing an address made only of spaces, format
+characters, or combining marks is invalid under this rule. TutorContacts displays the load warning below and preserves
+the entire file. Back up the file, replace the invalid address with valid address text, and restart to load the contacts.
 
 A missing, empty, or Java-whitespace-only stored note is loaded as absent. Surrounding Java whitespace is removed
 from a nonblank note. Loading does not rewrite the contact file; the normalized values are saved with the next
@@ -492,12 +542,16 @@ successful contact change.
 If the data file is invalid or unreadable, TutorContacts starts with an empty list and displays
 `Warning: TutorContacts could not load data/tutorcontacts.json. The existing file was not changed.`
 TutorContacts will not overwrite that file during the session; repair it and restart the app before changing contacts.
+Until then, commands that change contacts reply `Changes are disabled because TutorContacts could not load
+data/tutorcontacts.json. Repair the file, then restart TutorContacts.`
 Back up the file before editing it.<br>
 Certain edits can also cause TutorContacts to behave unexpectedly (for example, if a value is outside the acceptable
 range). Edit the data file only if you are confident that you can update it correctly.
 </div>
 
-Window settings are stored separately in `preferences.json` next to the JAR file. If that file is invalid or unreadable,
+Window settings are stored separately in `preferences.json` next to the JAR file. You can also copy this file from an
+older launch folder while the app is closed if you want to retain its window settings.
+If the file is invalid or unreadable,
 TutorContacts uses default window settings and displays
 `Warning: TutorContacts could not load preferences.json. Default window settings are in use; the existing file was not changed.`
 The file is not overwritten at startup or exit. Repair or rename it before restarting if you want window settings to be

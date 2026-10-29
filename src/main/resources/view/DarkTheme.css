@@ -375,3 +375,12 @@
     -fx-background-radius: 2;
     -fx-font-size: 11;
 }
+
+#tagScroller, #tagScroller > .viewport {
+    -fx-background-color: transparent;
+}
+
+#tagScroller {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}

@@ -5,21 +5,29 @@ import java.util.function.Function;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Orientation;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.model.person.Person;
 
 /**
- * Panel containing the list of persons.
+ * Coordinates compact contact cards and a detail pane using one contact-based selection.
  */
 public class PersonListPanel extends UiPart<Region> {
     private static final String FXML = "PersonListPanel.fxml";
+    private static final double HORIZONTAL_MIN_WIDTH = 800;
+    private static final double DEFAULT_DIVIDER_POSITION = 0.4;
     private final ContactListState state = new ContactListState();
+    private final ContactDetailPanel detailPanel = new ContactDetailPanel();
 
     /**
-     * Looks up the contacts linked to a contact so that expanded cards can list them.
+     * Looks up relationships independently of the filtered list and of JavaFX cell reuse.
      */
     private final Function<Person, List<Person>> linkedPersonsLookup;
 
@@ -31,6 +39,14 @@ public class PersonListPanel extends UiPart<Region> {
 
     @FXML
     private ListView<Person> personListView;
+    @FXML
+    private SplitPane contactSplitPane;
+    @FXML
+    private VBox contactsPane;
+    @FXML
+    private StackPane detailPanePlaceholder;
+    @FXML
+    private Label contactCount;
 
     /**
      * Creates a {@code PersonListPanel} with the given {@code ObservableList} and no linked contacts.
@@ -40,7 +56,7 @@ public class PersonListPanel extends UiPart<Region> {
     }
 
     /**
-     * Creates a {@code PersonListPanel} whose expanded cards list the contacts returned by {@code linkedPersonsLookup}.
+     * Creates a workspace whose detail pane includes the contacts returned by {@code linkedPersonsLookup}.
      *
      * @param personList Contacts to display.
      * @param linkedPersonsLookup Returns the contacts linked to a given contact.
@@ -48,14 +64,18 @@ public class PersonListPanel extends UiPart<Region> {
     public PersonListPanel(ObservableList<Person> personList, Function<Person, List<Person>> linkedPersonsLookup) {
         super(FXML);
         this.linkedPersonsLookup = linkedPersonsLookup;
+        detailPanePlaceholder.getChildren().add(detailPanel.getRoot());
         personListView.setItems(personList);
         personListView.setCellFactory(listView -> new PersonListViewCell());
         personListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (!isExecutingCommand && !isUpdatingSelection) {
                 state.select(newValue);
-                personListView.refresh();
+                refreshDetails();
             }
         });
+        contactSplitPane.widthProperty().addListener((observable, oldWidth, newWidth) -> updateOrientation());
+        updateOrientation();
+        refreshDetails();
     }
 
     /**
@@ -73,8 +93,8 @@ public class PersonListPanel extends UiPart<Region> {
     public void completeCommand(CommandResult result) {
         state.apply(result, personListView.getItems());
         refreshSelection();
-        if (result.getContact().isPresent()) {
-            personListView.scrollTo(result.getContact().get());
+        if (state.getSelectedContact().isPresent()) {
+            personListView.scrollTo(state.getSelectedContact().get());
         }
         isExecutingCommand = false;
     }
@@ -99,7 +119,40 @@ public class PersonListPanel extends UiPart<Region> {
             personListView.getSelectionModel().clearSelection();
         }
         personListView.refresh();
+        refreshDetails();
         isUpdatingSelection = false;
+    }
+
+    /**
+     * Refreshes count and relationships after every command, including changes that do not alter the list.
+     */
+    private void refreshDetails() {
+        int count = personListView.getItems().size();
+        contactCount.setText(count + (count == 1 ? " contact" : " contacts"));
+        if (state.getSelectedContact().isPresent()) {
+            Person contact = state.getSelectedContact().orElseThrow();
+            int displayedIndex = personListView.getItems().indexOf(contact) + 1;
+            assert displayedIndex > 0 : "The selected contact must belong to the final displayed list";
+            detailPanel.showContact(contact, displayedIndex, linkedPersonsLookup.apply(contact));
+        } else {
+            detailPanel.clear(count == 0);
+        }
+    }
+
+    /**
+     * Stacks panes when two readable columns no longer fit, without creating another window.
+     */
+    private void updateOrientation() {
+        boolean isHorizontal = contactSplitPane.getWidth() >= HORIZONTAL_MIN_WIDTH;
+        Orientation orientation = isHorizontal ? Orientation.HORIZONTAL : Orientation.VERTICAL;
+        contactsPane.setMinWidth(isHorizontal ? 280 : 0);
+        detailPanePlaceholder.setMinWidth(isHorizontal ? 320 : 0);
+        contactsPane.setMinHeight(isHorizontal ? 0 : 60);
+        detailPanePlaceholder.setMinHeight(isHorizontal ? 0 : 40);
+        if (contactSplitPane.getOrientation() != orientation) {
+            contactSplitPane.setOrientation(orientation);
+            contactSplitPane.setDividerPositions(DEFAULT_DIVIDER_POSITION);
+        }
     }
 
     /**
@@ -114,8 +167,7 @@ public class PersonListPanel extends UiPart<Region> {
                 setGraphic(null);
                 setText(null);
             } else {
-                PersonCard card = new PersonCard(person, getIndex() + 1, state.isExpanded(person),
-                        linkedPersonsLookup.apply(person));
+                PersonCard card = new PersonCard(person, getIndex() + 1);
                 card.getRoot().prefWidthProperty().bind(widthProperty().subtract(20));
                 setGraphic(card.getRoot());
             }

@@ -1,0 +1,141 @@
+/* Keep contact styles local to the workspace so the command guide retains its own appearance. */
+.contact-workspace {
+    -fx-background-color: #151a21;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.contact-workspace .label {
+    -fx-font-family: "System";
+    -fx-font-size: 18px;
+    -fx-text-fill: #f1f5f9;
+    -fx-opacity: 1;
+}
+
+.contact-workspace:horizontal .split-pane-divider,
+.contact-workspace:vertical .split-pane-divider {
+    -fx-background-color: #151a21;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0 10;
+}
+
+.contact-workspace:vertical .split-pane-divider {
+    -fx-padding: 8 0;
+}
+
+.contact-workspace .split-pane-divider:hover {
+    -fx-background-color: #354352;
+}
+
+.contact-workspace .contacts-heading,
+.contact-workspace .contact-name {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.contact-workspace .contact-index,
+.contact-workspace .contact-secondary {
+    -fx-font-size: 16px;
+    -fx-text-fill: #b9c5d2;
+}
+
+.contact-workspace .contact-index {
+    -fx-text-fill: #95a5b8;
+}
+
+.contact-workspace .list-view,
+.contact-workspace .list-cell {
+    -fx-background-color: #151a21;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.contact-workspace .list-cell {
+    -fx-padding: 0 0 8 0;
+}
+
+.contact-workspace #cardPane {
+    -fx-background-color: #1d242d;
+    -fx-background-radius: 6;
+    -fx-border-color: #354352;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-padding: 12;
+}
+
+.contact-workspace .list-cell:filled:selected #cardPane {
+    -fx-background-color: #213e3c;
+    -fx-border-color: #6ddfc2;
+    -fx-border-width: 2;
+    -fx-padding: 11;
+}
+
+.contact-workspace .contact-role {
+    -fx-font-family: "System";
+    -fx-font-size: 14px;
+    -fx-font-weight: normal;
+    -fx-padding: 4 8;
+    -fx-background-radius: 6;
+}
+
+.contact-workspace .student-role {
+    -fx-background-color: #233f43;
+    -fx-text-fill: #8de4d5;
+}
+
+.contact-workspace .parent-role {
+    -fx-background-color: #3b334a;
+    -fx-text-fill: #d7bef2;
+}
+
+.contact-workspace .contact-detail-panel,
+.contact-workspace .contact-detail-panel > .viewport {
+    -fx-background-color: #1d242d;
+    -fx-background-insets: 0;
+}
+
+.contact-workspace .contact-detail-panel {
+    -fx-border-color: #354352;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 1;
+}
+
+.contact-workspace .detail-content {
+    -fx-padding: 24;
+}
+
+.contact-workspace .detail-name {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+}
+
+.contact-workspace .field-caption {
+    -fx-font-size: 14px;
+    -fx-text-fill: #95a5b8;
+}
+
+.contact-workspace .separator .line {
+    -fx-border-color: #354352 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.contact-workspace .tuition-fields {
+    -fx-background-color: #252f3b;
+    -fx-background-radius: 6;
+    -fx-padding: 8 16;
+}
+
+.contact-workspace .scroll-bar {
+    -fx-background-color: #151a21;
+}
+
+.contact-workspace .contact-detail-panel .scroll-bar {
+    -fx-background-color: #1d242d;
+}
+
+.contact-workspace .scroll-bar .thumb {
+    -fx-background-color: #354352;
+    -fx-background-radius: 6;
+}

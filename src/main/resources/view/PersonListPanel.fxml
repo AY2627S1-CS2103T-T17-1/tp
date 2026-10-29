@@ -1,8 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
-  <ListView fx:id="personListView" VBox.vgrow="ALWAYS" />
-</VBox>
+<SplitPane fx:id="contactSplitPane" dividerPositions="0.4" minWidth="0" minHeight="0"
+           styleClass="contact-workspace" stylesheets="@ContactWorkspace.css"
+           xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+  <items>
+    <VBox fx:id="contactsPane" spacing="8" minWidth="0" minHeight="0">
+      <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label text="Contacts" styleClass="contacts-heading" maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+        <Label fx:id="contactCount" styleClass="contact-index" minWidth="-Infinity" />
+      </HBox>
+      <ListView fx:id="personListView" minHeight="0" minWidth="0" VBox.vgrow="ALWAYS">
+        <placeholder>
+          <Label text="No contacts to display." styleClass="contact-secondary" wrapText="true" />
+        </placeholder>
+      </ListView>
+    </VBox>
+    <StackPane fx:id="detailPanePlaceholder" minWidth="0" minHeight="0" />
+  </items>
+</SplitPane>

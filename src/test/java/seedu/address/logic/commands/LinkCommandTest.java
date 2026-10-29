@@ -39,7 +39,7 @@ public class LinkCommandTest {
         String expectedMessage = "Linked parent George Best (9482442) to student Alice Pauline (94351253).";
 
         assertCommandSuccess(new LinkCommand(INDEX_GEORGE, INDEX_FIRST_PERSON), model,
-                CommandResult.expandContact(expectedMessage, GEORGE), expectedModel);
+                CommandResult.selectContact(expectedMessage, GEORGE), expectedModel);
         assertEquals(List.of(GEORGE), model.getLinkedPersons(ALICE));
     }
 

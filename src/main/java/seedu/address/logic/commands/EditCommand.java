@@ -61,7 +61,7 @@ public class EditCommand extends Command {
 
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
-    public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
+    public static final String MESSAGE_DUPLICATE_PERSON = "This contact duplicates an existing %1$s: %2$s (%3$s).";
 
     private final Index index;
     private final EditPersonDescriptor editPersonDescriptor;
@@ -84,26 +84,38 @@ public class EditCommand extends Command {
         List<Person> lastShownList = model.getFilteredPersonList();
 
         if (index.getZeroBased() >= lastShownList.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+            throw new CommandException(
+                    String.format(Messages.MESSAGE_DISPLAYED_INDEX_OUT_OF_RANGE, index.getOneBased()));
         }
 
         Person personToEdit = lastShownList.get(index.getZeroBased());
         if (personToEdit.getRole() == Role.PARENT
-                && (editPersonDescriptor.getSubject().isPresent() || editPersonDescriptor.getLevel().isPresent())) {
+                && (editPersonDescriptor.isSubjectEdited() || editPersonDescriptor.isLevelEdited())) {
             throw new CommandException(AddCommand.MESSAGE_PARENT_FIELDS);
+        }
+        if (editPersonDescriptor.isSubjectEdited() && editPersonDescriptor.getSubject().isEmpty()) {
+            throw new CommandException(Subject.MESSAGE_CONSTRAINTS);
+        }
+        if (editPersonDescriptor.isLevelEdited() && editPersonDescriptor.getLevel().isEmpty()) {
+            throw new CommandException(Level.MESSAGE_CONSTRAINTS);
         }
         Person editedPerson = createEditedPerson(personToEdit, editPersonDescriptor);
 
-        boolean hasDuplicatePerson = model.getAddressBook().getPersonList().stream()
+        // Name the clashing contact with its phone, since contacts with the same name can coexist.
+        Optional<Person> duplicatePerson = model.getAddressBook().getPersonList().stream()
                 .filter(person -> !person.equals(personToEdit))
-                .anyMatch(editedPerson::isSamePerson);
-        if (hasDuplicatePerson) {
-            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+                .filter(editedPerson::isSamePerson)
+                .findFirst();
+        if (duplicatePerson.isPresent()) {
+            Person existingPerson = duplicatePerson.get();
+            throw new CommandException(String.format(MESSAGE_DUPLICATE_PERSON,
+                    existingPerson.getRole(), existingPerson.getName(), existingPerson.getPhone()));
         }
 
         model.setPerson(personToEdit, editedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
-        return new CommandResult(String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)));
+        return CommandResult.selectContact(
+                String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), editedPerson);
     }
 
     /**
@@ -160,6 +172,8 @@ public class EditCommand extends Command {
         private Address address;
         private Subject subject;
         private Level level;
+        private boolean isSubjectEdited;
+        private boolean isLevelEdited;
         private Optional<Note> note;
         private Set<Tag> tags;
 
@@ -174,8 +188,20 @@ public class EditCommand extends Command {
             setPhone(toCopy.phone);
             setEmail(toCopy.email);
             setAddress(toCopy.address);
-            setSubject(toCopy.subject);
-            setLevel(toCopy.level);
+            if (toCopy.isSubjectEdited) {
+                if (toCopy.subject == null) {
+                    setEmptySubject();
+                } else {
+                    setSubject(toCopy.subject);
+                }
+            }
+            if (toCopy.isLevelEdited) {
+                if (toCopy.level == null) {
+                    setEmptyLevel();
+                } else {
+                    setLevel(toCopy.level);
+                }
+            }
             if (toCopy.note != null) {
                 setNote(toCopy.note);
             }
@@ -186,7 +212,8 @@ public class EditCommand extends Command {
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, phone, email, address, subject, level, note, tags);
+            return isSubjectEdited || isLevelEdited
+                    || CollectionUtil.isAnyNonNull(name, phone, email, address, note, tags);
         }
 
         public void setName(Name name) {
@@ -223,34 +250,76 @@ public class EditCommand extends Command {
 
         /**
          * Sets the student's subject to use for this edit.
+         *
+         * @param subject Subject to use when editing a student contact.
          */
         public void setSubject(Subject subject) {
-            this.subject = subject;
+            this.subject = requireNonNull(subject);
+            isSubjectEdited = true;
+        }
+
+        /**
+         * Records that an empty subject was supplied so role validation can occur before value validation.
+         */
+        public void setEmptySubject() {
+            subject = null;
+            isSubjectEdited = true;
         }
 
         /**
          * Returns the subject supplied for this edit, if any.
+         *
+         * @return The supplied subject, or empty if no subject edit was specified.
          */
         public Optional<Subject> getSubject() {
             return Optional.ofNullable(subject);
         }
 
         /**
+         * Returns whether a subject prefix was supplied for this edit.
+         */
+        public boolean isSubjectEdited() {
+            return isSubjectEdited;
+        }
+
+        /**
          * Sets the student's academic level to use for this edit.
+         *
+         * @param level Academic level to use when editing a student contact.
          */
         public void setLevel(Level level) {
-            this.level = level;
+            this.level = requireNonNull(level);
+            isLevelEdited = true;
+        }
+
+        /**
+         * Records that an empty level was supplied so role validation can occur before value validation.
+         */
+        public void setEmptyLevel() {
+            level = null;
+            isLevelEdited = true;
         }
 
         /**
          * Returns the academic level supplied for this edit, if any.
+         *
+         * @return The supplied level, or empty if no level edit was specified.
          */
         public Optional<Level> getLevel() {
             return Optional.ofNullable(level);
         }
 
         /**
+         * Returns whether a level prefix was supplied for this edit.
+         */
+        public boolean isLevelEdited() {
+            return isLevelEdited;
+        }
+
+        /**
          * Sets the note to replace the existing note, or an empty value to clear it.
+         *
+         * @param note Note to use for the edit, or empty to clear the existing note.
          */
         public void setNote(Optional<Note> note) {
             this.note = requireNonNull(note);
@@ -258,6 +327,8 @@ public class EditCommand extends Command {
 
         /**
          * Returns the specified note change, if any. An inner empty value means the note should be cleared.
+         *
+         * @return An outer empty value if no note edit was specified; an inner empty value if it should be cleared.
          */
         public Optional<Optional<Note>> getNote() {
             return Optional.ofNullable(note);
@@ -295,6 +366,8 @@ public class EditCommand extends Command {
                     && Objects.equals(phone, otherEditPersonDescriptor.phone)
                     && Objects.equals(email, otherEditPersonDescriptor.email)
                     && Objects.equals(address, otherEditPersonDescriptor.address)
+                    && isSubjectEdited == otherEditPersonDescriptor.isSubjectEdited
+                    && isLevelEdited == otherEditPersonDescriptor.isLevelEdited
                     && Objects.equals(subject, otherEditPersonDescriptor.subject)
                     && Objects.equals(level, otherEditPersonDescriptor.level)
                     && Objects.equals(note, otherEditPersonDescriptor.note)
@@ -308,6 +381,8 @@ public class EditCommand extends Command {
                     .add("phone", phone)
                     .add("email", email)
                     .add("address", address)
+                    .add("isSubjectEdited", isSubjectEdited)
+                    .add("isLevelEdited", isLevelEdited)
                     .add("subject", subject)
                     .add("level", level)
                     .add("note", note)

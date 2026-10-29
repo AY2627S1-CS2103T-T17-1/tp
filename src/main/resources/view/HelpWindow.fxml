@@ -51,7 +51,7 @@
                 <Label minHeight="-Infinity" text="List all contacts" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="list" styleClass="command-syntax" />
                 <Label minHeight="-Infinity"
-                    text="Restore the complete insertion-order list and collapse expanded details."
+                    text="Restore the complete insertion-order list and retain the selected contact's details."
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
@@ -66,7 +66,7 @@
               <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="View contact details" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="view INDEX" styleClass="command-syntax" />
-                <Label minHeight="-Infinity" text="Expand the contact at INDEX in the displayed list. Example: view 1"
+                <Label minHeight="-Infinity" text="Show the contact at INDEX in the details pane. Example: view 1"
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">

@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +20,7 @@ import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.DataLoadingException;
 
 /**
- * Converts a Java object instance to JSON and vice versa
+ * Converts Java objects to JSON and reads complete JSON documents.
  */
 public class JsonUtil {
 
@@ -43,10 +44,13 @@ public class JsonUtil {
     /**
      * Returns the JSON object from the given file or {@code Optional.empty()} object if the file is not found.
      * If any values are missing from the file, default values will be used, as long as the file is a valid JSON file.
+     * An existing file must deserialize to a non-null value from one complete JSON document.
      *
      * @param filePath cannot be null.
      * @param classOfObjectToDeserialize JSON file has to correspond to the structure in the class given here.
-     * @throws DataLoadingException if loading of the JSON file failed.
+     * @param <T> Type of the deserialized value.
+     * @return The loaded value, or an empty optional if the file does not exist.
+     * @throws DataLoadingException If reading fails, deserialization returns null, or the document is invalid.
      */
     public static <T> Optional<T> readJsonFile(
             Path filePath, Class<T> classOfObjectToDeserialize) throws DataLoadingException {
@@ -61,6 +65,9 @@ public class JsonUtil {
 
         try {
             jsonFile = deserializeObjectFromJsonFile(filePath, classOfObjectToDeserialize);
+            if (jsonFile == null) {
+                throw new IOException("JSON file must not contain a null root value.");
+            }
         } catch (IOException e) {
             logger.warning("Error reading from jsonFile file " + filePath + ": " + e);
             throw new DataLoadingException(e);
@@ -85,12 +92,23 @@ public class JsonUtil {
 
 
     /**
-     * Converts a given string representation of JSON data to an instance of a class
-     * @param <T> The generic type to create an instance of
-     * @return The instance of T with the specified values in the JSON string
+     * Converts one complete JSON value to an instance of the requested class.
+     * Allows surrounding JSON whitespace, but rejects trailing values or malformed content.
+     *
+     * @param json JSON document to deserialize.
+     * @param instanceClass Class of the result.
+     * @param <T> Type of the result.
+     * @return The deserialized value, which may be {@code null}.
+     * @throws IOException If the document is malformed, contains trailing content, or cannot be deserialized.
      */
     public static <T> T fromJsonString(String json, Class<T> instanceClass) throws IOException {
-        return objectMapper.readValue(json, instanceClass);
+        try (JsonParser parser = objectMapper.getFactory().createParser(json)) {
+            T value = objectMapper.readValue(parser, instanceClass);
+            if (parser.nextToken() != null) {
+                throw new IOException("Unexpected content after the JSON value.");
+            }
+            return value;
+        }
     }
 
     /**
