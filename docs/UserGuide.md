@@ -298,10 +298,12 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
 * Edits still follow the existing duplicate-contact rule: the same role and normalized name, together with a
   matching normalized phone or case-insensitive email, is a duplicate. Invalid input, a duplicate, or a failed save
   leaves the displayed and saved contact data unchanged. Successful edits are saved automatically.
-* After a successful edit, TutorContacts reports `Edited person: ...` and displays the complete contact list again.
-  A search filter is cleared, so contact indices may change. Check the contact's current index, or search for the
-  contact again, before using `view INDEX` to inspect its subject, level, or note. The success message itself lists
-  only the general contact fields.
+* After a successful edit, TutorContacts reports the saved details, for example
+  `Edited student: Alex Tan (91234567); Email: alex@example.com; Address: 1 Clementi Rd; Subject: Physics;
+  Level: JC 1; Note: Prefers worked examples.` Students show their subject and level, and every contact shows its
+  note (`None` if empty) and any tags.
+* The complete contact list is then displayed again with the edited contact highlighted. A search filter is cleared,
+  so contact indices may change; check the contact's current index before using another index-based command.
 * Editing a linked contact's name or phone keeps its links to other contacts.
 
 Examples (assuming contact 1 is a student and contact 2 is a parent):

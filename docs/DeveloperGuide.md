@@ -678,7 +678,7 @@ in the current AB3 codebase.)
 2. TutorContacts resolves `INDEX` in the currently displayed list, validates the supplied fields against the
    contact's role, and checks that the edited contact does not duplicate another record.
 3. TutorContacts replaces the contact while retaining its role and omitted fields, then shows the complete list.
-4. TutorContacts saves the updated data and reports `Edited person: ...`.
+4. TutorContacts saves the updated data and reports `Edited ROLE: NAME (PHONE); ...` with the saved details.
 
    Use case ends.
 
