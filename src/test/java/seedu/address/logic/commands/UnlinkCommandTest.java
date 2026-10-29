@@ -75,6 +75,20 @@ public class UnlinkCommandTest {
     }
 
     @Test
+    public void execute_sameIndexInEmptyList_reportsMissingContact() {
+        assertCommandFailure(new UnlinkCommand(INDEX_FIRST_PERSON, INDEX_FIRST_PERSON), new ModelManager(),
+                "No contact exists at index 1 in the current list.");
+    }
+
+    @Test
+    public void execute_sameIndexOutsideFilteredList_reportsMissingContact() {
+        model.updateFilteredPersonList(person -> false);
+
+        assertCommandFailure(new UnlinkCommand(INDEX_FIRST_PERSON, INDEX_FIRST_PERSON), model,
+                "No contact exists at index 1 in the current list.");
+    }
+
+    @Test
     public void execute_indexOutOfRange_throwsCommandException() {
         Index outOfBoundIndex = Index.fromOneBased(model.getFilteredPersonList().size() + 1);
 

@@ -47,18 +47,19 @@ public abstract class ParentStudentCommand extends Command {
      * @param model Model whose displayed list the indices refer to.
      * @param sameIndexMessage Feedback to give if both indices refer to the same contact.
      * @return The parent and student to act on.
-     * @throws CommandException If both indices are the same, either index is out of range, or the contacts do not
-     *     have the parent and student roles respectively.
+     * @throws CommandException If either index is out of range, both indices are the same, or the contacts do not
+     *     have the parent and student roles respectively. These are checked in that order.
      */
     protected ParentAndStudent getParentAndStudent(Model model, String sameIndexMessage) throws CommandException {
         requireNonNull(model);
         List<Person> displayedContacts = model.getFilteredPersonList();
 
+        // Resolve both contacts first, so an index outside the list is reported even when both indices match.
+        Person parent = getDisplayedContact(displayedContacts, parentIndex);
+        Person student = getDisplayedContact(displayedContacts, studentIndex);
         if (parentIndex.equals(studentIndex)) {
             throw new CommandException(sameIndexMessage);
         }
-        Person parent = getDisplayedContact(displayedContacts, parentIndex);
-        Person student = getDisplayedContact(displayedContacts, studentIndex);
         if (parent.getRole() != Role.PARENT) {
             throw new CommandException(String.format(MESSAGE_NOT_PARENT, parentIndex.getOneBased()));
         }
