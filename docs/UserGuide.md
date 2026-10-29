@@ -482,6 +482,8 @@ Additional text is rejected with `Invalid command format. Expected: exit`; for e
 TutorContacts automatically saves contact data after commands that change it, such as `add`, `edit`, `link`, `delete`, and
 `clear`. You do not need to save manually. Read-only commands such as `list`, `find`, `filter`, `help`, and `exit` do not rewrite
 the data file. A failed save leaves both the displayed contacts and the existing data file unchanged.
+TutorContacts then says the change was not made, for example
+`Contact was not edited because TutorContacts could not save the data file.`
 
 ### Editing the data file
 
@@ -513,6 +515,8 @@ successful contact change.
 If the data file is invalid or unreadable, TutorContacts starts with an empty list and displays
 `Warning: TutorContacts could not load data/tutorcontacts.json. The existing file was not changed.`
 TutorContacts will not overwrite that file during the session; repair it and restart the app before changing contacts.
+Until then, commands that change contacts reply `Changes are disabled because TutorContacts could not load
+data/tutorcontacts.json. Repair the file, then restart TutorContacts.`
 Back up the file before editing it.<br>
 Certain edits can also cause TutorContacts to behave unexpectedly (for example, if a value is outside the acceptable
 range). Edit the data file only if you are confident that you can update it correctly.

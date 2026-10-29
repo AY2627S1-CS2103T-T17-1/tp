@@ -165,7 +165,7 @@ public class MainAppTest {
         assertEquals(ListCommand.MESSAGE_EMPTY_LIST, app.logic.execute("list").getFeedbackToUser());
         String addCommand = "add r/parent n/Alpha Parent p/91000001 e/alpha@example.com a/1 Test Road";
         assertThrows(CommandException.class,
-                LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> app.logic.execute(addCommand));
+                LogicManager.MESSAGE_DATA_FILE_NOT_LOADED, () -> app.logic.execute(addCommand));
         assertEquals(new AddressBook(), app.model.getAddressBook());
         assertArrayEquals(originalData, Files.readAllBytes(dataPath));
 
