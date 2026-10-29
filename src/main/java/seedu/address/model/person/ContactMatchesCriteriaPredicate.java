@@ -36,8 +36,20 @@ public class ContactMatchesCriteriaPredicate implements Predicate<Person> {
         this.level = requireNonNull(level);
         checkArgument(!nameKeywords.isEmpty() || subject.isPresent() || level.isPresent(),
                 "At least one filter criterion is required.");
-        checkArgument(nameKeywords.stream().allMatch(keyword -> !keyword.isBlank() && keyword.matches("\\S+")),
+        checkArgument(nameKeywords.stream().allMatch(ContactMatchesCriteriaPredicate::isValidNameKeyword),
                 "Name keywords must be nonblank single words.");
+    }
+
+    /**
+     * Returns whether a keyword is a nonblank single word under the filter's whitespace rules.
+     *
+     * @param keyword Keyword to validate.
+     * @return {@code true} if the keyword is nonblank and contains no regex whitespace.
+     * @throws NullPointerException If {@code keyword} is {@code null}.
+     */
+    public static boolean isValidNameKeyword(String keyword) {
+        requireNonNull(keyword);
+        return !keyword.isBlank() && keyword.matches("\\S+");
     }
 
     /**

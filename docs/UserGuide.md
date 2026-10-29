@@ -329,6 +329,9 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * Contacts matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
 * A new `find` replaces the previous search/filter and retains the current display ordering.
 
+Successful searches report `Showing N matching contacts.`, including `Showing 1 matching contacts.` for one match.
+Zero matches (including an empty address book) report `No matching contacts.` and display an empty list.
+
 Examples:
 * `find John` returns `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`
@@ -448,6 +451,8 @@ Contact data is saved as a JSON file at `[JAR file location]/data/tutorcontacts.
 `data/addressbook.json`, is not loaded automatically; copy it to the new path before starting TutorContacts if you want
 to keep those contacts. If the data file is missing, TutorContacts starts with an empty list and creates the file after
 the first successful data-changing command. Advanced users can edit the JSON file directly.
+The file must contain a single JSON object. A file containing only `null`, or an object followed by another JSON value
+or other text, is invalid. Spaces, tabs, and line breaks around the object are allowed.
 
 Launching the JAR from a terminal in another folder still uses the data and preferences beside that JAR.
 If an older version saved your contacts under a different launch folder, close TutorContacts and copy that folder's

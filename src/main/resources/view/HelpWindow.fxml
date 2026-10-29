@@ -78,10 +78,16 @@
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="Edit a contact" styleClass="command-title" />
-                <Label minHeight="-Infinity" text="edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [t/TAG]..."
+                <Label minHeight="-Infinity" text="edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVEL] [o/NOTE] [t/TAG]..."
                     styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />
                 <Label minHeight="-Infinity"
-                    text="Supply at least one field. Role, subject, level, and note cannot be edited yet."
+                    text="Supply at least one field. Unspecified fields stay unchanged. Role cannot be edited."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Only students can have their subject and academic level edited."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="Both students and parents can have their note edited. Use an empty o/ to clear the note."
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">

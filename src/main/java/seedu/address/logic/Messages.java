@@ -15,7 +15,6 @@ public class Messages {
             "Index must be a positive integer shown in the current list.";
     public static final String MESSAGE_DISPLAYED_INDEX_OUT_OF_RANGE =
             "No contact exists at index %1$s in the current list.";
-    public static final String MESSAGE_PERSONS_LISTED_OVERVIEW = "%1$d person(s) listed!";
     public static final String MESSAGE_DUPLICATE_FIELDS =
             "Prefix %s may be specified only once.";
 
