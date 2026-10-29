@@ -345,7 +345,8 @@ are omitted to keep the diagram focused on parsing and applying the sort.
 
 ### Parent-student links
 
-`link PARENT_INDEX STUDENT_INDEX` records that a parent contact is the parent of a student contact.
+`link PARENT_INDEX STUDENT_INDEX` records that a parent contact is the parent of a student contact, and
+`unlink PARENT_INDEX STUDENT_INDEX` removes that link while keeping both contacts.
 Expanded contact cards then list the contact's linked students or parents.
 
 The class diagram below shows how a link is represented and persisted. Fields and classes unrelated to links,
@@ -361,11 +362,20 @@ and phone identify at most one contact, so each link resolves to exactly one par
 A parent can have 0..* linked students and a student can have 0..* linked parents.
 Cards and `link` messages show each linked contact as `Name (phone)`, because two contacts may share a name.
 
-**Normal path.** `LinkCommandParser` parses two displayed-list indices. `LinkCommand#execute` looks up both
-contacts in `Model#getFilteredPersonList()`, checks that the first is a parent and the second a student, creates the
-link with `ParentStudentLink#between`, and rejects a duplicate using `Model#hasLink`. It then calls
-`Model#addLink` and returns a result that expands the parent's card. `LogicManager` saves the address book because
-the command changes data. `PersonListPanel` asks `Logic#getLinkedPersons` for each card's linked contacts.
+**Normal path.** `LinkCommandParser` parses two displayed-list indices with `ParserUtil#parseTwoDisplayedIndices`.
+`LinkCommand` and `UnlinkCommand` both extend `ParentStudentCommand`, whose `getParentAndStudent` looks up both
+contacts in `Model#getFilteredPersonList()`, then rejects the same index twice, then checks that the first contact
+is a parent and the second a student. Looking up both contacts first means an index outside the list is reported even
+when both indices are equal. `LinkCommand#execute` creates the link with `ParentStudentLink#between`, rejects a
+duplicate using `Model#hasLink`, calls `Model#addLink`, and returns a result that expands the parent's card.
+`LogicManager` saves the address book because the command changes data. `PersonListPanel` asks
+`Logic#getLinkedPersons` for each card's linked contacts.
+
+**Removing a link.** `UnlinkCommand` runs the same checks, then requires the link to exist (`Model#hasLink`) and calls
+`Model#removeLink`, which asserts that the link exists and removes only that link. Both contacts and their other links
+are kept, and the parent's card is expanded to show its remaining links. Sharing the checks in
+`ParentStudentCommand`, and the index parsing in `ParserUtil`, keeps the two commands' validation and messages
+identical without duplicated code.
 
 **Keeping links consistent.** `AddressBook` updates links whenever contacts change, so every command that changes
 contacts keeps links valid without extra code:
@@ -393,95 +403,6 @@ A file without a `links` list loads with no links, so data files from earlier ve
 * **Alternative 3:** give each `Person` a generated ID and link by ID.
   * Pros: links survive any edit without rewriting.
   * Cons: IDs must be generated, saved, and validated, which adds risk to every existing command and data file.
-
-### \[Proposed\] Undo/redo feature
-
-#### Proposed Implementation
-
-The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
-
-* `VersionedAddressBook#commit()` — Saves the current address book state in its history.
-* `VersionedAddressBook#undo()` — Restores the previous address book state from its history.
-* `VersionedAddressBook#redo()` — Restores a previously undone address book state from its history.
-
-These operations are exposed in the `Model` interface as `Model#commitAddressBook()`, `Model#undoAddressBook()` and `Model#redoAddressBook()` respectively.
-
-Given below is an example usage scenario and how the undo/redo mechanism behaves at each step.
-
-Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial address book state, and the `currentStatePointer` pointing to that single address book state.
-
-![UndoRedoState0](images/UndoRedoState0.png)
-
-Step 2. The user executes `delete 5` command to delete the 5th person in the address book. The `delete` command calls `Model#commitAddressBook()`, causing the modified state of the address book after the `delete 5` command executes to be saved in the `addressBookStateList`, and the `currentStatePointer` is shifted to the newly inserted address book state.
-
-![UndoRedoState1](images/UndoRedoState1.png)
-
-Step 3. The user executes `add n/David …​` to add a new person. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
-
-![UndoRedoState2](images/UndoRedoState2.png)
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the address book state will not be saved into the `addressBookStateList`.
-
-</div>
-
-Step 4. The user now decides that adding the person was a mistake, and decides to undo that action by executing the `undo` command. The `undo` command will call `Model#undoAddressBook()`, which will shift the `currentStatePointer` once to the left, pointing it to the previous address book state, and restores the address book to that state.
-
-![UndoRedoState3](images/UndoRedoState3.png)
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** If the `currentStatePointer` is at index 0, pointing to the initial AddressBook state, then there are no previous AddressBook states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
-than attempting to perform the undo.
-
-</div>
-
-The following sequence diagram shows how an undo operation goes through the `Logic` component:
-
-![UndoSequenceDiagram](images/UndoSequenceDiagram-Logic.png)
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifeline for `UndoCommand` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
-
-</div>
-
-Similarly, how an undo operation goes through the `Model` component is shown below:
-
-![UndoSequenceDiagram](images/UndoSequenceDiagram-Model.png)
-
-The `redo` command does the opposite — it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** If the `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest address book state, then there are no undone AddressBook states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is the case. If so, it will return an error to the user rather than attempting to perform the redo.
-
-</div>
-
-Step 5. The user then decides to execute the command `list`. Commands that do not modify the address book, such as `list`, will usually not call `Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, the `addressBookStateList` remains unchanged.
-
-![UndoRedoState4](images/UndoRedoState4.png)
-
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David …​` command. This is the behavior that most modern desktop applications follow.
-
-![UndoRedoState5](images/UndoRedoState5.png)
-
-The following activity diagram summarizes what happens when a user executes a new command:
-
-<img src="images/CommitActivityDiagram.png" width="250" />
-
-#### Design considerations:
-
-**Aspect: How undo & redo execute:**
-
-* **Alternative 1 (current choice):** Saves the entire address book.
-  * Pros: Easy to implement.
-  * Cons: May have performance issues in terms of memory usage.
-
-* **Alternative 2:** Individual command knows how to undo/redo by
-  itself.
-  * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
-  * Cons: We must ensure that the implementation of each individual command is correct.
-
-_{more aspects and alternatives to be added}_
-
-### \[Proposed\] Data archiving
-
-_{Explain here how the data archiving feature will be implemented}_
-
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -530,6 +451,7 @@ Priorities:
 | `* *` | private tutor | edit a contact's details | keep the record accurate when details change |
 | `* *` | private tutor | find contacts by name | locate someone without scanning the complete list |
 | `* *` | private tutor | link a parent to one or more students | identify whom to contact for each student without duplicating the parent's record |
+| `* *` | private tutor | remove a link between a parent and a student | correct a link I made by mistake without deleting either contact |
 | `* *` | private tutor | archive an inactive contact | keep its information without showing it among active contacts |
 | `* *` | new TutorContacts user | see a brief command guide | learn the available commands without reading the full user guide |
 | `* *` | private tutor | record multiple subjects for a student | keep all subjects I teach that student in one record |
@@ -543,9 +465,8 @@ Priorities:
 (For all use cases below, the **System** is `TutorContacts` and the **Actor** is the tutor, unless specified
 otherwise. `INDEX` is the one-based position in the displayed contact list. The original MVP use cases follow the
 [V2 TutorContacts MVP specification](https://docs.google.com/document/d/13atDT_z6unnRSmTLVOimhPvUcavvWek9Xy9jy5YNyFY/edit?tab=t.pgg9f79ckkj4);
-the edit use case describes the subsequent v1.4 extension.
-Failed commands leave the displayed and saved contact data unchanged. Some specified behavior is not yet implemented
-in the current AB3 codebase.)
+later use cases describe the editing, linking, filtering, and sorting added in v1.4 and v1.5.
+Failed commands leave the displayed and saved contact data unchanged.)
 
 **Use case: Add a student or parent contact**
 
@@ -699,6 +620,120 @@ in the current AB3 codebase.)
 * 4a. TutorContacts cannot save the data file.
   * 4a1. TutorContacts restores the previous contact data and displayed filter, then reports a storage error. The
     existing data file remains unchanged.
+
+    Use case ends.
+
+**Use case: Link a parent to a student**
+
+**MSS**
+
+1. User displays contacts, for example with `list` or `find`.
+2. User enters `link PARENT_INDEX STUDENT_INDEX` for a parent and a student in that displayed list.
+3. TutorContacts records the link, expands the parent's card to show its linked students, saves the data file, and
+   reports `Linked parent PARENT_NAME (PHONE) to student STUDENT_NAME (PHONE).`
+
+   Use case ends.
+
+**Extensions**
+
+* 2a. Either index is not a positive integer.
+  * 2a1. TutorContacts shows `Index must be a positive integer shown in the current list.`
+
+    Use case resumes at step 2.
+* 2b. Either index is outside the displayed list.
+  * 2b1. TutorContacts shows `No contact exists at index INDEX in the current list.`
+
+    Use case resumes at step 2.
+* 2c. Both indices refer to the same contact.
+  * 2c1. TutorContacts shows `A contact cannot be linked to itself.`
+
+    Use case resumes at step 2.
+* 2d. The first contact is not a parent, or the second is not a student.
+  * 2d1. TutorContacts shows `The contact at index INDEX is not a parent.` or `... is not a student.`
+
+    Use case resumes at step 2.
+* 2e. The two contacts are already linked.
+  * 2e1. TutorContacts shows `PARENT_NAME (PHONE) is already linked to STUDENT_NAME (PHONE).`
+
+    Use case ends.
+* 3a. TutorContacts cannot save the data file.
+  * 3a1. TutorContacts reports that the change was not made. The contacts stay unlinked, and the saved data is
+    unchanged.
+
+    Use case ends.
+
+**Use case: Unlink a parent from a student**
+
+**MSS**
+
+1. User displays contacts, for example with `list` or `find`.
+2. User enters `unlink PARENT_INDEX STUDENT_INDEX` for a linked parent and student in that displayed list.
+3. TutorContacts removes the link, keeps both contacts, expands the parent's card to show its remaining links,
+   saves the data file, and reports `Unlinked parent PARENT_NAME (PHONE) from student STUDENT_NAME (PHONE).`
+
+   Use case ends.
+
+**Extensions**
+
+* 2a. An index is invalid or outside the displayed list, both indices are the same, or the contacts do not have
+  the parent and student roles.
+  * 2a1. TutorContacts shows the same message as `link` (extensions 2a to 2d of *Link a parent to a student*),
+    except that the same-index message is `A contact cannot be unlinked from itself.`
+
+    Use case resumes at step 2.
+* 2b. The two contacts are not linked.
+  * 2b1. TutorContacts shows `PARENT_NAME (PHONE) is not linked to STUDENT_NAME (PHONE).`
+
+    Use case ends.
+* 3a. TutorContacts cannot save the data file.
+  * 3a1. TutorContacts reports that the change was not made. The link is kept, and the saved data is unchanged.
+
+    Use case ends.
+
+**Use case: Filter contacts by name, subject, and level**
+
+**MSS**
+
+1. User enters `filter` with at least one of `n/KEYWORDS`, `s/SUBJECT`, and `l/LEVEL`.
+2. TutorContacts shows only the contacts that match every supplied criterion, in name order, and reports
+   `Showing N matching contacts.`
+
+   Use case ends.
+
+**Extensions**
+
+* 1a. No criterion is supplied, a prefix is unknown or repeated, or a value is invalid.
+  * 1a1. TutorContacts shows the matching error message and leaves the displayed list unchanged.
+
+    Use case resumes at step 1.
+* 2a. No contact matches.
+  * 2a1. TutorContacts shows an empty list and reports `No matching contacts.`
+
+    Use case ends.
+* 2b. User later enters `list`.
+  * 2b1. TutorContacts clears the filter and shows every contact in insertion order.
+
+    Use case ends.
+
+**Use case: Sort contacts by academic level**
+
+**MSS**
+
+1. User displays contacts, optionally narrowed with `find` or `filter`.
+2. User enters `sort level`.
+3. TutorContacts orders the displayed students from `Primary 1` to `JC 2`, then by name, with students without a
+   level next and parents last, and reports `Contacts sorted by academic level.` The saved data is not reordered.
+
+   Use case ends.
+
+**Extensions**
+
+* 2a. The criterion is missing, unsupported, or followed by extra text.
+  * 2a1. TutorContacts shows `Invalid command format. Expected: sort level` and leaves the display unchanged.
+
+    Use case resumes at step 2.
+* 3a. User later enters `list`.
+  * 3a1. TutorContacts clears the ordering and shows every contact in insertion order.
 
     Use case ends.
 
@@ -981,7 +1016,7 @@ testers are expected to do more *exploratory* testing.
 
 </div>
 
-### Linking a parent to a student
+### Linking and unlinking a parent and a student
 
 1. Prerequisites: close TutorContacts, then move `data/tutorcontacts.json` (next to the JAR file) elsewhere so that
    the app starts with an empty list. Start TutorContacts and enter these commands in order. The two students share
@@ -1008,6 +1043,53 @@ testers are expected to do more *exploratory* testing.
 1. Test case: `delete 1`<br>
    Expected: `Deleted contact: student Alex Tan (80000000). Removed 1 link(s).` `view 2` shows only
    `Alex Tan (98765432)`.
+1. Test case: `unlink 2 1`<br>
+   Expected: `Unlinked parent Mary Tan (93334444) from student Alex Tan (98765432).` Mary Tan's card shows
+   `Linked students: None`, and both contacts remain in the list.
+1. Test case: `unlink 2 1` again, then `unlink 2 2`<br>
+   Expected: in turn, `Mary Tan (93334444) is not linked to Alex Tan (98765432).` and
+   `A contact cannot be unlinked from itself.` No data changes.
+1. Test case: close and reopen TutorContacts, then `view 2`<br>
+   Expected: Mary Tan still shows `Linked students: None`.
+1. Clean-up: close TutorContacts and move your original `data/tutorcontacts.json` back.
+
+### Finding, filtering, and sorting contacts
+
+1. Prerequisites: close TutorContacts, then move `data/tutorcontacts.json` (next to the JAR file) elsewhere so that
+   the app starts with an empty list. Start TutorContacts and enter these commands in order.
+   1. `add r/student n/Alex Tan p/91234567 e/alex@example.com a/1 Road s/Mathematics l/Secondary 3`
+   1. `add r/student n/Bea Lim p/92345678 e/bea@example.com a/2 Road s/Mathematics l/Primary 5`
+   1. `add r/student n/Chris Tan p/93456789 e/chris@example.com a/3 Road s/Physics l/JC 1`
+   1. `add r/parent n/Mary Tan p/98765432 e/mary@example.com a/1 Road`
+   1. `list`
+
+   Expected: `Showing 4 contacts.` in the order Alex Tan, Bea Lim, Chris Tan, Mary Tan.
+1. Test case: `find Tan`<br>
+   Expected: `Showing 3 matching contacts.` Alex Tan, Chris Tan, and Mary Tan are shown.
+1. Test case: `filter s/Mathematics`<br>
+   Expected: `Showing 2 matching contacts.` Alex Tan, then Bea Lim (name order).
+1. Test case: `sort level`<br>
+   Expected: `Contacts sorted by academic level.` Bea Lim (Primary 5) is now above Alex Tan (Secondary 3), and the
+   filter still applies.
+1. Test case: `list`<br>
+   Expected: `Showing 4 contacts.` in the original order, with filtering and sorting cleared.
+1. Test case: `filter n/Tan l/JC 1`, then `filter n/Zed`<br>
+   Expected: in turn, `Showing 1 matching contacts.` with only Chris Tan, then `No matching contacts.` with an
+   empty list.
+1. Test case: `filter`, `filter x/foo`, `sort`, and `sort name`<br>
+   Expected: in turn, `Invalid command format. Expected: filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]`,
+   `Unknown prefix: x/.`, and `Invalid command format. Expected: sort level` (twice). The display is unchanged.
+1. Test case: `filter s/Mathematics`, `sort level`, then close and reopen TutorContacts<br>
+   Expected: all four contacts are shown in the original order, because filters and sorting are not saved.
+1. Clean-up: keep the data file for the next test, or move your original `data/tutorcontacts.json` back.
+
+### Clearing all contacts
+
+1. Prerequisites: at least one contact is listed, using a disposable data file.
+1. Test case: `clear`<br>
+   Expected: `Address book has been cleared!` and an empty list. `list` reports `No contacts to display.`
+1. Test case: close and reopen TutorContacts, then `list`<br>
+   Expected: `No contacts to display.` The cleared list was saved.
 1. Clean-up: close TutorContacts and move your original `data/tutorcontacts.json` back.
 
 ### Launch and shutdown
@@ -1126,3 +1208,35 @@ Close the app before preparing each test file.
 `DataLoadingException`. These failures use `MainApp`'s existing recovery path, which displays the warning and
 disables data-changing commands until restart. `JsonUtilTest`, `JsonAddressBookStorageTest`, and `MainAppTest`
 cover document validation, unchanged invalid files, startup protection, and recovery after repair and restart.
+
+--------------------------------------------------------------------------------------------------------------------
+
+## **Appendix: Effort**
+
+**Difficulty.** AB3 manages one kind of entity with independent records. TutorContacts manages two roles with
+different rules (students need a subject and academic level, parents cannot have them) and relationships between
+contacts (parent-student links), while keeping AB3's guarantees: every command is typed, every change is saved, and
+the data file stays editable by hand.
+
+**Main challenges.**
+
+* **Role-specific contacts.** Adding roles touched parsing, validation, duplicate detection, display, storage, and
+  editing. Older data files without a subject or level still had to load and stay editable.
+* **Parent-student links.** Links identify contacts by normalized name and phone instead of generated IDs, so the data
+  file stays readable. In exchange, every change to contacts (edit, delete, clear, and the rollback after a failed
+  save) must keep links valid, and loading must reject links to missing contacts or duplicates. Linking and unlinking
+  share one validation path, so both report the same problems in the same order.
+* **Filtering and sorting the displayed list.** `filter`, `find`, and `sort` change what is displayed but not what is
+  stored. Every index-based command, the selected and expanded card, and the effect of `add`, `edit`, and `list` had to
+  stay consistent with the displayed order.
+* **Safe data handling.** Saves replace the data file atomically, a failed save rolls back the in-memory change, an
+  invalid or unreadable file is reported without being overwritten, and application files stay beside the JAR.
+  Validation handles Unicode whitespace, escaped prefix-shaped text, and very long input without crashing.
+
+**Effort.** Beyond AB3, the team wrote about 2,700 lines of functional code and 5,200 lines of test code by
+27 October (RepoSense code dashboard), and the test suite has grown to about 580 tests, including desktop UI tests.
+Team alpha testing produced 30 issues, which the team triages and fixes through assigned issues and reviewed pull
+requests.
+
+**Reuse.** The project builds on AB3's architecture, storage, and UI framework (see [Acknowledgements](#acknowledgements)).
+No libraries were added beyond those AB3 already uses.
