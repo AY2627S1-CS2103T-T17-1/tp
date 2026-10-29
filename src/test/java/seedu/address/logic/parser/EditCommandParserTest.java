@@ -110,6 +110,8 @@ public class EditCommandParserTest {
         assertParseFailure(parser, "1" + INVALID_EMAIL_DESC, Email.MESSAGE_CONSTRAINTS); // invalid email
         assertParseFailure(parser, "1" + INVALID_ADDRESS_DESC, Address.MESSAGE_CONSTRAINTS); // invalid address
         assertParseFailure(parser, "1" + INVALID_TAG_DESC, Tag.MESSAGE_CONSTRAINTS); // invalid tag
+        assertParseFailure(parser, "1 t/Café", Tag.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 t/数学", Tag.MESSAGE_CONSTRAINTS);
 
         // invalid phone followed by valid email
         assertParseFailure(parser, "1" + INVALID_PHONE_DESC + EMAIL_DESC_AMY, Phone.MESSAGE_CONSTRAINTS);
@@ -271,11 +273,21 @@ public class EditCommandParserTest {
      */
     @Test
     public void parse_invalidRoleSpecificValues_failure() {
-        assertParseFailure(parser, "1 s/", Subject.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, "1 l/", Level.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, "1 s/Math*", Subject.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, "1 l/Secondary.3", Level.MESSAGE_CONSTRAINTS);
         assertParseFailure(parser, "1 o/" + "n".repeat(201), Note.MESSAGE_CONSTRAINTS);
+    }
+
+    /**
+     * Checks that empty student fields are retained for role-aware validation during command execution.
+     */
+    @Test
+    public void parse_emptyRoleSpecificValues_success() {
+        EditPersonDescriptor subject = new EditPersonDescriptorBuilder().withEmptySubject().build();
+        EditPersonDescriptor level = new EditPersonDescriptorBuilder().withEmptyLevel().build();
+
+        assertParseSuccess(parser, "1 s/", new EditCommand(INDEX_FIRST_PERSON, subject));
+        assertParseSuccess(parser, "1 l/", new EditCommand(INDEX_FIRST_PERSON, level));
     }
 
     /**

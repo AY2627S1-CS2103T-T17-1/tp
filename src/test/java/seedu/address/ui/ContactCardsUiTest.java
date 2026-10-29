@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.AfterAll;
@@ -55,6 +56,7 @@ import javafx.scene.input.DataFormat;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -764,6 +766,7 @@ public class ContactCardsUiTest {
                 TextArea feedback = (TextArea) stage.getScene().getRoot().lookup("#resultDisplay");
                 assertNotNull(feedback);
                 assertEquals(MainApp.DATA_FILE_WARNING, feedback.getText());
+                assertTrue(feedback.isWrapText());
             } finally {
                 stage.close();
             }
@@ -789,6 +792,77 @@ public class ContactCardsUiTest {
             assertTrue(label(card, "note").getHeight() > 20, "Long note must wrap to multiple lines");
             assertTrue(card.getBoundsInParent().getMaxX() <= list(panel.getRoot()).getWidth());
         });
+    }
+
+    @Test
+    void cards_longAndManyTags_stayWithinScrollableTagArea() throws Exception {
+        String longTag = "A".repeat(1000);
+        Stage stage = callOnFxThread(() -> {
+            String[] tagNames = IntStream.range(0, 200)
+                    .mapToObj(index -> "T" + index)
+                    .toArray(String[]::new);
+            tagNames[0] = longTag;
+            Person contact = new PersonBuilder(ALICE).withTags(tagNames).build();
+            PersonListPanel panel = new PersonListPanel(FXCollections.observableArrayList(contact, GEORGE));
+            Scene scene = new Scene(panel.getRoot(), 460, 300);
+            scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+            Stage testStage = new Stage();
+            testStage.setScene(scene);
+            testStage.show();
+            panel.completeCommand(CommandResult.expandContact("view", contact));
+            return testStage;
+        });
+        Scene scene = callOnFxThread(stage::getScene);
+        try {
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                layout(root);
+                Node card = selectedCard(root);
+                ScrollPane tagScroller = (ScrollPane) card.lookup("#tagScroller");
+                assertNotNull(tagScroller);
+                FlowPane tags = (FlowPane) tagScroller.getContent();
+                Label longTagLabel = (Label) tags.getChildren().stream()
+                        .filter(node -> ((Label) node).getText().equals(longTag))
+                        .findFirst()
+                        .orElseThrow();
+                Node viewport = tagScroller.lookup(".viewport");
+                assertNotNull(viewport);
+
+                assertEquals(200, tags.getChildren().size());
+                assertTrue(longTagLabel.isWrapText());
+                assertTrue(longTagLabel.getWidth() <= 320);
+                assertTrue(longTagLabel.getHeight() > 30,
+                        "The complete long tag must wrap instead of being ellipsized on one line");
+                assertTrue(tagScroller.getHeight() <= 96);
+                assertEquals(ScrollPane.ScrollBarPolicy.AS_NEEDED, tagScroller.getVbarPolicy());
+                Bounds tagAreaBounds = tags.localToScene(tags.getBoundsInLocal());
+                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                assertTrue(tagAreaBounds.getWidth() <= viewportBounds.getWidth() + 1,
+                        "Tag area width " + tagAreaBounds.getWidth() + " must fit viewport width "
+                                + viewportBounds.getWidth() + "; min=" + tags.minWidth(-1)
+                                + ", pref=" + tags.prefWidth(-1) + ", max=" + tags.maxWidth(-1));
+                saveSnapshot(root, "long-and-many-tags");
+                tagScroller.setVvalue(1);
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                Node card = selectedCard(root);
+                ScrollPane tagScroller = (ScrollPane) card.lookup("#tagScroller");
+                FlowPane tags = (FlowPane) tagScroller.getContent();
+                Node finalTagLabel = tags.getChildren().get(tags.getChildren().size() - 1);
+                Node viewport = tagScroller.lookup(".viewport");
+                Bounds finalTagBounds = finalTagLabel.localToScene(finalTagLabel.getBoundsInLocal());
+                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                assertTrue(finalTagBounds.getMinX() >= viewportBounds.getMinX() - 1);
+                assertTrue(finalTagBounds.getMaxX() <= viewportBounds.getMaxX() + 1);
+                assertTrue(finalTagBounds.getMinY() >= viewportBounds.getMinY() - 1);
+                assertTrue(finalTagBounds.getMaxY() <= viewportBounds.getMaxY() + 1);
+            });
+        } finally {
+            runOnFxThread(stage::close);
+        }
     }
 
     /**

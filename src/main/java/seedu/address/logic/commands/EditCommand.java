@@ -89,8 +89,14 @@ public class EditCommand extends Command {
 
         Person personToEdit = lastShownList.get(index.getZeroBased());
         if (personToEdit.getRole() == Role.PARENT
-                && (editPersonDescriptor.getSubject().isPresent() || editPersonDescriptor.getLevel().isPresent())) {
+                && (editPersonDescriptor.isSubjectEdited() || editPersonDescriptor.isLevelEdited())) {
             throw new CommandException(AddCommand.MESSAGE_PARENT_FIELDS);
+        }
+        if (editPersonDescriptor.isSubjectEdited() && editPersonDescriptor.getSubject().isEmpty()) {
+            throw new CommandException(Subject.MESSAGE_CONSTRAINTS);
+        }
+        if (editPersonDescriptor.isLevelEdited() && editPersonDescriptor.getLevel().isEmpty()) {
+            throw new CommandException(Level.MESSAGE_CONSTRAINTS);
         }
         Person editedPerson = createEditedPerson(personToEdit, editPersonDescriptor);
 
@@ -161,6 +167,8 @@ public class EditCommand extends Command {
         private Address address;
         private Subject subject;
         private Level level;
+        private boolean isSubjectEdited;
+        private boolean isLevelEdited;
         private Optional<Note> note;
         private Set<Tag> tags;
 
@@ -175,8 +183,20 @@ public class EditCommand extends Command {
             setPhone(toCopy.phone);
             setEmail(toCopy.email);
             setAddress(toCopy.address);
-            setSubject(toCopy.subject);
-            setLevel(toCopy.level);
+            if (toCopy.isSubjectEdited) {
+                if (toCopy.subject == null) {
+                    setEmptySubject();
+                } else {
+                    setSubject(toCopy.subject);
+                }
+            }
+            if (toCopy.isLevelEdited) {
+                if (toCopy.level == null) {
+                    setEmptyLevel();
+                } else {
+                    setLevel(toCopy.level);
+                }
+            }
             if (toCopy.note != null) {
                 setNote(toCopy.note);
             }
@@ -187,7 +207,8 @@ public class EditCommand extends Command {
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, phone, email, address, subject, level, note, tags);
+            return isSubjectEdited || isLevelEdited
+                    || CollectionUtil.isAnyNonNull(name, phone, email, address, note, tags);
         }
 
         public void setName(Name name) {
@@ -228,7 +249,16 @@ public class EditCommand extends Command {
          * @param subject Subject to use when editing a student contact.
          */
         public void setSubject(Subject subject) {
-            this.subject = subject;
+            this.subject = requireNonNull(subject);
+            isSubjectEdited = true;
+        }
+
+        /**
+         * Records that an empty subject was supplied so role validation can occur before value validation.
+         */
+        public void setEmptySubject() {
+            subject = null;
+            isSubjectEdited = true;
         }
 
         /**
@@ -241,12 +271,28 @@ public class EditCommand extends Command {
         }
 
         /**
+         * Returns whether a subject prefix was supplied for this edit.
+         */
+        public boolean isSubjectEdited() {
+            return isSubjectEdited;
+        }
+
+        /**
          * Sets the student's academic level to use for this edit.
          *
          * @param level Academic level to use when editing a student contact.
          */
         public void setLevel(Level level) {
-            this.level = level;
+            this.level = requireNonNull(level);
+            isLevelEdited = true;
+        }
+
+        /**
+         * Records that an empty level was supplied so role validation can occur before value validation.
+         */
+        public void setEmptyLevel() {
+            level = null;
+            isLevelEdited = true;
         }
 
         /**
@@ -256,6 +302,13 @@ public class EditCommand extends Command {
          */
         public Optional<Level> getLevel() {
             return Optional.ofNullable(level);
+        }
+
+        /**
+         * Returns whether a level prefix was supplied for this edit.
+         */
+        public boolean isLevelEdited() {
+            return isLevelEdited;
         }
 
         /**
@@ -308,6 +361,8 @@ public class EditCommand extends Command {
                     && Objects.equals(phone, otherEditPersonDescriptor.phone)
                     && Objects.equals(email, otherEditPersonDescriptor.email)
                     && Objects.equals(address, otherEditPersonDescriptor.address)
+                    && isSubjectEdited == otherEditPersonDescriptor.isSubjectEdited
+                    && isLevelEdited == otherEditPersonDescriptor.isLevelEdited
                     && Objects.equals(subject, otherEditPersonDescriptor.subject)
                     && Objects.equals(level, otherEditPersonDescriptor.level)
                     && Objects.equals(note, otherEditPersonDescriptor.note)
@@ -321,6 +376,8 @@ public class EditCommand extends Command {
                     .add("phone", phone)
                     .add("email", email)
                     .add("address", address)
+                    .add("isSubjectEdited", isSubjectEdited)
+                    .add("isLevelEdited", isLevelEdited)
                     .add("subject", subject)
                     .add("level", level)
                     .add("note", note)

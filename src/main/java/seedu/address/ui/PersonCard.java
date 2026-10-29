@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -18,6 +19,7 @@ import seedu.address.model.person.Role;
 public class PersonCard extends UiPart<Region> {
 
     private static final String FXML = "PersonListCard.fxml";
+    private static final double MAX_TAG_LABEL_WIDTH = 320;
 
     /**
      * Note: Certain keywords such as "location" and "resources" are reserved keywords in JavaFX.
@@ -51,6 +53,8 @@ public class PersonCard extends UiPart<Region> {
     private Label note;
     @FXML
     private Label links;
+    @FXML
+    private ScrollPane tagScroller;
     @FXML
     private FlowPane tags;
 
@@ -106,9 +110,22 @@ public class PersonCard extends UiPart<Region> {
         details.setManaged(isExpanded);
         person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))
-                .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
-        tags.setVisible(!person.getTags().isEmpty());
-        tags.setManaged(!person.getTags().isEmpty());
+                .map(tag -> createTagLabel(tag.tagName))
+                .forEach(tags.getChildren()::add);
+        tagScroller.setVisible(!person.getTags().isEmpty());
+        tagScroller.setManaged(!person.getTags().isEmpty());
+    }
+
+    /**
+     * Creates a tag label that wraps long values within the contact card.
+     */
+    private static Label createTagLabel(String tagName) {
+        Label label = new Label(tagName);
+        label.setWrapText(true);
+        label.setMinWidth(0);
+        label.setMinHeight(Region.USE_PREF_SIZE);
+        label.setMaxWidth(MAX_TAG_LABEL_WIDTH);
+        return label;
     }
 
     /**
