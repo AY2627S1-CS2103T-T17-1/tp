@@ -41,7 +41,9 @@ public class Name {
     public static boolean isValidName(String test) {
         requireNonNull(test);
         String normalized = normalize(test);
-        return normalized.length() <= MAX_LENGTH && normalized.matches(VALIDATION_REGEX);
+        // Count code points, not UTF-16 units, so a letter outside the Basic Multilingual Plane counts once.
+        return normalized.codePointCount(0, normalized.length()) <= MAX_LENGTH
+                && normalized.matches(VALIDATION_REGEX);
     }
 
     /**

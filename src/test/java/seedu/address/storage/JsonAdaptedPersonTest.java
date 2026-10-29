@@ -59,6 +59,13 @@ public class JsonAdaptedPersonTest {
     }
 
     @Test
+    public void toModelType_savedSupplementaryLetterName_loads() throws Exception {
+        // 36 letters (72 UTF-16 units) were valid before names were counted by code point, so saved files must load.
+        Person person = new PersonBuilder(BENSON).withName("\uD840\uDC00".repeat(36)).build();
+        assertEquals(person, new JsonAdaptedPerson(person).toModelType());
+    }
+
+    @Test
     public void toModelType_invalidName_throwsIllegalValueException() {
         JsonAdaptedPerson person =
                 createPerson(VALID_ROLE, INVALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,

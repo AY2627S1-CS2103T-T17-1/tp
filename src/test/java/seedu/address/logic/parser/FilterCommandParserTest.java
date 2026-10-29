@@ -10,9 +10,15 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.FilterCommand;
+import seedu.address.model.AddressBook;
+import seedu.address.model.Model;
+import seedu.address.model.ModelManager;
+import seedu.address.model.UserPrefs;
 import seedu.address.model.person.ContactMatchesCriteriaPredicate;
 import seedu.address.model.person.Level;
+import seedu.address.model.person.Person;
 import seedu.address.model.person.Subject;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Tests filter syntax, field boundaries, normalization, and deterministic validation precedence.
@@ -34,6 +40,21 @@ public class FilterCommandParserTest {
             assertParseSuccess(parser, input, command(hasName ? List.of("Alice", "Tan") : List.of(),
                     hasSubject ? "Mathematics" : null, hasLevel ? "Secondary 3" : null));
         }
+    }
+
+    /**
+     * Checks that a name keyword typed with combining accents finds the contact stored in precomposed form.
+     */
+    @Test
+    public void parse_decomposedNameKeyword_matchesPrecomposedName() throws Exception {
+        Person sinead = new PersonBuilder().withName("Sin\u00e9ad Bhriain").build();
+        AddressBook addressBook = new AddressBook();
+        addressBook.addPerson(sinead);
+        Model model = new ModelManager(addressBook, new UserPrefs());
+
+        parser.parse(" n/Sine\u0301ad").execute(model);
+
+        assertEquals(List.of(sinead), model.getFilteredPersonList());
     }
 
     /**

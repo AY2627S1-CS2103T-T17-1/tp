@@ -48,6 +48,13 @@ public class NameTest {
     }
 
     @Test
+    public void isValidName_supplementaryLetters_countsCodePoints() {
+        String supplementaryLetter = "\uD840\uDC00"; // U+20000, one letter stored as two UTF-16 units
+        assertTrue(Name.isValidName(supplementaryLetter.repeat(70)));
+        assertFalse(Name.isValidName(supplementaryLetter.repeat(71)));
+    }
+
+    @Test
     public void isValidName_restrictedPunctuation() {
         assertTrue(Name.isValidName("Mary Anne D'Souza")); // straight apostrophe
         assertFalse(Name.isValidName("Niamh O\u2019Connor")); // curly apostrophe

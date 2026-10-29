@@ -64,7 +64,9 @@ public class ContactMatchesCriteriaPredicate implements Predicate<Person> {
     public boolean test(Person person) {
         requireNonNull(person);
         return nameKeywords.stream()
-                .allMatch(keyword -> StringUtil.containsWordIgnoreCase(person.getName().fullName, keyword))
+                // Names are stored in NFC form, so a keyword typed with combining accents still matches.
+                .allMatch(keyword -> StringUtil.containsWordIgnoreCase(person.getName().fullName,
+                        Name.normalize(keyword)))
                 && subject.map(expected -> person.getSubject()
                         .map(actual -> actual.value.equalsIgnoreCase(expected.value)).orElse(false)).orElse(true)
                 && level.map(expected -> person.getLevel()
