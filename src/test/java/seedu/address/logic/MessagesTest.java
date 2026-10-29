@@ -18,7 +18,15 @@ public class MessagesTest {
     public void format_studentWithAllFields_includesSubjectLevelNoteAndTags() {
         assertEquals("student: Alice Pauline (94351253); Email: alice@example.com; "
                 + "Address: 123, Jurong West Ave 6, #08-111; Subject: Mathematics; Level: Secondary 3; "
-                + "Note: Prefers visual examples; Tags: [friends]", Messages.format(ALICE));
+                + "Note: Prefers visual examples; Tags: friends", Messages.format(ALICE));
+    }
+
+    @Test
+    public void format_multipleTags_sortsAndSeparatesThem() {
+        Person taggedParent = new PersonBuilder(GEORGE).withTags("weekend", "Alpha", "evening").build();
+
+        assertEquals("parent: George Best (9482442); Email: anna@example.com; Address: 4th street; "
+                + "Note: Contact after 6 pm; Tags: Alpha, evening, weekend", Messages.format(taggedParent));
     }
 
     @Test

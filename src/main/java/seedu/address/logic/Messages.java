@@ -1,5 +1,7 @@
 package seedu.address.logic;
 
+import java.util.stream.Collectors;
+
 import seedu.address.logic.parser.Prefix;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Role;
@@ -33,7 +35,7 @@ public class Messages {
      * Formats the {@code person} for display to the user, starting with its role, name, and phone.
      * Every field that can be edited is included, so the edit confirmation shows the values that were saved.
      * Students show their subject and level, or {@code Not recorded} for older records without them, as the
-     * expanded contact card does. Tags appear only if the contact has any.
+     * detail pane does. Tags appear only if the contact has any, sorted by name and separated by commas.
      *
      * @param person Contact to describe.
      * @return A one-line description such as {@code student: Alex Tan (91234567); Email: ...; Note: None}.
@@ -55,8 +57,11 @@ public class Messages {
         }
         builder.append("; Note: ").append(person.getNote().map(Object::toString).orElse("None"));
         if (!person.getTags().isEmpty()) {
-            builder.append("; Tags: ");
-            person.getTags().forEach(builder::append);
+            // Tags are stored in a set, so sort them as the detail pane does to give a stable, readable order.
+            builder.append("; Tags: ").append(person.getTags().stream()
+                    .map(tag -> tag.tagName)
+                    .sorted()
+                    .collect(Collectors.joining(", ")));
         }
         return builder.toString();
     }
