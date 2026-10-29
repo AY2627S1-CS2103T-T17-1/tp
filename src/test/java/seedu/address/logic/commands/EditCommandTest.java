@@ -134,6 +134,26 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_duplicateOfOneSameNameContact_namesTheClashingContactsPhone() {
+        Model sameNameModel = new ModelManager();
+        Person firstAlex = new PersonBuilder().withName("Alex Tan").withPhone("91111111")
+                .withEmail("alex.first@example.com").build();
+        Person secondAlex = new PersonBuilder().withName("Alex Tan").withPhone("92222222")
+                .withEmail("alex.second@example.com").build();
+        Person bea = new PersonBuilder().withName("Bea Tan").withPhone("93333333").withEmail("bea@example.com").build();
+        sameNameModel.addPerson(firstAlex);
+        sameNameModel.addPerson(secondAlex);
+        sameNameModel.addPerson(bea);
+
+        EditCommand editCommand = new EditCommand(Index.fromOneBased(3),
+                new EditPersonDescriptorBuilder().withName("Alex Tan").withPhone("92222222").build());
+
+        // Both existing contacts are named Alex Tan, so only the phone shows which one clashes.
+        assertCommandFailure(editCommand, sameNameModel,
+                "This contact duplicates an existing student: Alex Tan (92222222).");
+    }
+
+    @Test
     public void execute_phoneEditedToMatchSameNameContact_failure() {
         Person personToEdit = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         Person otherPerson = new PersonBuilder(personToEdit).withPhone(VALID_PHONE_BOB)
@@ -145,7 +165,7 @@ public class EditCommandTest {
 
         // The message names the existing contact that the edit would duplicate.
         assertCommandFailure(editCommand, model, "This contact duplicates an existing "
-                + otherPerson.getRole() + ": " + otherPerson.getName() + ".");
+                + otherPerson.getRole() + ": " + otherPerson.getName() + " (" + VALID_PHONE_BOB + ").");
     }
 
     @Test
@@ -325,6 +345,7 @@ public class EditCommandTest {
      * Returns the error expected when an edit would duplicate {@code existingPerson}.
      */
     private static String duplicateMessage(Person existingPerson) {
-        return String.format(EditCommand.MESSAGE_DUPLICATE_PERSON, existingPerson.getRole(), existingPerson.getName());
+        return String.format(EditCommand.MESSAGE_DUPLICATE_PERSON, existingPerson.getRole(), existingPerson.getName(),
+                existingPerson.getPhone());
     }
 }

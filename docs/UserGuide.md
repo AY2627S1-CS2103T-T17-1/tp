@@ -297,8 +297,9 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [e/EMAIL] [a/ADDRESS] [s/SUBJECT] [l/LEVE
   prefixes can supply multiple replacement tags.
 * Edits still follow the existing duplicate-contact rule: the same role and normalized name, together with a
   matching normalized phone or case-insensitive email, is a duplicate. A duplicate is rejected with
-  `This contact duplicates an existing ROLE: NAME.`, naming the existing contact. Invalid input, a duplicate, or a
-  failed save leaves the displayed and saved contact data unchanged. Successful edits are saved automatically.
+  `This contact duplicates an existing ROLE: NAME (PHONE).`, naming the existing contact.
+  Invalid input, a duplicate, or a failed save leaves the displayed and saved contact data unchanged.
+  Successful edits are saved automatically.
 * After a successful edit, TutorContacts reports `Edited person: ...` and displays the complete contact list again.
   A search filter is cleared, so contact indices may change. Check the contact's current index, or search for the
   contact again, before using `view INDEX` to inspect its subject, level, or note. The success message itself lists

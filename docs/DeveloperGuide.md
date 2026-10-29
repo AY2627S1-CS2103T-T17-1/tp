@@ -693,7 +693,7 @@ in the current AB3 codebase.)
 
     Use case resumes at step 1.
 * 2b. The replacement contact would duplicate another contact under the existing role, name, phone, and email rule.
-  * 2b1. TutorContacts reports `This contact duplicates an existing ROLE: NAME.`, naming the existing contact.
+  * 2b1. TutorContacts reports `This contact duplicates an existing ROLE: NAME (PHONE).`, naming the existing contact.
     No contact data is changed.
 
     Use case resumes at step 1.
