@@ -157,6 +157,11 @@ The `Storage` component,
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
+Before initializing `Storage`, `MainApp` acquires an exclusive operating-system lock on `.tutorcontacts.lock` in the
+application home. `ApplicationLock` holds the lock for the process lifetime. A second instance using the same home
+shows an error and exits before reading or writing contacts or preferences. The zero-byte lock file may remain after
+exit; only the held operating-system lock indicates a running instance, so a crash does not leave a stale reservation.
+
 ### Common classes
 
 Classes used by multiple components are in the `seedu.address.commons` package.
@@ -766,6 +771,10 @@ Failed commands leave the displayed and saved contact data unchanged.)
   * 3a1. TutorContacts shows `Invalid command format. Expected: exit` and remains open.
 
     Use case resumes at step 3.
+* 5a. Another TutorContacts instance is already using the same application home.
+  * 5a1. TutorContacts shows `TutorContacts is already running` and exits without accessing contacts or preferences.
+
+    Use case ends.
 * 6a. The data file is missing.
   * 6a1. TutorContacts starts with an empty list without an error. It creates the file on the first successful
     data-changing command.
@@ -809,7 +818,8 @@ Failed commands leave the displayed and saved contact data unchanged.)
 
 **Scope and privacy**
 
-11. Should be used by a single user and should not support shared or multi-user access to the data.
+11. Should be used by a single user, allow only one running instance per application home, and not support shared or
+    multi-user access to the data.
 12. Should work without an internet connection and should not depend on any remote server.
 13. Should not transmit student or parent contact information outside the user's computer.
 
