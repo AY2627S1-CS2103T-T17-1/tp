@@ -19,7 +19,9 @@ public class NameContainsKeywordsPredicate implements Predicate<Person> {
     @Override
     public boolean test(Person person) {
         return keywords.stream()
-                .anyMatch(keyword -> StringUtil.containsWordIgnoreCase(person.getName().fullName, keyword));
+                // Names are stored in NFC form, so a keyword typed with combining accents still matches.
+                .anyMatch(keyword -> StringUtil.containsWordIgnoreCase(person.getName().fullName,
+                        Name.normalize(keyword)));
     }
 
     @Override
