@@ -33,6 +33,9 @@ public class LogicManager implements Logic {
             "Contact was not edited because TutorContacts could not save the data file.";
     public static final String MESSAGE_SAVE_FAILURE =
             "The change was not made because TutorContacts could not save the data file.";
+    public static final String MESSAGE_DATA_FILE_NOT_LOADED =
+            "Changes are disabled because TutorContacts could not load data/tutorcontacts.json. "
+                    + "Repair the file, then restart TutorContacts.";
 
     private final Logger logger = LogsCenter.getLogger(LogicManager.class);
 
@@ -67,9 +70,9 @@ public class LogicManager implements Logic {
         logger.info("----------------[USER COMMAND][" + commandText + "]");
 
         Command command = addressBookParser.parseCommand(commandText);
+        // Nothing is saved after a failed load, so the existing file is not overwritten; say why, not "could not save".
         if (command.isDataChanging() && !isDataFileWritable) {
-            IOException cause = new IOException("Data file could not be loaded.");
-            throw new CommandException(getSaveFailureMessage(command), cause);
+            throw new CommandException(MESSAGE_DATA_FILE_NOT_LOADED);
         }
 
         if (!command.isDataChanging()) {

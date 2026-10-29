@@ -473,6 +473,8 @@ successful contact change.
 If the data file is invalid or unreadable, TutorContacts starts with an empty list and displays
 `Warning: TutorContacts could not load data/tutorcontacts.json. The existing file was not changed.`
 TutorContacts will not overwrite that file during the session; repair it and restart the app before changing contacts.
+Until then, commands that change contacts reply `Changes are disabled because TutorContacts could not load
+data/tutorcontacts.json. Repair the file, then restart TutorContacts.`
 Back up the file before editing it.<br>
 Certain edits can also cause TutorContacts to behave unexpectedly (for example, if a value is outside the acceptable
 range). Edit the data file only if you are confident that you can update it correctly.

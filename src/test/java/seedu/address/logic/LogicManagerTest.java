@@ -253,6 +253,23 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_editOrLinkAfterLoadFailure_reportsLoadFailureNotSaveFailure() throws Exception {
+        model.addPerson(ALICE);
+        model.addPerson(GEORGE);
+        StorageManager storage = new StorageManager(addressBookStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        logic = new LogicManager(model, storage, false);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+
+        // The file was never saved to, so the feedback must point to repairing it, not to write permissions.
+        assertCommandFailure("edit 1 o/New note", CommandException.class,
+                LogicManager.MESSAGE_DATA_FILE_NOT_LOADED, expectedModel);
+        assertCommandFailure("link 2 1", CommandException.class,
+                LogicManager.MESSAGE_DATA_FILE_NOT_LOADED, expectedModel);
+        assertEquals(0, addressBookStorage.saveCount);
+    }
+
+    @Test
     public void execute_invalidDataFile_rejectsChangesWithoutOverwriting() throws Exception {
         Path dataPath = addressBookStorage.getAddressBookFilePath();
         Files.writeString(dataPath, "invalid data");
@@ -263,7 +280,7 @@ public class LogicManagerTest {
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + " s/Mathematics l/Secondary 3";
         assertThrows(CommandException.class,
-                LogicManager.MESSAGE_ADD_SAVE_FAILURE, () -> logic.execute(addCommand));
+                LogicManager.MESSAGE_DATA_FILE_NOT_LOADED, () -> logic.execute(addCommand));
         assertEquals(new AddressBook(), model.getAddressBook());
         assertEquals("invalid data", Files.readString(dataPath));
         assertEquals(0, addressBookStorage.saveCount);
