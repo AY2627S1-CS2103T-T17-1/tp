@@ -36,7 +36,7 @@ import seedu.address.ui.UiManager;
  */
 public class MainApp extends Application {
 
-    public static final String VERSION = "V1.3";
+    public static final String VERSION = "V1.5";
     public static final String DATA_FILE_WARNING = "Warning: TutorContacts could not load data/tutorcontacts.json. "
             + "The existing file was not changed.";
     public static final String PREFS_FILE_WARNING = "Warning: TutorContacts could not load preferences.json. "
