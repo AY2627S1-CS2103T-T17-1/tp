@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.skin.ListViewSkin;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -74,10 +75,11 @@ public class PersonListPanel extends UiPart<Region> {
                 refreshDetails();
             }
         });
-        // Wait for resized cells to reflow before restoring the selected row's scroll position.
+        // Reset cached row measurements after reflow before restoring the selected contact's position.
         personListView.layoutBoundsProperty().addListener((observable, oldBounds, newBounds) -> {
             if (state.getSelectedContact().isPresent()) {
                 Platform.runLater(() -> {
+                    personListView.setSkin(new ListViewSkin<>(personListView));
                     personListView.layout();
                     state.getSelectedContact().ifPresent(personListView::scrollTo);
                 });

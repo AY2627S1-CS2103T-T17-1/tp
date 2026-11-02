@@ -1297,7 +1297,7 @@ public class ContactCardsUiTest {
                     stage.setWidth(size[0]);
                     stage.setHeight(size[1]);
                 });
-                waitForContactNameVisible(scene, 19);
+                waitForLayout(scene);
                 runOnFxThread(() -> {
                     Region root = (Region) scene.getRoot();
                     saveSnapshot(root, "live-resize-" + size[0] + "x" + size[1]);
@@ -1324,14 +1324,14 @@ public class ContactCardsUiTest {
                 });
             }
             runOnFxThread(() -> list(scene.getRoot()).scrollTo(0));
-            waitForContactNameVisible(scene, 0);
+            waitForLayout(scene);
             runOnFxThread(() -> {
                 Region root = (Region) scene.getRoot();
                 assertContactNameVisible(root, 0);
                 assertEquals(19, list(root).getSelectionModel().getSelectedIndex());
                 enter(root, "view 1");
             });
-            waitForContactNameVisible(scene, 0);
+            waitForLayout(scene);
             runOnFxThread(() -> {
                 Region root = (Region) scene.getRoot();
                 assertEquals(0, list(root).getSelectionModel().getSelectedIndex());
@@ -1388,54 +1388,24 @@ public class ContactCardsUiTest {
      *
      * @param root Main window whose list has completed layout.
      * @param index Zero-based index of the contact whose name should be visible.
-     * @return Whether a rendered contact name intersects the list viewport.
-     */
-    private static boolean isContactNameVisible(Region root, int index) {
-        Node card = list(root).lookupAll(".list-cell").stream()
-                .filter(node -> node instanceof ListCell<?> cell && cell.getIndex() == index && cell.isVisible())
-                .map(node -> ((ListCell<?>) node).getGraphic()).findFirst().orElse(null);
-        if (card == null) {
-            return false;
-        }
-        Label name = label(card, "name");
-        Bounds nameBounds = name.localToScene(name.getBoundsInLocal());
-        Bounds listBounds = list(root).localToScene(list(root).getBoundsInLocal());
-        return name.getHeight() > 0 && nameBounds.getMinY() < listBounds.getMaxY() - 1
-                && nameBounds.getMaxY() > listBounds.getMinY() + 1;
-    }
-
-    /**
-     * Reports the actual viewport and rendered indices when a contact is missing after layout.
-     *
-     * @param root Main window whose list has completed layout.
-     * @param index Zero-based index of the contact whose name should be visible.
      */
     private static void assertContactNameVisible(Region root, int index) {
         List<Integer> visibleIndices = list(root).lookupAll(".list-cell").stream()
                 .filter(node -> node instanceof ListCell<?> cell && cell.isVisible())
                 .map(node -> ((ListCell<?>) node).getIndex()).sorted().toList();
-        assertTrue(isContactNameVisible(root, index), "Contact " + (index + 1)
-                + " must be visible in " + root.getWidth() + "x" + root.getHeight()
-                + "; rendered indices: " + visibleIndices);
-    }
-
-    /**
-     * Waits for the contact to render after asynchronous native resizing and virtualized cell layout.
-     * The wait only observes rendering and never scrolls the list or changes its selection.
-     *
-     * @param scene Live scene whose contact list should finish rendering.
-     * @param index Zero-based index of the contact whose name should be visible.
-     * @throws Exception If JavaFX execution or layout synchronization fails.
-     */
-    private static void waitForContactNameVisible(Scene scene, int index) throws Exception {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-        do {
-            waitForLayout(scene);
-            if (callOnFxThread(() -> isContactNameVisible((Region) scene.getRoot(), index))) {
-                return;
-            }
-        } while (System.nanoTime() < deadline);
-        runOnFxThread(() -> assertContactNameVisible((Region) scene.getRoot(), index));
+        Node card = list(root).lookupAll(".list-cell").stream()
+                .filter(node -> node instanceof ListCell<?> cell && cell.getIndex() == index && cell.isVisible())
+                .map(node -> ((ListCell<?>) node).getGraphic()).findFirst().orElse(null);
+        assertNotNull(card, "Contact " + (index + 1) + " must be rendered in " + root.getWidth()
+                + "x" + root.getHeight() + "; visible cell indices: " + visibleIndices);
+        Label name = label(card, "name");
+        assertTrue(name.getHeight() > 0, "The contact name must be rendered");
+        Bounds nameBounds = name.localToScene(name.getBoundsInLocal());
+        Bounds listBounds = list(root).localToScene(list(root).getBoundsInLocal());
+        assertTrue(nameBounds.getMinY() < listBounds.getMaxY() - 1,
+                "The contact name must not disappear below the resized list");
+        assertTrue(nameBounds.getMaxY() > listBounds.getMinY() + 1,
+                "The contact name must not disappear above the resized list");
     }
 
     /**
