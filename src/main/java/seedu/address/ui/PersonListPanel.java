@@ -3,6 +3,7 @@ package seedu.address.ui;
 import java.util.List;
 import java.util.function.Function;
 
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Orientation;
@@ -10,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.skin.ListViewSkin;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -50,6 +52,8 @@ public class PersonListPanel extends UiPart<Region> {
 
     /**
      * Creates a {@code PersonListPanel} with the given {@code ObservableList} and no linked contacts.
+     *
+     * @param personList Contacts to display.
      */
     public PersonListPanel(ObservableList<Person> personList) {
         this(personList, person -> List.of());
@@ -71,6 +75,16 @@ public class PersonListPanel extends UiPart<Region> {
             if (!isExecutingCommand && !isUpdatingSelection) {
                 state.select(newValue);
                 refreshDetails();
+            }
+        });
+        // Reset cached row measurements after reflow before restoring the selected contact's position.
+        personListView.layoutBoundsProperty().addListener((observable, oldBounds, newBounds) -> {
+            if (state.getSelectedContact().isPresent()) {
+                Platform.runLater(() -> {
+                    personListView.setSkin(new ListViewSkin<>(personListView));
+                    personListView.layout();
+                    state.getSelectedContact().ifPresent(this::revealContact);
+                });
             }
         });
         contactSplitPane.widthProperty().addListener((observable, oldWidth, newWidth) -> updateOrientation());
@@ -140,6 +154,20 @@ public class PersonListPanel extends UiPart<Region> {
     }
 
     /**
+     * Scrolls the list to the given contact's row.
+     * The list estimates the heights of rows it has not laid out yet, so each layout pass measures more wrapped
+     * rows and corrects the position; repeating a few times lets a tall row settle inside the viewport.
+     *
+     * @param contact Contact whose row should be brought into view.
+     */
+    private void revealContact(Person contact) {
+        for (int pass = 0; pass < 3; pass++) {
+            personListView.scrollTo(contact);
+            personListView.layout();
+        }
+    }
+
+    /**
      * Stacks panes when two readable columns no longer fit, without creating another window.
      */
     private void updateOrientation() {
@@ -147,7 +175,8 @@ public class PersonListPanel extends UiPart<Region> {
         Orientation orientation = isHorizontal ? Orientation.HORIZONTAL : Orientation.VERTICAL;
         contactsPane.setMinWidth(isHorizontal ? 280 : 0);
         detailPanePlaceholder.setMinWidth(isHorizontal ? 320 : 0);
-        contactsPane.setMinHeight(isHorizontal ? 0 : 60);
+        // Reserve the heading, card padding, and a readable name line when the panes are stacked.
+        contactsPane.setMinHeight(isHorizontal ? 0 : 90);
         detailPanePlaceholder.setMinHeight(isHorizontal ? 0 : 40);
         if (contactSplitPane.getOrientation() != orientation) {
             contactSplitPane.setOrientation(orientation);

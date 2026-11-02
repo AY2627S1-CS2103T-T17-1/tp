@@ -66,6 +66,7 @@ import javafx.scene.input.PickResult;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import seedu.address.MainApp;
@@ -1257,6 +1258,192 @@ public class ContactCardsUiTest {
             assertEquals(Orientation.HORIZONTAL, split.getOrientation());
             assertEquals(0.4, split.getDividerPositions()[0], 0.02);
         });
+    }
+
+    /**
+     * Checks that resizing the same live scene keeps the selected row and scrolling details reachable.
+     * Logical window budgets cover the course resolutions and scaling without changing OS settings.
+     *
+     * @throws Exception If JavaFX execution or layout synchronization fails.
+     */
+    @Test
+    void window_liveResizing_keepsSelectedContactVisible() throws Exception {
+        MainWindow window = callOnFxThread(() -> {
+            Model model = new ModelManager();
+            for (int i = 0; i < 20; i++) {
+                model.addPerson(new PersonBuilder(ALICE)
+                        .withName("Contact " + i + " with a long name that wraps over several lines")
+                        .withPhone("900000" + String.format("%02d", i))
+                        .withEmail("contact" + i + "." + "long".repeat(8) + "@example.com")
+                        .withAddress("A long address with many words and a unit number ".repeat(3))
+                        .withNote("Practice algebra before the next lesson. ".repeat(4))
+                        .withTags("Revision", "WeeklyLesson").build());
+            }
+            Path dataPath = temporaryFolder.resolve("contacts.json");
+            MainWindow mainWindow = new MainWindow(new Stage(), new LogicManager(model,
+                    new StorageManager(new JsonAddressBookStorage(dataPath),
+                            new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")))), dataPath);
+            mainWindow.fillInnerParts();
+            mainWindow.getPrimaryStage().setWidth(1200);
+            mainWindow.getPrimaryStage().setHeight(800);
+            mainWindow.show();
+            return mainWindow;
+        });
+        Stage stage = callOnFxThread(window::getPrimaryStage);
+        Scene scene = callOnFxThread(stage::getScene);
+        try {
+            waitForLayout(scene);
+            runOnFxThread(() -> enter((Region) scene.getRoot(), "view 20"));
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                TextField commandField = (TextField) scene.getRoot().lookup("#commandTextField");
+                commandField.requestFocus();
+                commandField.setText("draft command");
+            });
+            // Reuse the live scene: replacing it would miss virtualized row reflow during a resize.
+            int[][] sizes = {{850, 460}, {450, 420}, {1000, 620}, {450, 700},
+                {1920, 1080}, {1536, 864}, {853, 480}};
+            for (int[] size : sizes) {
+                runOnFxThread(() -> {
+                    stage.setWidth(size[0]);
+                    stage.setHeight(size[1]);
+                });
+                waitForLayout(scene);
+                runOnFxThread(() -> {
+                    Region root = (Region) scene.getRoot();
+                    saveSnapshot(root, "live-resize-" + size[0] + "x" + size[1]);
+                    assertEquals(19, list(root).getSelectionModel().getSelectedIndex());
+                    assertEquals("CONTACT 20", label(detail(root), "contactIndex").getText());
+                    assertContactNameVisible(root, 19);
+                    TextField commandField = (TextField) root.lookup("#commandTextField");
+                    assertEquals("draft command", commandField.getText());
+                    assertSame(commandField, scene.getFocusOwner());
+                    for (String selector : List.of("#commandTextField", "#resultDisplay", ".status-guidance")) {
+                        assertVisibleWithinWindow(root, root.lookup(selector));
+                    }
+                    TextArea feedback = (TextArea) root.lookup("#resultDisplay");
+                    assertEquals("Showing contact: " + label(detail(root), "name").getText() + ".",
+                            feedback.getText());
+                    scrollLastDetailTagIntoView(root);
+                });
+                waitForLayout(scene);
+                runOnFxThread(() -> {
+                    Region root = (Region) scene.getRoot();
+                    ScrollPane scroll = (ScrollPane) root.lookup("#detailScrollPane");
+                    assertDetailTextReachable(root);
+                    scroll.setVvalue(0);
+                });
+            }
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                Label name = label(selectedCard(root), "name");
+                Bounds nameBounds = name.localToScene(name.getBoundsInLocal());
+                Bounds listBounds = list(root).localToScene(list(root).getBoundsInLocal());
+                double originalTranslation = name.getTranslateY();
+                // A two-pixel overlap passed the old assertion but leaves the name unreadable.
+                try {
+                    name.setTranslateY(originalTranslation + listBounds.getMaxY() - nameBounds.getMinY() - 2);
+                    assertThrows(AssertionError.class, () -> assertContactNameVisible(root, 19));
+                    name.setTranslateY(originalTranslation + listBounds.getMinY() - nameBounds.getMaxY() + 2);
+                    assertThrows(AssertionError.class, () -> assertContactNameVisible(root, 19));
+                } finally {
+                    name.setTranslateY(originalTranslation);
+                }
+                assertContactNameVisible(root, 19);
+                list(root).scrollTo(0);
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                assertContactNameVisible(root, 0);
+                assertEquals(19, list(root).getSelectionModel().getSelectedIndex());
+                enter(root, "view 1");
+            });
+            waitForLayout(scene);
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                assertEquals(0, list(root).getSelectionModel().getSelectedIndex());
+                assertContactNameVisible(root, 0);
+            });
+        } finally {
+            runOnFxThread(stage::close);
+        }
+    }
+
+    /**
+     * Scrolls to the last tag without requiring the viewport to also fit the bottom padding.
+     *
+     * @param root Main window whose detail pane has completed layout.
+     */
+    private static void scrollLastDetailTagIntoView(Region root) {
+        ScrollPane scroll = (ScrollPane) root.lookup("#detailScrollPane");
+        Node lastTag = ((FlowPane) root.lookup("#tags")).getChildren().getLast();
+        Bounds tagBounds = scroll.getContent().sceneToLocal(lastTag.localToScene(lastTag.getBoundsInLocal()));
+        double viewportHeight = scroll.getViewportBounds().getHeight();
+        double scrollableHeight = scroll.getContent().getLayoutBounds().getHeight() - viewportHeight;
+        double scrollOffset = tagBounds.getMinY() - (viewportHeight - tagBounds.getHeight()) / 2;
+        scroll.setVvalue(scrollableHeight <= 0 ? 0 : Math.max(0, Math.min(1, scrollOffset / scrollableHeight)));
+    }
+
+    /**
+     * Checks that scrolling reaches the last tag and long detail values wrap inside the viewport.
+     *
+     * @param root Main window whose detail pane has been scrolled to the last tag.
+     */
+    private static void assertDetailTextReachable(Region root) {
+        ScrollPane scroll = (ScrollPane) root.lookup("#detailScrollPane");
+        FlowPane tags = (FlowPane) root.lookup("#tags");
+        Bounds tagBounds = tags.getChildren().getLast().localToScene(
+                tags.getChildren().getLast().getBoundsInLocal());
+        Node viewport = scroll.lookup(".viewport");
+        Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+        assertTrue(tagBounds.getMinX() >= viewportBounds.getMinX() - 1);
+        assertTrue(tagBounds.getMaxX() <= viewportBounds.getMaxX() + 1);
+        assertTrue(tagBounds.getMinY() >= viewportBounds.getMinY() - 1);
+        assertTrue(tagBounds.getMaxY() <= viewportBounds.getMaxY() + 1);
+        for (String field : List.of("name", "email", "address", "note")) {
+            Label value = label(detail(root), field);
+            assertTrue(value.getHeight() >= value.prefHeight(value.getWidth()) - 1,
+                    "Long " + field + " must have enough height to wrap");
+            Bounds valueBounds = value.localToScene(value.getBoundsInLocal());
+            assertTrue(valueBounds.getMaxX() <= viewportBounds.getMaxX() + 1);
+        }
+    }
+
+    /**
+     * Checks the actual rendered row, excluding invisible cells retained by JavaFX's virtualized list.
+     * At minimum height, a wrapped name may be taller than the viewport, but its first line must remain readable.
+     *
+     * @param root Main window whose list has completed layout.
+     * @param index Zero-based index of the contact whose name should be visible.
+     */
+    private static void assertContactNameVisible(Region root, int index) {
+        List<Integer> visibleIndices = list(root).lookupAll(".list-cell").stream()
+                .filter(node -> node instanceof ListCell<?> cell && cell.isVisible())
+                .map(node -> ((ListCell<?>) node).getIndex()).sorted().toList();
+        Node card = list(root).lookupAll(".list-cell").stream()
+                .filter(node -> node instanceof ListCell<?> cell && cell.getIndex() == index && cell.isVisible())
+                .map(node -> ((ListCell<?>) node).getGraphic()).findFirst().orElse(null);
+        assertNotNull(card, "Contact " + (index + 1) + " must be rendered in " + root.getWidth()
+                + "x" + root.getHeight() + "; visible cell indices: " + visibleIndices);
+        Label name = label(card, "name");
+        assertTrue(name.getHeight() > 0, "The contact name must be rendered");
+        Bounds nameBounds = name.localToScene(name.getBoundsInLocal());
+        Node viewport = list(root).lookup(".clipped-container");
+        assertNotNull(viewport, "The list must have a clipped viewport");
+        assertNotNull(viewport.getClip(), "The list viewport must clip overflowing rows");
+        Bounds viewportBounds = viewport.localToScene(viewport.getClip().getBoundsInParent());
+        assertTrue(nameBounds.getMinX() >= viewportBounds.getMinX() - 1,
+                "The contact name must not be clipped to the left of the list viewport");
+        assertTrue(nameBounds.getMaxX() <= viewportBounds.getMaxX() + 1,
+                "The contact name must not be clipped to the right of the list viewport");
+        assertTrue(nameBounds.getMinY() >= viewportBounds.getMinY() - 1,
+                "The contact name must not be clipped above the list viewport");
+        Text singleLineName = new Text(name.getText());
+        singleLineName.setFont(name.getFont());
+        double firstLineHeight = singleLineName.getLayoutBounds().getHeight();
+        assertTrue(nameBounds.getMinY() + firstLineHeight <= viewportBounds.getMaxY() + 1,
+                "At least the first full line of the contact name must fit inside the list viewport");
     }
 
     /**
