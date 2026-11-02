@@ -49,7 +49,7 @@ The following provides a quick overview of the main components and their interac
 
 **Main components of the architecture**
 
-**`Main`** (consisting of classes [`Main`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
+**`Main`** (consisting of classes [`Main`](https://github.com/AY2627S1-CS2103T-T17-1/tp/blob/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/AY2627S1-CS2103T-T17-1/tp/blob/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
 * At app launch, it initializes the other components in the correct sequence, and connects them up with each other.
 * At shut down, it shuts down the other components and invokes cleanup methods where necessary.
 
@@ -81,13 +81,13 @@ The sections below give more details of each component.
 
 ### UI component
 
-The **API** of this component is specified in [`Ui.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/Ui.java)
+The **API** of this component is specified in [`Ui.java`](https://github.com/AY2627S1-CS2103T-T17-1/tp/blob/master/src/main/java/seedu/address/ui/Ui.java)
 
 ![Structure of the UI Component](images/UiClassDiagram.png)
 
 The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, `ContactDetailPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
-The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
+The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103T-T17-1/tp/blob/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103T-T17-1/tp/blob/master/src/main/java/seedu/address/ui/MainWindow.java).
 
 The `UI` component,
 
@@ -98,7 +98,7 @@ The `UI` component,
 
 ### Logic component
 
-**API** : [`Logic.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/logic/Logic.java)
+**API** : [`Logic.java`](https://github.com/AY2627S1-CS2103T-T17-1/tp/blob/master/src/main/java/seedu/address/logic/Logic.java)
 
 Here's a (partial) class diagram of the `Logic` component:
 
@@ -134,7 +134,7 @@ How the parsing works:
 * All `XYZCommandParser` classes, such as `AddCommandParser` and `DeleteCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
 
 ### Model component
-**API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
+**API** : [`Model.java`](https://github.com/AY2627S1-CS2103T-T17-1/tp/blob/master/src/main/java/seedu/address/model/Model.java)
 
 <img src="images/ModelClassDiagram.png" width="450" />
 
@@ -151,7 +151,7 @@ The `Model` component,
 
 ### Storage component
 
-**API** : [`Storage.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/storage/Storage.java)
+**API** : [`Storage.java`](https://github.com/AY2627S1-CS2103T-T17-1/tp/blob/master/src/main/java/seedu/address/storage/Storage.java)
 
 <img src="images/StorageClassDiagram.png" width="550" />
 
@@ -236,6 +236,10 @@ diagram. Result-display updates, logging, and clipboard operations are omitted f
 
 The Help menu and the F1 accelerator call `MainWindow#handleHelp()` directly, so they share the same
 show-or-focus behavior without parsing a command.
+
+The in-app command guide is maintained manually in `HelpWindow.fxml`; its command titles, syntax, and
+explanations are labels there. Update those labels when command behavior or syntax changes, and run the
+Help-window UI test to check the listed commands and guidance.
 
 `HelpWindow.fxml` contains the command reference. Its scroll pane fits the available width, and command labels
 wrap to keep long formats readable. The resizable window starts within the primary screen's visual bounds,
@@ -436,6 +440,8 @@ information while preparing lessons or communicating with parents.
 details, in one place. Typed commands let the tutor record contacts and retrieve the information needed for lesson
 preparation or parent communication. The initial MVP focuses on creating, viewing, deleting, and retaining contact
 records. Version 1.4 adds parent-student links so the tutor can see which parents belong to which students.
+Version 1.5 adds unlinking, filtering, level sorting, a persistent detail pane, and protection against two
+running copies overwriting each other's data.
 
 ### User stories
 
@@ -839,6 +845,8 @@ Failed commands leave the displayed and saved contact data unchanged.)
   or email also matches that contact's.
 * **Detail pane**: The scrollable region showing complete information for the selected contact.
 * **INDEX**: The one-based position of a contact in the currently displayed contact list.
+* **Link**: A saved relationship between one parent contact and one student contact. Links store each contact's
+  name and phone and identify contacts using normalized comparisons.
 * **Mainstream OS**: Windows, Linux, Unix, or macOS.
 * **MVP**: Minimum viable product; the smallest version of TutorContacts that delivers its core value.
 * **Normalized name**: A name after leading and trailing spaces are removed and consecutive internal spaces are
@@ -853,6 +861,7 @@ Failed commands leave the displayed and saved contact data unchanged.)
 * **Student contact**: A contact with the `student` role. Newly added student contacts require a subject and an
   academic level; legacy records may lack either field.
 * **Subject**: The subject that the tutor teaches a student, such as `A-Math`. Recorded only for student contacts.
+* **Tag**: A case-sensitive label attached to a contact through `edit`. Tags appear in the detail pane.
 
 --------------------------------------------------------------------------------------------------------------------
 

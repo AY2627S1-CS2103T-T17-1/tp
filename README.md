@@ -9,13 +9,13 @@ TutorContacts is a desktop contact manager for independent private tutors who ma
 parents. It keeps essential contact and tuition information in one place and is optimized for tutors who
 prefer fast, typed commands.
 
-The planned MVP focuses on a small, reliable set of contact-management tasks:
+TutorContacts supports these everyday contact-management tasks:
 
-* add student and parent contacts with role-specific details;
-* list all saved contacts;
-* view the complete details of one contact;
-* delete contacts; and
-* save contact data locally between sessions.
+* add, list, view, edit, and delete student and parent contacts;
+* link parents to students and remove links when arrangements change;
+* find contacts by name, filter by name, subject, or level, and sort by academic level;
+* use notes and tags to keep useful context; and
+* save data locally between sessions, with a single-instance lock to prevent conflicting writes.
 
 ## Project links
 
