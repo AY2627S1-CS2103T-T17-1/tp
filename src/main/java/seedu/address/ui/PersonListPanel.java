@@ -52,6 +52,8 @@ public class PersonListPanel extends UiPart<Region> {
 
     /**
      * Creates a {@code PersonListPanel} with the given {@code ObservableList} and no linked contacts.
+     *
+     * @param personList Contacts to display.
      */
     public PersonListPanel(ObservableList<Person> personList) {
         this(personList, person -> List.of());
