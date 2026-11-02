@@ -407,7 +407,7 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * Contacts matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
 * A new `find` replaces the previous search/filter and retains the current display ordering.
 
-Successful searches report `Showing N matching contacts.`, including `Showing 1 matching contacts.` for one match.
+Successful searches report `Showing 1 matching contact.` for one match and `Showing N matching contacts.` for more.
 Zero matches (including an empty address book) report `No matching contacts.` and display an empty list.
 
 Examples:
@@ -456,7 +456,7 @@ Examples:
 
 ![Result of filter s/Mathematics showing only the two Mathematics students](images/filterContactsResult.png)
 
-Successful filtering reports `Showing N matching contacts.`, including `Showing 1 matching contacts.` for one match.
+Successful filtering reports `Showing 1 matching contact.` for one match and `Showing N matching contacts.` for more.
 Zero matches (including an empty address book) reports `No matching contacts.` and displays an empty list.
 
 Invalid input leaves contacts, the displayed list, ordering, selection, details, and saved data unchanged.
@@ -513,8 +513,6 @@ Invalid input leaves contact data and the displayed list unchanged:
 Deletes all contacts and links from TutorContacts.
 
 Format: `clear`
-
-![Result of clear: the contact list is empty](images/clearContactsResult.png)
 
 ### Exiting the program: `exit`
 

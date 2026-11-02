@@ -20,6 +20,7 @@ public class FindCommand extends Command {
             + "Example: " + COMMAND_WORD + " alice bob charlie";
 
     public static final String MESSAGE_SUCCESS = "Showing %1$d matching contacts.";
+    public static final String MESSAGE_SUCCESS_SINGULAR = "Showing 1 matching contact.";
     public static final String MESSAGE_NO_MATCHES = "No matching contacts.";
 
     private final NameContainsKeywordsPredicate predicate;
@@ -45,9 +46,14 @@ public class FindCommand extends Command {
         requireNonNull(model);
         model.updateFilteredPersonList(predicate);
         int contactCount = model.getFilteredPersonList().size();
-        String feedback = contactCount == 0
-                ? MESSAGE_NO_MATCHES
-                : String.format(MESSAGE_SUCCESS, contactCount);
+        String feedback;
+        if (contactCount == 0) {
+            feedback = MESSAGE_NO_MATCHES;
+        } else if (contactCount == 1) {
+            feedback = MESSAGE_SUCCESS_SINGULAR;
+        } else {
+            feedback = String.format(MESSAGE_SUCCESS, contactCount);
+        }
         return new CommandResult(feedback);
     }
 

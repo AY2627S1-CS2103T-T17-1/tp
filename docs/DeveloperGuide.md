@@ -1170,7 +1170,7 @@ testers are expected to do more *exploratory* testing.
 1. Test case: `list`<br>
    Expected: `Showing 4 contacts.` in the original order, with filtering and sorting cleared.
 1. Test case: `filter n/Tan l/JC 1`, then `filter n/Zed`<br>
-   Expected: in turn, `Showing 1 matching contacts.` with only Chris Tan, then `No matching contacts.` with an
+   Expected: in turn, `Showing 1 matching contact.` with only Chris Tan, then `No matching contacts.` with an
    empty list.
 1. Test case: `filter`, `filter x/foo`, `sort`, and `sort name`<br>
    Expected: in turn, `Invalid command format. Expected: filter [n/KEYWORDS] [s/SUBJECT] [l/LEVEL]`,
@@ -1183,7 +1183,7 @@ testers are expected to do more *exploratory* testing.
 
 1. Prerequisites: at least one contact is listed, using a disposable data file.
 1. Test case: `clear`<br>
-   Expected: `Address book has been cleared!` and an empty list. `list` reports `No contacts to display.`
+   Expected: `All contacts have been cleared.` and an empty list. `list` reports `No contacts to display.`
 1. Test case: close and reopen TutorContacts, then `list`<br>
    Expected: `No contacts to display.` The cleared list was saved.
 1. Clean-up: close TutorContacts and move your original `data/tutorcontacts.json` back.

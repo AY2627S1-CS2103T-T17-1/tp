@@ -102,7 +102,7 @@ public class FindCommandTest {
         NameContainsKeywordsPredicate predicate = preparePredicate("Carl");
         expectedModel.updateFilteredPersonList(predicate);
 
-        assertCommandSuccess(new FindCommand(predicate), model, "Showing 1 matching contacts.", expectedModel);
+        assertCommandSuccess(new FindCommand(predicate), model, "Showing 1 matching contact.", expectedModel);
         assertEquals(List.of(CARL), model.getFilteredPersonList());
     }
 
