@@ -3,6 +3,7 @@ package seedu.address.ui;
 import java.util.List;
 import java.util.function.Function;
 
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Orientation;
@@ -71,6 +72,15 @@ public class PersonListPanel extends UiPart<Region> {
             if (!isExecutingCommand && !isUpdatingSelection) {
                 state.select(newValue);
                 refreshDetails();
+            }
+        });
+        // Wait for resized cells to reflow before restoring the selected row's scroll position.
+        personListView.layoutBoundsProperty().addListener((observable, oldBounds, newBounds) -> {
+            if (state.getSelectedContact().isPresent()) {
+                Platform.runLater(() -> {
+                    personListView.layout();
+                    state.getSelectedContact().ifPresent(personListView::scrollTo);
+                });
             }
         });
         contactSplitPane.widthProperty().addListener((observable, oldWidth, newWidth) -> updateOrientation());
