@@ -28,6 +28,10 @@ title: Developer Guide
   * @jingyucodes used Claude Code to assist with the `view`, `link`, and `unlink` commands and their JUnit tests;
     alpha-bug fixes for name validation, `edit` feedback, and save/load error messages; User Guide and Developer
     Guide updates (including UML diagrams and screenshots); v1.5 release preparation; and pull-request reviews.
+  * @Antelyuu used OpenAI Codex to assist with Java implementation and JUnit/UI tests for the
+    remark command, student and parent contact fields, model and storage validation, the Help guide,
+    alpha bug fixes to editing and tag display, single-instance protection, and contact-result feedback;
+    User Guide and Developer Guide updates (including UML diagrams); and issue planning and pull-request reviews.
 
 --------------------------------------------------------------------------------------------------------------------
 
