@@ -20,6 +20,9 @@ title: Developer Guide
     contact-selection and search-feedback fixes, JUnit integration and UI regression tests,
     alpha-test cases and fictional contact data, User Guide and Developer Guide updates
     (including UML diagrams), and pull-request reviews with visual inspection of diagrams.
+  * @jingyucodes used Claude Code to assist with the `view`, `link`, and `unlink` commands and their JUnit tests;
+    alpha-bug fixes for name validation, `edit` feedback, and save/load error messages; User Guide and Developer
+    Guide updates (including UML diagrams and screenshots); v1.5 release preparation; and pull-request reviews.
 
 --------------------------------------------------------------------------------------------------------------------
 
