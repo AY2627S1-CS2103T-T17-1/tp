@@ -181,6 +181,9 @@ public class LogicManagerTest {
         assertEquals(1, addressBookStorage.saveCount);
     }
 
+    /**
+     * Checks that each successful data-changing command saves the contact book.
+     */
     @Test
     public void execute_dataChangingCommands_savesAddressBook() throws Exception {
         String addCommand = AddCommand.COMMAND_WORD + ROLE_DESC_AMY + NAME_DESC_AMY + PHONE_DESC_AMY
@@ -200,6 +203,9 @@ public class LogicManagerTest {
         assertEquals(5, addressBookStorage.saveCount);
     }
 
+    /**
+     * Checks that a failed add rolls back and a later exit does not save the failed change.
+     */
     @Test
     public void execute_failedAdd_rollsBackAndExitDoesNotSave() throws Exception {
         addressBookStorage.failNextSave = true;
@@ -218,6 +224,9 @@ public class LogicManagerTest {
         assertEquals(0, addressBookStorage.saveCount);
     }
 
+    /**
+     * Checks that a failed delete preserves the displayed contact and saved data.
+     */
     @Test
     public void execute_failedDelete_preservesDisplayedAndSavedData() throws Exception {
         model.addPerson(AMY);
@@ -236,6 +245,9 @@ public class LogicManagerTest {
         assertEquals(1, addressBookStorage.saveCount);
     }
 
+    /**
+     * Checks that a failed add preserves the active filter and saved contacts.
+     */
     @Test
     public void execute_failedAdd_preservesFilteredListAndSavedData() throws Exception {
         model.addPerson(AMY);

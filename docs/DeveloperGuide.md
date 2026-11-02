@@ -13,6 +13,9 @@ title: Developer Guide
   the [SE-EDU initiative](https://se-education.org/), including its code and documentation.
 * Third-party libraries used: [JavaFX](https://openjfx.io/), [Jackson](https://github.com/FasterXML/jackson), and
   [JUnit 5](https://github.com/junit-team/junit5).
+* Notable uses of AI:
+  * @kks070206 used OpenAI Codex to assist with Java implementation and JUnit tests for persistence, role-specific
+    editing, and alpha-bug fixes; UG/DG text and UML diagrams; and code and pull-request reviews.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -23,11 +26,6 @@ Refer to the guide [_Setting up and getting started_](SettingUp.md).
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Design**
-
-<div markdown="span" class="alert alert-primary">
-
-:bulb: **Tip:** The `.puml` files used to create diagrams are in `docs/diagrams`. Refer to the [_PlantUML Tutorial_ at se-edu/guides](https://se-education.org/guides/tutorials/plantUml.html) to learn how to create and edit diagrams.
-</div>
 
 ### Architecture
 
@@ -138,13 +136,6 @@ The `Model` component,
   The UI and indexed commands use this same view, so their indices agree.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The alternative, arguably more object-oriented, design below keeps a unique list of tags in `AddressBook`, and each `Person` references tags from that list. This lets `AddressBook` maintain one `Tag` object per unique tag instead of each `Person` holding its own `Tag` objects.<br>
-
-<img src="images/BetterModelClassDiagram.png" width="450" />
-
-</div>
-
 
 ### Storage component
 

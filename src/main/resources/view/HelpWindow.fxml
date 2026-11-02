@@ -26,7 +26,7 @@
         <Label minHeight="-Infinity"
             text="TutorContacts command guide" styleClass="heading" wrapText="true" maxWidth="Infinity" />
         <Label minHeight="-Infinity"
-            text="Type commands in the main window. INDEX means the number in the displayed list."
+            text="Type commands in the main window. INDEX is the 1-based number in the currently displayed list, even after filtering or sorting."
             wrapText="true" maxWidth="Infinity" />
         <ScrollPane fx:id="commandScrollPane" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
           <content>
@@ -37,7 +37,7 @@
                     text="add r/student n/NAME p/PHONE e/EMAIL a/ADDRESS s/SUBJECT l/LEVEL [o/NOTE]"
                     styleClass="command-syntax" wrapText="true" maxWidth="Infinity" />
                 <Label minHeight="-Infinity"
-                    text="Students require one subject and academic level. The note is optional."
+                    text="Students require one subject and a level: Primary 1–6, Secondary 1–5, or JC 1–2. The note is optional; tags cannot be added with add."
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
@@ -58,9 +58,9 @@
                 <Label minHeight="-Infinity" text="Sort contacts by academic level" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="sort level" styleClass="command-syntax" />
                 <Label minHeight="-Infinity"
-                    text="Order the displayed students by academic level, then name; parents follow by name."
+                    text="Order students from Primary through Secondary to JC, then by name. Students without a level follow; parents come last in name order."
                     wrapText="true" maxWidth="Infinity" />
-                <Label minHeight="-Infinity" text="Keep the current filter. Use list to reset filtering and ordering."
+                <Label minHeight="-Infinity" text="Keep the current filter without changing saved order. Use list to reset filtering and ordering."
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
@@ -73,7 +73,7 @@
                 <Label minHeight="-Infinity" text="Link a parent to a student" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="link PARENT_INDEX STUDENT_INDEX" styleClass="command-syntax" />
                 <Label minHeight="-Infinity"
-                    text="Link the parent at PARENT_INDEX to the student at STUDENT_INDEX. Example: link 2 1"
+                    text="Link the parent at PARENT_INDEX to the student at STUDENT_INDEX. The link is saved. Example: link 2 1"
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
@@ -91,10 +91,13 @@
                     text="Supply at least one field. Unspecified fields stay unchanged. Role cannot be edited."
                     wrapText="true" maxWidth="Infinity" />
                 <Label minHeight="-Infinity"
-                    text="Only students can have their subject and academic level edited."
+                    text="Only students can change subject or level. A successful edit clears the current filter, selects the edited contact, and keeps any active sort."
                     wrapText="true" maxWidth="Infinity" />
                 <Label minHeight="-Infinity"
                     text="Both students and parents can have their note edited. Use an empty o/ to clear the note."
+                    wrapText="true" maxWidth="Infinity" />
+                <Label minHeight="-Infinity"
+                    text="t/TAG replaces all existing tags; repeat t/ for multiple tags, or use an empty t/ to clear them."
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
@@ -102,7 +105,7 @@
                 <Label minHeight="-Infinity" text="find KEYWORD [MORE_KEYWORDS]" styleClass="command-syntax"
                     wrapText="true" maxWidth="Infinity" />
                 <Label minHeight="-Infinity"
-                    text="Match any whole word in a name, ignoring case. Example: find Alex May"
+                    text="Match any whole name word (OR), ignoring case. Keep the current ordering. Example: find Alex May"
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
@@ -113,7 +116,7 @@
                     text="Supply at least one criterion. Every name keyword and field must match, ignoring case."
                     wrapText="true" maxWidth="Infinity" />
                 <Label minHeight="-Infinity"
-                    text="Names match whole words; subject and level match complete values."
+                    text="Names match whole words; subject and level match complete values. Results use name order unless a sort is active."
                     wrapText="true" maxWidth="Infinity" />
                 <Label minHeight="-Infinity" text="Example: filter s/Mathematics l/Secondary 3"
                     wrapText="true" maxWidth="Infinity" />
@@ -121,13 +124,13 @@
               <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="Delete a contact" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="delete INDEX" styleClass="command-syntax" />
-                <Label minHeight="-Infinity" text="Delete the contact at INDEX in the displayed list. Example: delete 1"
+                <Label minHeight="-Infinity" text="Delete the contact at INDEX and its parent-student links. Example: delete 1"
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="Clear all contacts" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="clear" styleClass="command-syntax" />
-                <Label minHeight="-Infinity" text="Delete every contact, including contacts hidden by a search."
+                <Label minHeight="-Infinity" text="Delete every contact and link, including contacts hidden by a search."
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <VBox styleClass="command-entry" spacing="4.0">
@@ -140,11 +143,11 @@
               <VBox styleClass="command-entry" spacing="4.0">
                 <Label minHeight="-Infinity" text="Exit TutorContacts" styleClass="command-title" />
                 <Label minHeight="-Infinity" text="exit" styleClass="command-syntax" />
-                <Label minHeight="-Infinity" text="Close the app. Successful contact changes are saved automatically."
+                <Label minHeight="-Infinity" text="Close the app. Changes are saved when made; exit does not rewrite the data file."
                     wrapText="true" maxWidth="Infinity" />
               </VBox>
               <Label minHeight="-Infinity"
-                  text="UPPER_CASE values are placeholders. [Brackets] mark optional input; do not type them."
+                  text="UPPER_CASE values are placeholders; [brackets] mark optional input. Command words and prefixes ignore case, and prefixed fields may be in any order."
                   wrapText="true" maxWidth="Infinity" />
             </VBox>
           </content>

@@ -68,6 +68,9 @@ public class JsonAddressBookStorageTest {
         assertThrows(DataLoadingException.class, () -> readAddressBook("invalidAndValidPersonAddressBook.json"));
     }
 
+    /**
+     * Checks that a null contact fails loading without changing the saved file.
+     */
     @Test
     public void readAddressBook_nullPerson_throwsDataLoadingExceptionWithoutChangingFile() throws Exception {
         Path dataPath = testFolder.resolve("tutorcontacts.json");
@@ -95,6 +98,9 @@ public class JsonAddressBookStorageTest {
         }
     }
 
+    /**
+     * Checks that a null tag fails loading without changing the saved file.
+     */
     @Test
     public void readAddressBook_nullTag_throwsDataLoadingExceptionWithoutChangingFile() throws Exception {
         Path dataPath = testFolder.resolve("tutorcontacts.json");
@@ -139,6 +145,9 @@ public class JsonAddressBookStorageTest {
 
     }
 
+    /**
+     * Checks that a failed atomic replacement preserves existing data.
+     */
     @Test
     public void saveAddressBook_replacementFails_preservesExistingData() throws Exception {
         Path dataPath = testFolder.resolve("tutorcontacts.json");

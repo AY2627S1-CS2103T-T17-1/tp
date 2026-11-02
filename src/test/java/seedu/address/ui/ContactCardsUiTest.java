@@ -247,6 +247,16 @@ public class ContactCardsUiTest {
             }
             assertEquals(Set.of("add", "list", "sort", "view", "link", "unlink", "edit", "find", "filter", "delete",
                     "clear", "help", "exit"), commands);
+            Set<String> guideText = new HashSet<>();
+            for (Node node : root.lookupAll(".label")) {
+                guideText.add(((Label) node).getText());
+            }
+            assertTrue(guideText.stream().anyMatch(text -> text.contains("1-based number")));
+            assertTrue(guideText.stream().anyMatch(text -> text.contains("Primary 1–6, Secondary 1–5")));
+            assertTrue(guideText.stream().anyMatch(text -> text.contains("Match any whole name word (OR)")));
+            assertTrue(guideText.stream().anyMatch(text -> text.contains("t/TAG replaces all existing tags")));
+            assertTrue(guideText.stream().anyMatch(text -> text.contains("parent-student links")));
+            assertTrue(guideText.stream().anyMatch(text -> text.contains("exit does not rewrite the data file")));
 
             Clipboard clipboard = Clipboard.getSystemClipboard();
             Map<DataFormat, Object> previousContent = new HashMap<>();

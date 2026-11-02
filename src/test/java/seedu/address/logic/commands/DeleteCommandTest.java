@@ -114,6 +114,9 @@ public class DeleteCommandTest {
                 "Deleted contact: parent George Best (9482442).", expectedModel);
     }
 
+    /**
+     * Checks that delete feedback distinguishes contacts with the same name and phone by role.
+     */
     @Test
     public void execute_sameNameAndPhoneAcrossRoles_identifiesDeletedRole() {
         Person student = new PersonBuilder(ALICE)
@@ -130,6 +133,9 @@ public class DeleteCommandTest {
                 "Deleted contact: parent Alex Tan (91234567).", expectedModel);
     }
 
+    /**
+     * Checks that delete feedback identifies the phone of the removed contact.
+     */
     @Test
     public void execute_sameNameDifferentPhones_identifiesDeletedPhone() {
         Person firstStudent = new PersonBuilder(ALICE)
