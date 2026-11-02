@@ -16,6 +16,10 @@ title: Developer Guide
 * Notable uses of AI:
   * @kks070206 used OpenAI Codex to assist with Java implementation and JUnit tests for persistence, role-specific
     editing, and alpha-bug fixes; UG/DG text and UML diagrams; and code and pull-request reviews.
+  * @qztoh used OpenAI Codex to assist with the Figma UI mockup, JavaFX split-pane interface,
+    contact-selection and search-feedback fixes, JUnit integration and UI regression tests,
+    alpha-test cases and fictional contact data, User Guide and Developer Guide updates
+    (including UML diagrams), and pull-request reviews with visual inspection of diagrams.
 
 --------------------------------------------------------------------------------------------------------------------
 
