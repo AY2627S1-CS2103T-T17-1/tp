@@ -13,6 +13,16 @@ title: Developer Guide
   the [SE-EDU initiative](https://se-education.org/), including its code and documentation.
 * Third-party libraries used: [JavaFX](https://openjfx.io/), [Jackson](https://github.com/FasterXML/jackson), and
   [JUnit 5](https://github.com/junit-team/junit5).
+* Notable uses of AI:
+  * @kks070206 used OpenAI Codex to assist with Java implementation and JUnit tests for persistence, role-specific
+    editing, and alpha-bug fixes; UG/DG text and UML diagrams; and code and pull-request reviews.
+  * @qztoh used OpenAI Codex to assist with the Figma UI mockup, JavaFX split-pane interface,
+    contact-selection and search-feedback fixes, JUnit integration and UI regression tests,
+    alpha-test cases and fictional contact data, User Guide and Developer Guide updates
+    (including UML diagrams), and pull-request reviews with visual inspection of diagrams.
+  * @jingyucodes used Claude Code to assist with the `view`, `link`, and `unlink` commands and their JUnit tests;
+    alpha-bug fixes for name validation, `edit` feedback, and save/load error messages; User Guide and Developer
+    Guide updates (including UML diagrams and screenshots); v1.5 release preparation; and pull-request reviews.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -23,11 +33,6 @@ Refer to the guide [_Setting up and getting started_](SettingUp.md).
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Design**
-
-<div markdown="span" class="alert alert-primary">
-
-:bulb: **Tip:** The `.puml` files used to create diagrams are in `docs/diagrams`. Refer to the [_PlantUML Tutorial_ at se-edu/guides](https://se-education.org/guides/tutorials/plantUml.html) to learn how to create and edit diagrams.
-</div>
 
 ### Architecture
 
@@ -75,7 +80,7 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/se-
 
 ![Structure of the UI Component](images/UiClassDiagram.png)
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, `ContactDetailPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -139,13 +144,6 @@ The `Model` component,
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The alternative, arguably more object-oriented, design below keeps a unique list of tags in `AddressBook`, and each `Person` references tags from that list. This lets `AddressBook` maintain one `Tag` object per unique tag instead of each `Person` holding its own `Tag` objects.<br>
-
-<img src="images/BetterModelClassDiagram.png" width="450" />
-
-</div>
-
-
 ### Storage component
 
 **API** : [`Storage.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/storage/Storage.java)
@@ -156,6 +154,7 @@ The `Storage` component,
 * can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
+* saves each parent-student link as a `JsonAdaptedLink` that holds the parent's and student's names and phone numbers, so links stay readable and editable in the JSON file. When loading, `JsonSerializableAddressBook` rejects null or duplicate links, and links whose parent or student is not in the contact list.
 
 Before initializing `Storage`, `MainApp` acquires an exclusive operating-system lock on `.tutorcontacts.lock` in the
 application home. `ApplicationLock` holds the lock for the process lifetime. A second instance using the same home

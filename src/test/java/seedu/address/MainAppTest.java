@@ -157,6 +157,9 @@ public class MainAppTest {
         restartedApp.stop();
     }
 
+    /**
+     * Checks that a missing contact file starts with an empty model and no warning.
+     */
     @Test
     public void initModelManager_missingFile_startsEmptyWithoutWarning() {
         Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
@@ -169,6 +172,9 @@ public class MainAppTest {
         assertFalse(Files.exists(dataPath));
     }
 
+    /**
+     * Checks that invalid contact data triggers a warning without rewriting the file.
+     */
     @Test
     public void initModelManager_invalidFile_warnsAndPreservesFile() throws Exception {
         Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
@@ -283,6 +289,9 @@ public class MainAppTest {
         }
     }
 
+    /**
+     * Checks that a null contact triggers recovery without changing the saved data.
+     */
     @Test
     public void initModelManager_nullContact_warnsAndPreservesFile() throws Exception {
         Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
@@ -297,6 +306,9 @@ public class MainAppTest {
         assertEquals(invalidData, Files.readString(dataPath));
     }
 
+    /**
+     * Checks that a null tag triggers recovery without changing the saved data.
+     */
     @Test
     public void initModelManager_nullTag_warnsAndPreservesFile() throws Exception {
         Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
@@ -312,6 +324,9 @@ public class MainAppTest {
         assertEquals(invalidData, Files.readString(dataPath));
     }
 
+    /**
+     * Checks that missing preferences are created with defaults and no warning.
+     */
     @Test
     public void initPrefs_missingFile_createsDefaultPreferencesWithoutWarning() throws Exception {
         Path prefsPath = temporaryFolder.resolve("preferences.json");
@@ -324,6 +339,9 @@ public class MainAppTest {
         assertEquals(prefs, new JsonUserPrefsStorage(prefsPath).readUserPrefs().orElseThrow());
     }
 
+    /**
+     * Checks that a failed preferences save leaves the app using defaults.
+     */
     @Test
     public void initPrefs_saveFails_usesDefaultPreferences() {
         Path prefsPath = temporaryFolder.resolve("preferences.json");
@@ -340,6 +358,9 @@ public class MainAppTest {
         assertFalse(Files.exists(prefsPath));
     }
 
+    /**
+     * Checks that invalid preferences trigger a warning and remain unchanged through exit.
+     */
     @Test
     public void initPrefs_invalidFile_warnsAndPreservesFileOnStartupAndExit() throws Exception {
         Path prefsPath = temporaryFolder.resolve("preferences.json");
@@ -359,6 +380,9 @@ public class MainAppTest {
         assertEquals(invalidPrefs, Files.readString(prefsPath));
     }
 
+    /**
+     * Checks that valid preferences reflect updated GUI settings after exit.
+     */
     @Test
     public void initPrefs_validFile_savesUpdatedSettingsOnExit() throws Exception {
         Path prefsPath = temporaryFolder.resolve("preferences.json");
@@ -377,6 +401,9 @@ public class MainAppTest {
         assertEquals(updatedSettings, prefsStorage.readUserPrefs().orElseThrow().getGuiSettings());
     }
 
+    /**
+     * Checks that invalid contact and preference files produce both startup warnings.
+     */
     @Test
     public void initPrefsAndModelManager_bothFilesInvalid_displaysBothWarnings() throws Exception {
         Path prefsPath = temporaryFolder.resolve("preferences.json");
@@ -393,6 +420,9 @@ public class MainAppTest {
         assertEquals("{invalid-json", Files.readString(dataPath));
     }
 
+    /**
+     * Checks that duplicate contacts trigger a warning without changing the saved file.
+     */
     @Test
     public void initModelManager_duplicateContact_warnsAndPreservesFile() throws Exception {
         Path dataPath = temporaryFolder.resolve("tutorcontacts.json");
@@ -409,6 +439,9 @@ public class MainAppTest {
         assertEquals(savedData, Files.readString(dataPath));
     }
 
+    /**
+     * Checks that an unreadable contact path remains untouched and triggers a warning.
+     */
     @Test
     public void initModelManager_unreadableDataPath_warnsAndPreservesDirectory() throws Exception {
         Path dataPath = temporaryFolder.resolve("tutorcontacts.json");

@@ -147,6 +147,9 @@ public class JsonAdaptedPersonTest {
         assertThrows(IllegalValueException.class, person::toModelType);
     }
 
+    /**
+     * Checks that a null tag is rejected when converting a saved contact.
+     */
     @Test
     public void toModelType_nullTag_throwsIllegalValueException() {
         List<JsonAdaptedTag> invalidTags = new ArrayList<>(VALID_TAGS);

@@ -100,6 +100,9 @@ public class JsonSerializableAddressBookTest {
                 data::toModelType);
     }
 
+    /**
+     * Checks that a null contact is rejected before constructing an address book.
+     */
     @Test
     public void toModelType_nullPerson_throwsIllegalValueException() {
         JsonSerializableAddressBook data = new JsonSerializableAddressBook(Collections.singletonList(null), null);

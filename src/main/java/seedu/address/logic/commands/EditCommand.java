@@ -269,7 +269,7 @@ public class EditCommand extends Command {
         /**
          * Returns the subject supplied for this edit, if any.
          *
-         * @return The supplied subject, or empty if no subject edit was specified.
+         * @return The supplied subject, or empty if no subject prefix was supplied or its value was empty.
          */
         public Optional<Subject> getSubject() {
             return Optional.ofNullable(subject);
@@ -277,6 +277,8 @@ public class EditCommand extends Command {
 
         /**
          * Returns whether a subject prefix was supplied for this edit.
+         *
+         * @return True if a subject prefix was supplied, including an empty one.
          */
         public boolean isSubjectEdited() {
             return isSubjectEdited;
@@ -303,7 +305,7 @@ public class EditCommand extends Command {
         /**
          * Returns the academic level supplied for this edit, if any.
          *
-         * @return The supplied level, or empty if no level edit was specified.
+         * @return The supplied level, or empty if no level prefix was supplied or its value was empty.
          */
         public Optional<Level> getLevel() {
             return Optional.ofNullable(level);
@@ -311,6 +313,8 @@ public class EditCommand extends Command {
 
         /**
          * Returns whether a level prefix was supplied for this edit.
+         *
+         * @return True if a level prefix was supplied, including an empty one.
          */
         public boolean isLevelEdited() {
             return isLevelEdited;

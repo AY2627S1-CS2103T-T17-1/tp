@@ -24,7 +24,7 @@ help you find and manage this information faster than traditional GUI applicatio
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar tutorcontacts.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. On the first launch, the contact list is empty.<br>
-   ![TutorContacts main window with a compact list and selected-contact detail pane](images/mainWindow.png)
+   ![TutorContacts on first launch: an empty contact list and no contact selected](images/firstLaunch.png)
 
    <div markdown="span" class="alert alert-info">:information_source: **If TutorContacts does not start or save as expected:**<br>
    **Launching:** use `java -jar tutorcontacts.jar` as above. Double-clicking the JAR file may fail, or may use a different Java version.<br>
@@ -216,7 +216,7 @@ Format: `list`
 
 Example: `list`
 
-![Compact contact list beside the detail pane](images/mainWindow.png)
+![Result of list: all five contacts are shown in the order they were added, and no contact is selected](images/listContactsResult.png)
 
 ### Sorting contacts by academic level: `sort`
 
@@ -234,7 +234,7 @@ Format: `sort level`
   including for an empty list. Missing, unsupported, or extra arguments give
   `Invalid command format. Expected: sort level` and leave the display unchanged.
 
-Example: run `find Amy`, then `sort level` to order only the matching contacts. Run `list` to reset.
+Example: run `filter s/Mathematics`, then `sort level` to order only the matching contacts. Run `list` to reset.
 
 ![Result of sort level after filter s/Mathematics: Bea Tan (Primary 5) is listed before Alex Tan (Secondary 3)](images/sortByLevelResult.png)
 
@@ -263,7 +263,7 @@ Examples:
 * `list` followed by `view 2` shows the second displayed contact.
 * `find Betsy` followed by `view 1` shows the first search result.
 
-![Selected student shown beside the compact contact list](images/mainWindow.png)
+![Result of list followed by view 2: Bea Tan is highlighted and her details appear in the detail pane](images/viewContactResult.png)
 
 Invalid input leaves contact data, the displayed list, and the current selection and displayed details unchanged:
 
@@ -295,6 +295,7 @@ Format: `link PARENT_INDEX STUDENT_INDEX`
 Examples:
 * `list` followed by `link 2 1` links the parent at index 2 to the student at index 1.
 * `find Tan` followed by `link 1 3` links the first search result (a parent) to the third (a student).
+* `list` followed by `link 4 2` links parent Mary Tan (index 4) to student Bea Tan (index 2), as shown below.
 
 ![Result of link 4 2: Mary Tan is selected and the detail pane lists her linked students with their phone numbers](images/linkContactsResult.png)
 
@@ -323,6 +324,7 @@ Format: `unlink PARENT_INDEX STUDENT_INDEX`
 
 Example:
 * `list` followed by `unlink 2 1` removes the link between the parent at index 2 and the student at index 1.
+* `list` followed by `unlink 4 2` removes the link between Mary Tan and Bea Tan, as shown below.
 
 ![Result of unlink 4 2: Mary Tan now lists only Alex Tan as a linked student](images/unlinkContactsResult.png)
 
@@ -411,6 +413,7 @@ Zero matches (including an empty address book) report `No matching contacts.` an
 Examples:
 * `find John` returns `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`
+* `find Tan` returns `Alex Tan`, `Bea Tan`, and `Mary Tan`, as shown below.
 
 ![Result of find Tan: Alex Tan, Bea Tan, and Mary Tan are shown](images/findContactsResult.png)
 
@@ -493,6 +496,7 @@ Format: `delete INDEX`
 Examples:
 * `list` followed by `delete 2` deletes the second displayed contact.
 * `find Betsy` followed by `delete 1` deletes the first search result.
+* `list` followed by `delete 3` deletes Chris Lim, as shown below.
 
 ![Result of delete 3: Chris Lim is deleted and the remaining contacts are renumbered](images/deleteContactResult.png)
 

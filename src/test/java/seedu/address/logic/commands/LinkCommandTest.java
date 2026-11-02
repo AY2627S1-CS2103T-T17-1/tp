@@ -72,6 +72,9 @@ public class LinkCommandTest {
                 LinkCommand.MESSAGE_SAME_INDEX);
     }
 
+    /**
+     * Checks that linking from an empty list reports the missing contact first.
+     */
     @Test
     public void execute_sameIndexInEmptyList_reportsMissingContact() {
         Model emptyModel = new ModelManager();
@@ -80,6 +83,9 @@ public class LinkCommandTest {
                 "No contact exists at index 1 in the current list.");
     }
 
+    /**
+     * Checks that an index excluded by the current filter reports a missing contact.
+     */
     @Test
     public void execute_sameIndexOutsideFilteredList_reportsMissingContact() {
         model.updateFilteredPersonList(person -> false);
@@ -88,6 +94,9 @@ public class LinkCommandTest {
                 "No contact exists at index 1 in the current list.");
     }
 
+    /**
+     * Checks that an out-of-range first index reports a missing contact.
+     */
     @Test
     public void execute_firstIndexOutOfRange_reportsMissingContact() {
         Index outOfBoundIndex = Index.fromOneBased(model.getFilteredPersonList().size() + 1);
