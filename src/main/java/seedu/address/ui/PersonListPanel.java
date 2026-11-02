@@ -81,7 +81,7 @@ public class PersonListPanel extends UiPart<Region> {
                 Platform.runLater(() -> {
                     personListView.setSkin(new ListViewSkin<>(personListView));
                     personListView.layout();
-                    state.getSelectedContact().ifPresent(personListView::scrollTo);
+                    state.getSelectedContact().ifPresent(this::revealContact);
                 });
             }
         });
@@ -148,6 +148,18 @@ public class PersonListPanel extends UiPart<Region> {
             detailPanel.showContact(contact, displayedIndex, linkedPersonsLookup.apply(contact));
         } else {
             detailPanel.clear(count == 0);
+        }
+    }
+
+    /**
+     * Scrolls the list to the given contact's row.
+     * The list estimates the heights of rows it has not laid out yet, so each layout pass measures more wrapped
+     * rows and corrects the position; repeating a few times lets a tall row settle inside the viewport.
+     */
+    private void revealContact(Person contact) {
+        for (int pass = 0; pass < 3; pass++) {
+            personListView.scrollTo(contact);
+            personListView.layout();
         }
     }
 
