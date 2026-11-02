@@ -12,9 +12,9 @@ title: TutorContacts
 parents.** It keeps essential contact and tuition information in one place and is optimized for tutors who
 prefer fast, typed commands.
 
-TutorContacts is designed to make common contact-management tasks quick: adding student and parent
-contacts, listing contacts, viewing their complete details, deleting outdated entries, and retaining data
-locally between sessions.
+TutorContacts makes contact management quick for tutors: add, view, and edit student and parent contacts, link
+parents to students, find and filter the people you need, sort by academic level, and save data locally
+between sessions.
 
 * To use TutorContacts, start with the [_Quick Start_ section of the **User Guide**](UserGuide.html#quick-start).
 * To learn how TutorContacts is designed and maintained, see the [**Developer Guide**](DeveloperGuide.html).
