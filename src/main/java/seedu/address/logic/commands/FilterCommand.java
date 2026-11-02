@@ -17,6 +17,7 @@ public class FilterCommand extends Command {
     public static final String MESSAGE_EMPTY_NAME = "Name filter requires at least one keyword.";
     public static final String MESSAGE_INVALID_NAME_KEYWORD = "Name filter keywords must be nonblank single words.";
     public static final String MESSAGE_SUCCESS = "Showing %1$d matching contacts.";
+    public static final String MESSAGE_SUCCESS_SINGULAR = "Showing 1 matching contact.";
     public static final String MESSAGE_NO_MATCHES = "No matching contacts.";
 
     private final ContactMatchesCriteriaPredicate predicate;
@@ -47,7 +48,15 @@ public class FilterCommand extends Command {
             model.setPersonListComparator(new PersonNameComparator());
         }
         int count = model.getFilteredPersonList().size();
-        return new CommandResult(count == 0 ? MESSAGE_NO_MATCHES : String.format(MESSAGE_SUCCESS, count));
+        String feedback;
+        if (count == 0) {
+            feedback = MESSAGE_NO_MATCHES;
+        } else if (count == 1) {
+            feedback = MESSAGE_SUCCESS_SINGULAR;
+        } else {
+            feedback = String.format(MESSAGE_SUCCESS, count);
+        }
+        return new CommandResult(feedback);
     }
 
     @Override

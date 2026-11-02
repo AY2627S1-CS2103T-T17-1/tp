@@ -37,7 +37,7 @@ public class FilterCommandTest {
         Person zed = new PersonBuilder().withName("Zed Alice").build();
         Person alice = new PersonBuilder().withName("Alice Tan").build();
         model.addPerson(zed);
-        assertEquals(new CommandResult("Showing 1 matching contacts."), command.execute(model));
+        assertEquals(new CommandResult("Showing 1 matching contact."), command.execute(model));
         model.addPerson(alice);
         assertEquals(new CommandResult("Showing 2 matching contacts."), command.execute(model));
         assertEquals(List.of(alice, zed), model.getFilteredPersonList());
