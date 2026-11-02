@@ -155,6 +155,8 @@ public class PersonListPanel extends UiPart<Region> {
      * Scrolls the list to the given contact's row.
      * The list estimates the heights of rows it has not laid out yet, so each layout pass measures more wrapped
      * rows and corrects the position; repeating a few times lets a tall row settle inside the viewport.
+     *
+     * @param contact Contact whose row should be brought into view.
      */
     private void revealContact(Person contact) {
         for (int pass = 0; pass < 3; pass++) {
@@ -171,7 +173,8 @@ public class PersonListPanel extends UiPart<Region> {
         Orientation orientation = isHorizontal ? Orientation.HORIZONTAL : Orientation.VERTICAL;
         contactsPane.setMinWidth(isHorizontal ? 280 : 0);
         detailPanePlaceholder.setMinWidth(isHorizontal ? 320 : 0);
-        contactsPane.setMinHeight(isHorizontal ? 0 : 60);
+        // Reserve the heading, card padding, and a readable name line when the panes are stacked.
+        contactsPane.setMinHeight(isHorizontal ? 0 : 90);
         detailPanePlaceholder.setMinHeight(isHorizontal ? 0 : 40);
         if (contactSplitPane.getOrientation() != orientation) {
             contactSplitPane.setOrientation(orientation);

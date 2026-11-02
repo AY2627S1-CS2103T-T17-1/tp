@@ -66,6 +66,7 @@ import javafx.scene.input.PickResult;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import seedu.address.MainApp;
@@ -1333,7 +1334,24 @@ public class ContactCardsUiTest {
                     scroll.setVvalue(0);
                 });
             }
-            runOnFxThread(() -> list(scene.getRoot()).scrollTo(0));
+            runOnFxThread(() -> {
+                Region root = (Region) scene.getRoot();
+                Label name = label(selectedCard(root), "name");
+                Bounds nameBounds = name.localToScene(name.getBoundsInLocal());
+                Bounds listBounds = list(root).localToScene(list(root).getBoundsInLocal());
+                double originalTranslation = name.getTranslateY();
+                // A two-pixel overlap passed the old assertion but leaves the name unreadable.
+                try {
+                    name.setTranslateY(originalTranslation + listBounds.getMaxY() - nameBounds.getMinY() - 2);
+                    assertThrows(AssertionError.class, () -> assertContactNameVisible(root, 19));
+                    name.setTranslateY(originalTranslation + listBounds.getMinY() - nameBounds.getMaxY() + 2);
+                    assertThrows(AssertionError.class, () -> assertContactNameVisible(root, 19));
+                } finally {
+                    name.setTranslateY(originalTranslation);
+                }
+                assertContactNameVisible(root, 19);
+                list(root).scrollTo(0);
+            });
             waitForLayout(scene);
             runOnFxThread(() -> {
                 Region root = (Region) scene.getRoot();
@@ -1394,7 +1412,7 @@ public class ContactCardsUiTest {
 
     /**
      * Checks the actual rendered row, excluding invisible cells retained by JavaFX's virtualized list.
-     * At minimum height, a row may be taller than the viewport, but its name must remain visible.
+     * At minimum height, a wrapped name may be taller than the viewport, but its first line must remain readable.
      *
      * @param root Main window whose list has completed layout.
      * @param index Zero-based index of the contact whose name should be visible.
@@ -1411,11 +1429,21 @@ public class ContactCardsUiTest {
         Label name = label(card, "name");
         assertTrue(name.getHeight() > 0, "The contact name must be rendered");
         Bounds nameBounds = name.localToScene(name.getBoundsInLocal());
-        Bounds listBounds = list(root).localToScene(list(root).getBoundsInLocal());
-        assertTrue(nameBounds.getMinY() < listBounds.getMaxY() - 1,
-                "The contact name must not disappear below the resized list");
-        assertTrue(nameBounds.getMaxY() > listBounds.getMinY() + 1,
-                "The contact name must not disappear above the resized list");
+        Node viewport = list(root).lookup(".clipped-container");
+        assertNotNull(viewport, "The list must have a clipped viewport");
+        assertNotNull(viewport.getClip(), "The list viewport must clip overflowing rows");
+        Bounds viewportBounds = viewport.localToScene(viewport.getClip().getBoundsInParent());
+        assertTrue(nameBounds.getMinX() >= viewportBounds.getMinX() - 1,
+                "The contact name must not be clipped to the left of the list viewport");
+        assertTrue(nameBounds.getMaxX() <= viewportBounds.getMaxX() + 1,
+                "The contact name must not be clipped to the right of the list viewport");
+        assertTrue(nameBounds.getMinY() >= viewportBounds.getMinY() - 1,
+                "The contact name must not be clipped above the list viewport");
+        Text singleLineName = new Text(name.getText());
+        singleLineName.setFont(name.getFont());
+        double firstLineHeight = singleLineName.getLayoutBounds().getHeight();
+        assertTrue(nameBounds.getMinY() + firstLineHeight <= viewportBounds.getMaxY() + 1,
+                "At least the first full line of the contact name must fit inside the list viewport");
     }
 
     /**
