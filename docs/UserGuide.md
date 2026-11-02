@@ -589,7 +589,16 @@ saved again. Contact data is unaffected. If both files cannot be loaded, both wa
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer and overwrite the data file it creates with the data file from your previous TutorContacts home folder.
+**A**: Copy your contact-data file to the other computer:
+
+1. Ensure Java 25 is installed on the destination computer. Download or copy `tutorcontacts.jar` into a writable
+   folder there, following [Quick start](#quick-start). No installer is needed.
+2. Close TutorContacts on both computers before copying any data.
+3. Back up any existing `data/tutorcontacts.json` in the destination JAR folder before replacing it.
+4. Create a `data` subfolder beside the destination JAR if it does not already exist. Copy
+   `data/tutorcontacts.json` from the source TutorContacts home folder into that destination `data` subfolder,
+   keeping the filename `tutorcontacts.json`. You do not need to launch the destination app or add a contact first.
+5. Launch TutorContacts on the destination computer and check that your contacts and links appear.
 
 --------------------------------------------------------------------------------------------------------------------
 

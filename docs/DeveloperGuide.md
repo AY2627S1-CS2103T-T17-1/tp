@@ -402,7 +402,8 @@ contacts keeps links valid without extra code:
 * `removePerson` removes every link that involves the deleted contact. `DeleteCommand` reports how many it removed.
 * `setPerson` calls `ParentStudentLink#withContactReplaced`, which rewrites the side of a link that matched the
   edited contact. Editing a name or phone therefore keeps the link.
-* `resetData` copies links, so `clear` and the save-failure rollback restore links together with contacts.
+* `resetData` replaces contacts and links together. `clear` supplies an empty address book, removing both;
+  save-failure rollback supplies the previous snapshot, restoring both.
 
 **Storage.** `JsonSerializableAddressBook` saves links in a `links` list of `JsonAdaptedLink` objects, each holding the
 two names and phones as strings. When loading, it rejects a link with invalid fields, a link whose parent or student
@@ -496,8 +497,9 @@ Failed commands leave the displayed and saved contact data unchanged.)
 1. User enters `add` with a role, name, phone, email, and address. The user supplies a subject and level for a student
    and may supply a note for either role.
 2. TutorContacts validates the fields and checks for a duplicate contact.
-3. TutorContacts adds the contact to the end of the list and selects its compact card, which shows its index, role,
-   name, phone, and student tuition summary. Its complete information appears in the detail pane.
+3. TutorContacts appends the contact to the stored collection and clears filtering while preserving any active
+   sorting. Its compact card appears at the position determined by the active ordering, or at the end if no sorting
+   is active. The new contact is selected, and its complete information appears in the detail pane.
 4. TutorContacts saves the updated data file and reports `Added student: NAME.` or `Added parent: NAME.`
 
    Use case ends.
@@ -770,7 +772,8 @@ Failed commands leave the displayed and saved contact data unchanged.)
 2. TutorContacts saves the contacts and their role-specific fields to `data/tutorcontacts.json` before confirming the
    command.
 3. User enters `exit`.
-4. TutorContacts reports `Exiting TutorContacts.` and closes after confirming that no accepted change remains unsaved.
+4. TutorContacts reports `Exiting TutorContacts.` and closes. Successful contact changes have already been saved;
+   exiting does not save contact data or retry rejected changes.
 5. User launches TutorContacts again.
 6. TutorContacts loads every saved contact field and displays the restored compact-card list.
 
@@ -1249,7 +1252,7 @@ Use a disposable folder containing the rebuilt JAR and launch with Java 25. Add 
       Expected: `Showing 2 contacts.` Alpha Student is index 1 and Alpha Parent is index 2. Neither has any links.
 
    1. Test case: `delete 1`<br>
-      Expected: `Deleted contact: Alpha Student.` Only Alpha Parent remains, renumbered to index 1.
+      Expected: `Deleted contact: student Alpha Student (91000001).` Only Alpha Parent remains, renumbered to index 1.
 
    1. Test case: `delete 0`<br>
       Expected: `Index must be a positive integer shown in the current list.` No contact is deleted.
@@ -1317,7 +1320,8 @@ Close the app before preparing each test file.
 
 1. Protection and recovery: during each invalid-file session, enter `list`, then the add command above.<br>
    Expected: `list` shows `No contacts to display.`; add shows
-   `Contact was not added because TutorContacts could not save the data file.` No contact is added.
+   `Changes are disabled because TutorContacts could not load data/tutorcontacts.json. Repair the file, then restart TutorContacts.`
+   The command is rejected before changing contacts or attempting a save.
    Exit and compare the complete file contents with the original; they must be unchanged.
    Replace the file with `{"persons":[]}`, restart, and repeat add.<br>
    Expected: No warning; add succeeds and the new contact survives another restart.
