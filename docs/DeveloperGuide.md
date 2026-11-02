@@ -154,6 +154,7 @@ The `Storage` component,
 * can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
+* saves each parent-student link as a `JsonAdaptedLink` that holds the parent's and student's names and phone numbers, so links stay readable and editable in the JSON file. When loading, `JsonSerializableAddressBook` rejects null or duplicate links, and links whose parent or student is not in the contact list.
 
 Before initializing `Storage`, `MainApp` acquires an exclusive operating-system lock on `.tutorcontacts.lock` in the
 application home. `ApplicationLock` holds the lock for the process lifetime. A second instance using the same home
