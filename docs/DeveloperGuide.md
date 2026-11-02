@@ -140,7 +140,7 @@ How the parsing works:
 ### Model component
 **API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
 
-<img src="images/ModelClassDiagram.png" width="450" />
+<img src="images/ModelClassDiagram.png" width="650" />
 
 
 The `Model` component,
@@ -152,6 +152,8 @@ The `Model` component,
   The UI and indexed commands use this same view, so their indices agree.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
+
+The [parent-student links section](#parent-student-links) shows the relationship model in more detail.
 
 ### Storage component
 
